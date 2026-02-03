@@ -1,12 +1,11 @@
 // src/pages/HomePage.jsx
 import React from 'react';
-import { Search, Bell } from 'lucide-react';
+import { Search, Bell, PlayCircle } from 'lucide-react'; // PlayCircle 아이콘 추가
 import { Link } from 'react-router-dom';
 
-// ✅ 핵심 수정: openModal을 props로 받고, 기본값 설정
 const HomePage = ({ openModal = () => {} }) => {
   
-  // 1. 급상승 키워드 데이터 (Mock Data)
+  // 1. 트렌드 키워드 데이터
   const risingKeywords = [
     { rank: 1, keyword: "저당(Low Sugar) 간식", volume: "검색량 1.5만회", change: "▲ 12%", isUp: true },
     { rank: 2, keyword: "여름 휴가 룩북", volume: "검색량 8,200회", change: "▲ 8%", isUp: true },
@@ -15,35 +14,57 @@ const HomePage = ({ openModal = () => {} }) => {
     { rank: 5, keyword: "편의점 신상", volume: "검색량 3,200회", change: "-", isUp: null },
   ];
 
-  // 2. 조회수 급등 영상 데이터
+  // 2. 플랫폼별 키워드 데이터
   const risingVideos = [
     { rank: 1, title: "[먹방] 신메뉴 솔직 리뷰", stats: "조회수 120만 • 댓글 3,400개" },
     { rank: 2, title: "10분 홈트레이닝 루틴", stats: "조회수 85만 • 댓글 800개" },
     { rank: 3, title: "개발자 취업 현실", stats: "조회수 50만 • 댓글 1,200개" },
+    { rank: 4, title: "[브이로그] 직장인 주말 일상", stats: "조회수 42만 • 댓글 560개" },
+    { rank: 5, title: "갤럭시 Z플립6 언박싱", stats: "조회수 28만 • 댓글 1,100개" },
   ];
 
-  // 3. AI 인사이트 데이터
-  const aiInsights = [
+  // 3. 유튜브 인기 동영상 데이터 (실제 영상 썸네일형)
+  // * 이미지는 무료 플레이스홀더 서비스를 사용했습니다. 추후 실제 유튜브 썸네일 URL로 교체하세요.
+  const youtubeTrends = [
     {
-      type: "opportunity",
-      label: "기회 요인",
-      title: "'제로 슈거' 트렌드 활용 적기입니다!",
-      desc: "현재 관련 커뮤니티에서 긍정적인 반응이 80% 이상입니다. 특히 '건강'과 '맛'을 동시에 잡은 제품 리뷰가 인기입니다.",
-      color: "green"
+      id: 1,
+      title: "2024년 하반기 마케팅 트렌드 총정리! 이거 모르면 손해봅니다",
+      channel: "마케팅 팩토리",
+      views: "조회수 34만회",
+      date: "2일 전",
+      thumbnail: "https://placehold.co/600x400/png?text=Marketing+Trend" 
     },
     {
-      type: "risk",
-      label: "리스크 감지",
-      title: "'OO 챌린지' 참여 신중하게 결정하세요.",
-      desc: "해당 챌린지는 안전 문제로 인해 부정적 댓글이 급증하고 있습니다. 브랜드 이미지 보호를 위해 참여를 보류하는 것을 추천합니다.",
-      color: "red"
+      id: 2,
+      title: "AI로 영상 자동 편집하는 법 (초보자 가이드)",
+      channel: "테크 리뷰어",
+      views: "조회수 85만회",
+      date: "5일 전",
+      thumbnail: "https://placehold.co/600x400/2563eb/white?text=AI+Video+Edit"
     },
     {
-      type: "info",
-      label: "트렌드 정보",
-      title: "숏폼 콘텐츠 길이 변화 감지",
-      desc: "1분 미만 영상보다 1분 30초 내외의 스토리텔링형 영상의 체류 시간이 늘어나는 추세입니다.",
-      color: "gray"
+      id: 3,
+      title: "요즘 뜨는 숏폼 콘텐츠의 비밀 3가지",
+      channel: "크리에이터 랩",
+      views: "조회수 12만회",
+      date: "1주 전",
+      thumbnail: "https://placehold.co/600x400/fbbf24/white?text=Shorts+Secret"
+    },
+    {
+      id: 4,
+      title: "[Vlog] 퇴사 후 시골에서 한 달 살기 1편",
+      channel: "데일리 로그",
+      views: "조회수 150만회",
+      date: "3주 전",
+      thumbnail: "https://placehold.co/600x400/10b981/white?text=Vlog+Summer"
+    },
+    {
+      id: 5,
+      title: "탕후루 다음은 이거? 편의점 신상 디저트 털기",
+      channel: "먹방 요정",
+      views: "조회수 55만회",
+      date: "1개월 전",
+      thumbnail: "https://placehold.co/600x400/f43f5e/white?text=Food+Review"
     }
   ];
 
@@ -72,13 +93,14 @@ const HomePage = ({ openModal = () => {} }) => {
 
       <h1 className="text-2xl font-bold mb-8">안녕하세요, 마케터님 👋</h1>
 
+      {/* 메인 2열 그리드 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
         
-        {/* 카드 1: 급상승 키워드 */}
+        {/* 카드 1: 트렌드 키워드 */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="font-bold text-lg flex items-center gap-2">
-              🔥 급상승 키워드 Top 5
+            <h2 className="font-bold text-lg flex items-center gap-2 border-b-2 border-transparent hover:border-black transition-colors">
+              트렌드 키워드 Top 5
             </h2>
             <span className="text-xs text-gray-400">실시간 기준</span>
           </div>
@@ -112,11 +134,11 @@ const HomePage = ({ openModal = () => {} }) => {
           </ul>
         </div>
 
-        {/* 카드 2: 조회수 급등 영상 */}
+        {/* 카드 2: 플랫폼별 키워드 */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <h2 className="font-bold text-lg flex items-center gap-2">
-              📺 조회수 급등 영상
+              플랫폼별 키워드
             </h2>
             <span className="text-xs text-gray-400">최근 24시간</span>
           </div>
@@ -128,7 +150,7 @@ const HomePage = ({ openModal = () => {} }) => {
                     title: item.title, 
                     desc: `영상 '${item.title}'의 트렌드 분석 리포트입니다.`,
                     badges: [
-                      { text: "급등영상", color: "bg-red-100 text-red-600" },
+                      { text: "플랫폼키워드", color: "bg-red-100 text-red-600" },
                       { text: "24시간", color: "bg-gray-100 text-gray-600" },
                       { text: "요약분석", color: "bg-purple-100 text-purple-600" },
                     ]
@@ -146,49 +168,48 @@ const HomePage = ({ openModal = () => {} }) => {
         </div>
       </div>
 
-      {/* AI 맥락 분석 & 추천 섹션 */}
+      {/* 하단 섹션: 유튜브 인기 동영상 (영상 썸네일 카드형 5개) */}
       <div className="mb-8">
-        <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-          🤖 AI 맥락 분석 & 추천
+        <h2 className="font-bold text-lg mb-4 flex items-center gap-2 border-b-2 border-gray-800 w-fit pb-1">
+          유튜브 인기 동영상
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {aiInsights.map((card, index) => (
-            <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between h-64">
-              <div>
-                <span className={`
-                  inline-block px-2 py-1 rounded-md text-xs font-bold mb-3
-                  ${card.color === 'green' ? 'bg-green-100 text-green-700' : ''}
-                  ${card.color === 'red' ? 'bg-red-100 text-red-700' : ''}
-                  ${card.color === 'gray' ? 'bg-gray-100 text-gray-600' : ''}
-                `}>
-                  {card.type === 'opportunity' && '⚡ '}
-                  {card.type === 'risk' && '⚠️ '}
-                  {card.type === 'info' && '📊 '}
-                  {card.label}
-                </span>
-                
-                <h3 className="font-bold text-gray-900 mb-2 leading-snug">
-                  {card.title}
-                </h3>
-                <p className="text-sm text-gray-500 leading-relaxed overflow-hidden text-ellipsis line-clamp-3">
-                  {card.desc}
-                </p>
+        {/* 5열 그리드 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {youtubeTrends.map((video, index) => (
+            <div 
+                key={index} 
+                className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer flex flex-col"
+                onClick={() => openModal({
+                    title: video.title,
+                    desc: `영상 '${video.title}' 상세 분석 내용을 확인하세요.`,
+                    badges: [{ text: "YouTube", color: "bg-red-100 text-red-600" }]
+                })}
+            >
+              {/* 썸네일 영역 */}
+              <div className="relative w-full aspect-video bg-gray-200">
+                <img 
+                    src={video.thumbnail} 
+                    alt={video.title} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                {/* 플레이 아이콘 (호버시 등장) */}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <PlayCircle className="text-white w-10 h-10 drop-shadow-lg" />
+                </div>
               </div>
               
-              <div className="text-right mt-4">
-                <button 
-                  onClick={() => openModal({ 
-                    title: card.title, 
-                    desc: card.desc,
-                    badges: [
-                      { text: card.label, color: card.color === 'green' ? 'bg-green-100 text-green-600' : card.color === 'red' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600' },
-                    ]
-                  })}
-                  className="text-xs text-blue-600 font-semibold flex items-center justify-end gap-1 w-full hover:underline"
-                >
-                  {index === 0 ? "관련 키워드 보기" : index === 1 ? "댓글 반응 분석 보기" : "통계 자세히 보기"} →
-                </button>
+              {/* 영상 정보 영역 */}
+              <div className="p-4 flex flex-col justify-between flex-1">
+                <div>
+                    <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 mb-2">
+                    {video.title}
+                    </h3>
+                    <p className="text-xs text-gray-500 font-medium">{video.channel}</p>
+                </div>
+                <div className="mt-2 text-[11px] text-gray-400">
+                    {video.views} • {video.date}
+                </div>
               </div>
             </div>
           ))}
