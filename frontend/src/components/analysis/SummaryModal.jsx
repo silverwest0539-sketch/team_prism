@@ -39,7 +39,7 @@ export default function SummaryModal({ isOpen, onClose, data }) {
         <div className="mb-8">
           {/* 긍부정 신호등 뱃지 */}
           <div className="inline-block bg-orange-100 text-orange-600 text-xs font-bold px-2 py-1 rounded mb-2">
-            👥 긍부정 신호등
+            긍부정 신호등
           </div>
           {/* 키워드 타이틀 (녹색 강조) */}
           <h2 className="text-3xl font-extrabold text-green-500 tracking-tight">

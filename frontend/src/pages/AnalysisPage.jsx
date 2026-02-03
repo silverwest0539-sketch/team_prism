@@ -35,14 +35,14 @@ const AnalysisPage = () => {
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">📅</div>
+          <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center"></div>
           <div>
             <p className="text-xs text-gray-500 font-medium">기간</p>
             <p className="text-lg font-bold text-gray-800">타임라인</p>
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">📊</div>
+          <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center"></div>
           <div>
             <p className="text-xs text-gray-500 font-medium">플랫폼</p>
             <p className="text-lg font-bold text-gray-800">플랫폼명</p>
@@ -55,7 +55,7 @@ const AnalysisPage = () => {
         {/* 구간 1: 언급량 추이 */}
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
           <h3 className="text-sm font-bold text-indigo-600 flex items-center gap-1 mb-4">
-            <span className="text-lg">📈</span> 언급량 추이
+            <span className="text-lg"></span> 언급량 추이
           </h3>
           <div className="h-48 bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-center justify-center text-gray-400">
              Line Chart Area
@@ -73,7 +73,7 @@ const AnalysisPage = () => {
         {/* 구간 2: 연관어 분석 */}
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
           <h3 className="text-sm font-bold text-indigo-600 flex items-center gap-1 mb-4">
-            <span className="text-lg">☁️</span> 연관어 분석
+            <span className="text-lg"></span> 연관어 분석
           </h3>
           <div className="h-40 bg-gray-50 rounded-lg mb-4 flex items-center justify-center">
              Word Cloud Image
@@ -93,7 +93,7 @@ const AnalysisPage = () => {
         {/* 구간 3: 긍부정 분석 */}
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
           <h3 className="text-sm font-bold text-indigo-600 flex items-center gap-1 mb-4">
-            <span className="text-lg">😊</span> 긍부정 분석
+            <span className="text-lg"></span> 긍부정 분석
           </h3>
           <div className="grid grid-cols-2 gap-2 h-48">
              <div className="bg-gray-50 rounded-full flex items-center justify-center text-[10px] text-gray-400 border border-gray-100">Donut Chart</div>

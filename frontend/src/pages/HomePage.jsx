@@ -91,7 +91,7 @@ const HomePage = ({ openModal = () => {} }) => {
         </div>
       </div>
 
-      <h1 className="text-2xl font-bold mb-8">안녕하세요, 마케터님 👋</h1>
+      <h1 className="text-2xl font-bold mb-8">안녕하세요, 마케터님</h1>
 
       {/* 메인 2열 그리드 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
