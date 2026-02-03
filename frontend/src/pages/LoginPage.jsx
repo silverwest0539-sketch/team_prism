@@ -8,7 +8,7 @@ const LoginPage = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     // 로그인 처리 로직 후 메인으로 이동 (예시)
-    navigate('/analysis'); 
+    navigate('/home'); 
   };
 
   return (

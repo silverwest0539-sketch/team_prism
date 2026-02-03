@@ -1,72 +1,72 @@
 // src/pages/HomePage.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell, PlayCircle } from 'lucide-react'; // PlayCircle 아이콘 추가
 import { Link } from 'react-router-dom';
 
 const HomePage = ({ openModal = () => {} }) => {
   
-  // 1. 트렌드 키워드 데이터
-  const risingKeywords = [
-    { rank: 1, keyword: "저당(Low Sugar) 간식", volume: "검색량 1.5만회", change: "▲ 12%", isUp: true },
-    { rank: 2, keyword: "여름 휴가 룩북", volume: "검색량 8,200회", change: "▲ 8%", isUp: true },
-    { rank: 3, keyword: "AI 영상 편집", volume: "검색량 5,400회", change: "▼ 2%", isUp: false },
-    { rank: 4, keyword: "캠핑 용품 추천", volume: "검색량 4,100회", change: "▲ 5%", isUp: true },
-    { rank: 5, keyword: "편의점 신상", volume: "검색량 3,200회", change: "-", isUp: null },
-  ];
+// 상태 관리
+  const [risingKeywords, setRisingKeywords] = useState([]); // Top 5 키워드
+  const [risingContents, setRisingContents] = useState([]); // 콘텐츠 리스트
+  const [selectedPlatform, setSelectedPlatform] = useState('all'); // 'all', 'youtube', 'community'
+  const [youtubeVideos, setYoutubeVideos] = useState([]);
+  const [youtubeCategory, setYoutubeCategory] = useState('전체');
 
-  // 2. 플랫폼별 키워드 데이터
-  const risingVideos = [
-    { rank: 1, title: "[먹방] 신메뉴 솔직 리뷰", stats: "조회수 120만 • 댓글 3,400개" },
-    { rank: 2, title: "10분 홈트레이닝 루틴", stats: "조회수 85만 • 댓글 800개" },
-    { rank: 3, title: "개발자 취업 현실", stats: "조회수 50만 • 댓글 1,200개" },
-    { rank: 4, title: "[브이로그] 직장인 주말 일상", stats: "조회수 42만 • 댓글 560개" },
-    { rank: 5, title: "갤럭시 Z플립6 언박싱", stats: "조회수 28만 • 댓글 1,100개" },
-  ];
+  // 1. 초기 데이터 로드 (키워드 & 인사이트)
+  useEffect(() => {
+    // 급상승 키워드 (이미 최신 날짜 Top 10을 가져오므로 상위 5개만 자르면 됨)
+    fetch('http://localhost:5000/api/trends/rising')
+      .then(res => res.json())
+      .then(data => setRisingKeywords(data.slice(0, 5))) // Top 5만 사용
+      .catch(err => console.error(err));
+  }, []);
+
+  // 2. 플랫폼 탭이 바뀔 때마다 콘텐츠 데이터 새로 요청
+  useEffect(() => {
+    let url = 'http://localhost:5000/api/contents/rising';
+    if (selectedPlatform !== 'all') {
+      url += `?platform=${selectedPlatform}`;
+    }
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => setRisingContents(data))
+      .catch(err => console.error(err));
+  }, [selectedPlatform]); // selectedPlatform이 바뀔 때 재실행
+
+  const youtubecategories = ['전체', '게임', '라이프', '음악', '일상', '코미디'];
 
   // 3. 유튜브 인기 동영상 데이터 (실제 영상 썸네일형)
   // * 이미지는 무료 플레이스홀더 서비스를 사용했습니다. 추후 실제 유튜브 썸네일 URL로 교체하세요.
-  const youtubeTrends = [
-    {
-      id: 1,
-      title: "2024년 하반기 마케팅 트렌드 총정리! 이거 모르면 손해봅니다",
-      channel: "마케팅 팩토리",
-      views: "조회수 34만회",
-      date: "2일 전",
-      thumbnail: "https://placehold.co/600x400/png?text=Marketing+Trend" 
-    },
-    {
-      id: 2,
-      title: "AI로 영상 자동 편집하는 법 (초보자 가이드)",
-      channel: "테크 리뷰어",
-      views: "조회수 85만회",
-      date: "5일 전",
-      thumbnail: "https://placehold.co/600x400/2563eb/white?text=AI+Video+Edit"
-    },
-    {
-      id: 3,
-      title: "요즘 뜨는 숏폼 콘텐츠의 비밀 3가지",
-      channel: "크리에이터 랩",
-      views: "조회수 12만회",
-      date: "1주 전",
-      thumbnail: "https://placehold.co/600x400/fbbf24/white?text=Shorts+Secret"
-    },
-    {
-      id: 4,
-      title: "[Vlog] 퇴사 후 시골에서 한 달 살기 1편",
-      channel: "데일리 로그",
-      views: "조회수 150만회",
-      date: "3주 전",
-      thumbnail: "https://placehold.co/600x400/10b981/white?text=Vlog+Summer"
-    },
-    {
-      id: 5,
-      title: "탕후루 다음은 이거? 편의점 신상 디저트 털기",
-      channel: "먹방 요정",
-      views: "조회수 55만회",
-      date: "1개월 전",
-      thumbnail: "https://placehold.co/600x400/f43f5e/white?text=Food+Review"
+  // 1. 조회수 포맷팅 함수 (예: 305486 -> 30.5만회)
+  const formatViews = (views) => {
+    if (!views) return '0회';
+    const num = parseInt(views, 10);
+    if (num >= 10000) {
+      return (num / 10000).toFixed(1) + '만회'; // 소수점 첫째자리까지
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + '천회';
     }
-  ];
+    return num + '회';
+  };
+
+  // 2. 날짜 포맷팅 함수 (예: 2026-02-02... -> 1일 전)
+  const formatDate = (dateString) => {
+    const published = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - published);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return `${diffDays}일 전`; // 간단한 예시이며, 라이브러리(moment.js 등) 사용 시 더 정교해짐
+  };
+
+  // 3. 데이터 가져오기 (카테고리가 변경될 때마다 실행)
+  useEffect(() => {
+    // 쿼리 스트링으로 카테고리 전달
+    fetch(`http://localhost:5000/api/youtube/list?category=${youtubeCategory}`)
+      .then(res => res.json())
+      .then(data => setYoutubeVideos(data))
+      .catch(err => console.error("유튜브 데이터 로드 실패:", err));
+  }, [youtubeCategory]);
 
   return (
     <div className="w-full min-h-screen bg-gray-50 p-8 font-sans text-gray-800">
@@ -141,9 +141,24 @@ const HomePage = ({ openModal = () => {} }) => {
               플랫폼별 키워드
             </h2>
             <span className="text-xs text-gray-400">최근 24시간</span>
+            {/* 탭 버튼 그룹 */}
+              <div className="flex bg-gray-100 p-1 rounded-lg">
+                <button 
+                  onClick={() => setSelectedPlatform('youtube')}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition ${selectedPlatform === 'youtube' ? 'bg-white shadow text-red-600' : 'text-gray-500'}`}
+                >
+                  유튜브
+                </button>
+                <button 
+                  onClick={() => setSelectedPlatform('community')}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition ${selectedPlatform === 'community' ? 'bg-white shadow text-green-600' : 'text-gray-500'}`}
+                >
+                  커뮤니티
+                </button>
+              </div>
           </div>
           <ul className="space-y-6">
-            {risingVideos.map((item, index) => (
+            {risingContents.map((item, index) => (
               <li 
                 key={index}
                 onClick={() => openModal({ 
@@ -171,20 +186,39 @@ const HomePage = ({ openModal = () => {} }) => {
       {/* 하단 섹션: 유튜브 인기 동영상 (영상 썸네일 카드형 5개) */}
       <div className="mb-8">
         <h2 className="font-bold text-lg mb-4 flex items-center gap-2 border-b-2 border-gray-800 w-fit pb-1">
-          유튜브 인기 동영상
+          유튜브 일일 급상습 동영상
         </h2>
+
+        {/* ✅ 카테고리 버튼 영역 추가 */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+          {youtubecategories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setYoutubeCategory(cat)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap
+                ${youtubeCategory === cat 
+                  ? 'bg-black text-white shadow-md' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
         
         {/* 5열 그리드 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {youtubeTrends.map((video, index) => (
-            <div 
-                key={index} 
+          {youtubeVideos.slice(0, 5).map((video) => (
+            <a 
+                key={video.id}
+                href={`https://www.youtube.com/watch?v=${video.id}`}
+                target="_blank" 
+                rel="noopener noreferrer"
                 className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer flex flex-col"
-                onClick={() => openModal({
-                    title: video.title,
-                    desc: `영상 '${video.title}' 상세 분석 내용을 확인하세요.`,
-                    badges: [{ text: "YouTube", color: "bg-red-100 text-red-600" }]
-                })}
+                // onClick={() => openModal({
+                //     title: video.title,
+                //     desc: `영상 '${video.title}' 상세 분석 내용을 확인하세요.`,
+                //     badges: [{ text: "YouTube", color: "bg-red-100 text-red-600" }]
+                // })}
             >
               {/* 썸네일 영역 */}
               <div className="relative w-full aspect-video bg-gray-200">
@@ -208,10 +242,13 @@ const HomePage = ({ openModal = () => {} }) => {
                     <p className="text-xs text-gray-500 font-medium">{video.channel}</p>
                 </div>
                 <div className="mt-2 text-[11px] text-gray-400">
-                    {video.views} • {video.date}
+                    <span>{formatViews(video.views)}</span>
+                    <span>•</span>
+                    {/* server.js에서 publish_time으로 보내주므로 여기서도 맞춰야 합니다 */}
+                    <span>{formatDate(video.publish_time)}</span>
                 </div>
               </div>
-            </div>
+            </a>
           ))}
         </div>
       </div>

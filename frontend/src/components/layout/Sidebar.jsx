@@ -34,14 +34,6 @@ const Sidebar = ({ onOpenSummary = () => {} }) => {  // ✅ 기본값
           컨텐츠 생성
         </div>
 
-        {/* 요약 분석 모달 열기 메뉴 */}
-        <div
-          className="text-gray-500 hover:text-blue-600 hover:bg-gray-50 font-medium p-3 rounded-lg cursor-pointer transition-colors"
-          onClick={onOpenSummary}
-        >
-          요약 분석
-        </div>
-
         <div className="text-gray-500 hover:text-blue-600 cursor-pointer font-medium p-3 rounded-lg">
           내 스크랩
         </div>
