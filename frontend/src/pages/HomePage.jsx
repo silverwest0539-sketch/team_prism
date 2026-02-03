@@ -1,27 +1,38 @@
 // src/pages/HomePage.jsx
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, PlayCircle } from 'lucide-react'; // PlayCircle 아이콘 추가
+import { Search, Bell, PlayCircle } from 'lucide-react'; 
 import { Link } from 'react-router-dom';
 
 const HomePage = ({ openModal = () => {} }) => {
   
-// 상태 관리
-  const [risingKeywords, setRisingKeywords] = useState([]); // Top 5 키워드
-  const [risingContents, setRisingContents] = useState([]); // 콘텐츠 리스트
-  const [selectedPlatform, setSelectedPlatform] = useState('all'); // 'all', 'youtube', 'community'
+  // 상태 관리
+  const [risingKeywords, setRisingKeywords] = useState([]); 
+  const [risingContents, setRisingContents] = useState([]); 
+  const [selectedPlatform, setSelectedPlatform] = useState('youtube'); 
   const [youtubeVideos, setYoutubeVideos] = useState([]);
   const [youtubeCategory, setYoutubeCategory] = useState('전체');
 
-  // 1. 초기 데이터 로드 (키워드 & 인사이트)
+  // ✅ 추가된 상태: 드롭다운 열림/닫힘
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // ✅ 추가된 상수: 한글 라벨 매핑 (이모티콘 제거)
+  const platformLabels = {
+    'community': '커뮤니티 전체',
+    'fmkorea': '에펨코리아',
+    'theqoo': '더쿠',
+    'dcinside': '디시인사이드',
+    'instiz': '인스티즈'
+  };
+
+  // 1. 초기 데이터 로드
   useEffect(() => {
-    // 급상승 키워드 (이미 최신 날짜 Top 10을 가져오므로 상위 5개만 자르면 됨)
     fetch('http://localhost:5000/api/trends/rising')
       .then(res => res.json())
-      .then(data => setRisingKeywords(data.slice(0, 5))) // Top 5만 사용
+      .then(data => setRisingKeywords(data.slice(0, 5))) 
       .catch(err => console.error(err));
   }, []);
 
-  // 2. 플랫폼 탭이 바뀔 때마다 콘텐츠 데이터 새로 요청
+  // 2. 플랫폼 변경 시 데이터 요청
   useEffect(() => {
     let url = 'http://localhost:5000/api/contents/rising';
     if (selectedPlatform !== 'all') {
@@ -32,36 +43,27 @@ const HomePage = ({ openModal = () => {} }) => {
       .then(res => res.json())
       .then(data => setRisingContents(data))
       .catch(err => console.error(err));
-  }, [selectedPlatform]); // selectedPlatform이 바뀔 때 재실행
+  }, [selectedPlatform]);
 
   const youtubecategories = ['전체', '게임', '라이프', '음악', '일상', '코미디'];
 
-  // 3. 유튜브 인기 동영상 데이터 (실제 영상 썸네일형)
-  // * 이미지는 무료 플레이스홀더 서비스를 사용했습니다. 추후 실제 유튜브 썸네일 URL로 교체하세요.
-  // 1. 조회수 포맷팅 함수 (예: 305486 -> 30.5만회)
   const formatViews = (views) => {
     if (!views) return '0회';
     const num = parseInt(views, 10);
-    if (num >= 10000) {
-      return (num / 10000).toFixed(1) + '만회'; // 소수점 첫째자리까지
-    } else if (num >= 1000) {
-      return (num / 1000).toFixed(1) + '천회';
-    }
+    if (num >= 10000) return (num / 10000).toFixed(1) + '만회'; 
+    else if (num >= 1000) return (num / 1000).toFixed(1) + '천회';
     return num + '회';
   };
 
-  // 2. 날짜 포맷팅 함수 (예: 2026-02-02... -> 1일 전)
   const formatDate = (dateString) => {
     const published = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - published);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-    return `${diffDays}일 전`; // 간단한 예시이며, 라이브러리(moment.js 등) 사용 시 더 정교해짐
+    return `${diffDays}일 전`; 
   };
 
-  // 3. 데이터 가져오기 (카테고리가 변경될 때마다 실행)
   useEffect(() => {
-    // 쿼리 스트링으로 카테고리 전달
     fetch(`http://localhost:5000/api/youtube/list?category=${youtubeCategory}`)
       .then(res => res.json())
       .then(data => setYoutubeVideos(data))
@@ -69,9 +71,14 @@ const HomePage = ({ openModal = () => {} }) => {
   }, [youtubeCategory]);
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 p-8 font-sans text-gray-800">
+    // 드롭다운이 짤리지 않게 min-h-screen 유지, 클릭 이벤트 버블링 등 고려
+    <div 
+        className="w-full min-h-screen bg-gray-50 p-8 font-sans text-gray-800"
+        // (선택사항) 배경 클릭 시 드롭다운 닫기
+        onClick={() => isDropdownOpen && setIsDropdownOpen(false)}
+    >
       
-      {/* 상단 헤더 영역 */}
+      {/* 상단 헤더 */}
       <div className="flex justify-between items-start mb-8">
         <div className="relative w-full max-w-xl mx-auto"> 
           <input 
@@ -91,9 +98,8 @@ const HomePage = ({ openModal = () => {} }) => {
         </div>
       </div>
 
-      <h1 className="text-2xl font-bold mb-8">안녕하세요, 마케터님</h1>
+      <h1 className="text-2xl font-bold mb-8">안녕하세요, 마케터님 👋</h1>
 
-      {/* 메인 2열 그리드 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
         
         {/* 카드 1: 트렌드 키워드 */}
@@ -135,35 +141,93 @@ const HomePage = ({ openModal = () => {} }) => {
         </div>
 
         {/* 카드 2: 플랫폼별 키워드 */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative"> {/* relative 확인 */}
           <div className="flex justify-between items-center mb-6">
             <h2 className="font-bold text-lg flex items-center gap-2">
               플랫폼별 키워드
             </h2>
-            <span className="text-xs text-gray-400">최근 24시간</span>
-            {/* 탭 버튼 그룹 */}
-              <div className="flex bg-gray-100 p-1 rounded-lg">
+            
+            {/* ✅ 커스텀 드롭다운이 적용된 탭 버튼 그룹 */}
+            <div 
+                className="flex bg-gray-100 p-1 rounded-lg items-center relative z-10"
+                onClick={(e) => e.stopPropagation()} // 부모의 배경 클릭 이벤트 전파 방지
+            >
+                
+                {/* 1. 유튜브 버튼 */}
                 <button 
-                  onClick={() => setSelectedPlatform('youtube')}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition ${selectedPlatform === 'youtube' ? 'bg-white shadow text-red-600' : 'text-gray-500'}`}
+                  onClick={() => {
+                    setSelectedPlatform('youtube');
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all duration-200 ${
+                    selectedPlatform === 'youtube' 
+                      ? 'bg-white shadow-sm text-red-600' 
+                      : 'text-gray-500 hover:text-gray-800'
+                  }`}
                 >
                   유튜브
                 </button>
-                <button 
-                  onClick={() => setSelectedPlatform('community')}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition ${selectedPlatform === 'community' ? 'bg-white shadow text-green-600' : 'text-gray-500'}`}
-                >
-                  커뮤니티
-                </button>
-              </div>
+
+                {/* 구분선 */}
+                <div className="w-[1px] h-3 bg-gray-300 mx-1"></div>
+
+                {/* 2. 커뮤니티 커스텀 드롭다운 */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-200 ${
+                      selectedPlatform !== 'youtube'
+                        ? 'bg-white shadow-sm text-green-600'
+                        : 'text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
+                    {/* 현재 선택된 값 표시 */}
+                    <span>
+                      {selectedPlatform === 'youtube' 
+                        ? '커뮤니티' 
+                        : platformLabels[selectedPlatform] || '커뮤니티'}
+                    </span>
+                    {/* 화살표 아이콘 */}
+                    <svg 
+                      className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* 드롭다운 메뉴 (레이어 띄우기) */}
+                  {isDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
+                      {Object.entries(platformLabels).map(([key, label]) => (
+                        <button
+                          key={key}
+                          onClick={() => {
+                            setSelectedPlatform(key);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 text-xs hover:bg-gray-50 transition-colors ${
+                            selectedPlatform === key ? 'text-green-600 font-bold bg-green-50' : 'text-gray-600'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+            </div>
           </div>
+
           <ul className="space-y-6">
             {risingContents.map((item, index) => (
               <li 
                 key={index}
                 onClick={() => openModal({ 
                     title: item.title, 
-                    desc: `영상 '${item.title}'의 트렌드 분석 리포트입니다.`,
+                    desc: `영상 '${item.title}' 분석 리포트`,
                     badges: [
                       { text: "플랫폼키워드", color: "bg-red-100 text-red-600" },
                       { text: "24시간", color: "bg-gray-100 text-gray-600" },
@@ -183,13 +247,12 @@ const HomePage = ({ openModal = () => {} }) => {
         </div>
       </div>
 
-      {/* 하단 섹션: 유튜브 인기 동영상 (영상 썸네일 카드형 5개) */}
+      {/* 하단 섹션: 유튜브 일일 급상승 동영상 */}
       <div className="mb-8">
         <h2 className="font-bold text-lg mb-4 flex items-center gap-2 border-b-2 border-gray-800 w-fit pb-1">
-          유튜브 일일 급상습 동영상
+          유튜브 일일 급상승 동영상
         </h2>
 
-        {/* ✅ 카테고리 버튼 영역 추가 */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
           {youtubecategories.map((cat) => (
             <button
@@ -205,7 +268,6 @@ const HomePage = ({ openModal = () => {} }) => {
           ))}
         </div>
         
-        {/* 5열 그리드 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {youtubeVideos.slice(0, 5).map((video) => (
             <a 
@@ -214,26 +276,17 @@ const HomePage = ({ openModal = () => {} }) => {
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer flex flex-col"
-                // onClick={() => openModal({
-                //     title: video.title,
-                //     desc: `영상 '${video.title}' 상세 분석 내용을 확인하세요.`,
-                //     badges: [{ text: "YouTube", color: "bg-red-100 text-red-600" }]
-                // })}
             >
-              {/* 썸네일 영역 */}
               <div className="relative w-full aspect-video bg-gray-200">
                 <img 
                     src={video.thumbnail} 
                     alt={video.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                {/* 플레이 아이콘 (호버시 등장) */}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
                     <PlayCircle className="text-white w-10 h-10 drop-shadow-lg" />
                 </div>
               </div>
-              
-              {/* 영상 정보 영역 */}
               <div className="p-4 flex flex-col justify-between flex-1">
                 <div>
                     <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 mb-2">
@@ -244,7 +297,6 @@ const HomePage = ({ openModal = () => {} }) => {
                 <div className="mt-2 text-[11px] text-gray-400">
                     <span>{formatViews(video.views)}</span>
                     <span>•</span>
-                    {/* server.js에서 publish_time으로 보내주므로 여기서도 맞춰야 합니다 */}
                     <span>{formatDate(video.publish_time)}</span>
                 </div>
               </div>
@@ -252,7 +304,6 @@ const HomePage = ({ openModal = () => {} }) => {
           ))}
         </div>
       </div>
-
     </div>
   );
 };
