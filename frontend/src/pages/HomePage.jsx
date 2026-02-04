@@ -15,13 +15,15 @@ const HomePage = ({ openModal = () => {} }) => {
   // ✅ 추가된 상태: 드롭다운 열림/닫힘
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // ✅ 추가된 상수: 한글 라벨 매핑 (이모티콘 제거)
+  // ✅ [수정됨] 실제 작업된 커뮤니티 목록으로 업데이트
   const platformLabels = {
-    'community': '커뮤니티 전체',
-    'fmkorea': '에펨코리아',
-    'theqoo': '더쿠',
+    'community': '커뮤니티 전체', // "전체보기" 기능을 위해 유지
     'dcinside': '디시인사이드',
-    'instiz': '인스티즈'
+    'theqoo': '더쿠',
+    'natepan': '네이트판',
+    'fmkorea': 'fmkorea',
+    'ruliweb': '루리웹',
+    'x': 'X'
   };
 
   // 1. 초기 데이터 로드
