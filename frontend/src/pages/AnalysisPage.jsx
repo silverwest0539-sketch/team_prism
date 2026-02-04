@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { 
   MagnifyingGlass, Bell, Star, Copy, 
   ArrowsClockwise, BookmarkSimple, Export, PlayCircle,
-  CaretLeft, ChartLineUp, ChatCircle, LockKey
+  CaretLeft, ChartLineUp, ChatCircle, LockKey, Newspaper
 } from '@phosphor-icons/react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -82,7 +82,8 @@ const AnalysisPage = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
-  
+  const [news, setNews] = useState([]);
+
   // --- Helper 함수 ---
   const formatDateForInput = (dateStr) => {
     if (!dateStr) return '';
@@ -97,30 +98,41 @@ const AnalysisPage = () => {
   useEffect(() => {
     if (!keyword) {
       setData(null); // 키워드 없으면 데이터 초기화
+      setNews([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
 
-    fetch(`http://localhost:5000/api/analysis?keyword=${keyword}`)
-      .then(res => res.json())
-      .then(result => {
-        if (result.found) {
-          setData(result);
-          if (result.history && result.history.length > 0) {
-            setStartDate(formatDateForInput(result.history[0].date));
-            setEndDate(formatDateForInput(result.history[result.history.length - 1].date));
-          }
-        } else {
-          setData(null);
+
+
+    // 병렬 요청: 분석 데이터 & 뉴스 데이터
+    Promise.all([
+      fetch(`http://localhost:5000/api/analysis?keyword=${keyword}`).then(res => res.json()),
+      fetch(`http://localhost:5000/api/news?keyword=${keyword}`).then(res => res.json()) // ✅ 뉴스 API 호출
+    ])
+    .then(([analysisResult, newsResult]) => {
+      // 1. 분석 데이터 처리
+      if (analysisResult.found) {
+        setData(analysisResult);
+        if (analysisResult.history && analysisResult.history.length > 0) {
+          setStartDate(formatDateForInput(analysisResult.history[0].date));
+          setEndDate(formatDateForInput(analysisResult.history[analysisResult.history.length - 1].date));
         }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      } else {
+        setData(null);
+      }
+
+      // 2. 뉴스 데이터 처리
+      setNews(newsResult || []);
+
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
   }, [keyword]);
 
   // --- 2. 검색 핸들러 ---
@@ -360,24 +372,30 @@ const AnalysisPage = () => {
               </div>
               
               <h3 className="font-bold text-gray-800 mb-4 pb-2 border-b flex items-center gap-2">
-                <PlayCircle size={20} className="text-red-500"/> 관련 뉴스
+                <Newspaper size={20} className="text-red-500"/> 관련 뉴스
               </h3>
               <div className="space-y-3">
-                {filteredData?.youtubeComments?.length > 0 ? (
-                  filteredData.youtubeComments.map((comment, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition group cursor-pointer">
-                        <div className="w-20 h-12 bg-gray-200 rounded-md flex-shrink-0 flex items-center justify-center text-gray-400 text-xs">
-                          Thumbnail
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-800 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
-                            "{comment.text}"
+                {news?.length > 0 ? (
+                  news.map((item, idx) => (
+                    <a 
+                        key={idx} 
+                        href={item.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block p-3 hover:bg-gray-50 rounded-lg transition group border border-transparent hover:border-gray-100"
+                      >
+                        <div className="flex justify-between items-start">
+                          <p className="text-sm font-medium text-gray-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                            {item.title}
                           </p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
-                            <span>Youtube</span> • <span>조회수 {Math.floor(Math.random()*100)}만회</span>
-                          </div>
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2 mt-0.5">
+                            {new Date(item.pubDate).toLocaleDateString()}
+                          </span>
                         </div>
-                    </div>
+                        <div className="flex items-center gap-2 mt-1">
+                           <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{item.source}</span>
+                        </div>
+                      </a>
                   ))
                 ) : (
                   <div className="text-center py-8 text-gray-400 text-sm">관련 뉴스가 없습니다.</div>

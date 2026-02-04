@@ -1,6 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const { loadCSVData, getData, getYoutubeData } = require('./dataLoader');
+const Parser = require('rss-parser');
+const parser = new Parser({
+  customFields: {
+    // XML의 <source> 태그를 item.newsSource 라는 이름으로 가져오겠다는 설정
+    item: [['source', 'newsSource']] 
+  }
+});
 
 const app = express();
 const PORT = 5000;
@@ -263,6 +270,50 @@ app.get('/api/analysis', (req, res) => {
           }
       });
   }
+
+// 6. [AnalysisPage] 뉴스 RSS API (구글 뉴스 검색 활용)
+app.get('/api/news', async (req, res) => {
+  const { keyword } = req.query;
+  if (!keyword) return res.json([]);
+
+  try {
+    // 구글 뉴스 RSS (네이버는 API 키 필요, 구글은 무료/공개)
+    // 한글 검색을 위해 URL 인코딩 필수
+    const feedUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(keyword)}&hl=ko&gl=KR&ceid=KR:ko`;
+    
+    const feed = await parser.parseURL(feedUrl);
+    
+    // 프론트엔드에서 쓰기 좋게 가공 (최신 5개만)
+    const newsItems = feed.items.slice(0, 5).map(item => {
+      // 2. 언론사 이름 추출 로직 강화
+      let publisher = 'Google News';
+
+      // newsSource가 존재하는 경우 처리
+      if (item.newsSource) {
+        // case A: 단순 문자열인 경우
+        if (typeof item.newsSource === 'string') {
+          publisher = item.newsSource;
+        } 
+        // case B: 객체인 경우 (속성이 있어서 { _: '연합뉴스', $: {url: ...} } 형태로 올 때)
+        else if (item.newsSource._) {
+          publisher = item.newsSource._;
+        }
+      }
+
+      return {
+        title: item.title,
+        link: item.link,
+        pubDate: item.pubDate,
+        source: publisher // 추출한 언론사 이름 적용
+      };
+    });
+
+    res.json(newsItems);
+  } catch (error) {
+    console.error('RSS Error:', error);
+    res.json([]);
+  }
+});
 
   // 최종 응답 구성
   res.json({
