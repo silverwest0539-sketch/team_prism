@@ -117,14 +117,12 @@ const HomePage = ({ openModal = () => {} }) => {
               <li 
                 key={index} 
                 onClick={() => openModal({ 
-                    title: item.keyword, 
-                    desc: `${item.keyword}에 대한 AI 심층 분석 결과입니다.`,
-                    badges: [
-                      { text: "급상승", color: "bg-orange-100 text-orange-600" },
-                      { text: "실시간", color: "bg-blue-100 text-blue-600" },
-                      { text: "요약분석", color: "bg-purple-100 text-purple-600" },
-                    ]
-                })}
+                  keyword: item.keyword, // 여기서 keyword를 넘겨줘야 모달이 받습니다!
+                  rank: item.rank,
+                  score: item.score, // 필요하다면 점수 등도 전달
+                  title: item.keyword, // (선택) 타이틀 용도
+                  desc: `${item.keyword}에 대한 트렌드 요약입니다.` // (선택)
+              })}
                 className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors"
               >
                 <div className="flex items-center gap-4">

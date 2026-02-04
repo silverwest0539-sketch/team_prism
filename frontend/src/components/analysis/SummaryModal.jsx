@@ -1,148 +1,188 @@
-// src/components/analysis/SummaryModal.jsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  X, ArrowRight, CaretRight, 
+  TrendUp, ChatCircle, ChartLineUp,
+  Smiley, SmileySad, SmileyMeh // 감정 표현용 아이콘
+} from '@phosphor-icons/react';
+import { 
+  LineChart, Line, Tooltip, ResponsiveContainer, XAxis 
+} from 'recharts';
 
-export default function SummaryModal({ isOpen, onClose, data }) {
+export default function SummaryModal({ isOpen, onClose, data }) { // data는 HomePage에서 넘겨준 기본 정보 (keyword, rank 등)
   const navigate = useNavigate();
+  const [detailData, setDetailData] = useState(null); // 차트와 댓글을 위한 상세 데이터
+  const [loading, setLoading] = useState(false);
 
-  // 모달이 닫혀있으면 렌더링하지 않음
+  // 모달이 열리면 해당 키워드의 '상세 데이터'를 서버에서 가져옴 (차트, 댓글용)
+  useEffect(() => {
+    if (isOpen && data?.keyword) {
+      setLoading(true);
+      fetch(`http://localhost:5000/api/analysis?keyword=${data.keyword}`)
+        .then(res => res.json())
+        .then(result => {
+          if (result.found) {
+            setDetailData(result);
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("모달 데이터 로딩 실패:", err);
+          setLoading(false);
+        });
+    } else {
+      setDetailData(null); // 모달 닫히면 초기화
+    }
+  }, [isOpen, data]);
+
   if (!isOpen) return null;
 
-  // 데이터가 없을 때 보여줄 기본값 (이미지 시안 내용 반영)
-  const content = data || {
-    title: "키워드", // 실제 연동 시 data.title
-    summary: "해당 키워드가 이슈가 된 이유 요약 내용이 들어갑니다. 최근 2030 세대 사이에서 급격하게 확산되고 있으며...",
-    examples: [
-      { platform: "인스타그램", text: "이거 진짜 대박임 ㅋㅋ 완전 추천" },
-      { platform: "유튜브", text: "영상 보고 바로 구매했습니다. 가성비 좋네요." },
-    ]
-  };
-
-  // 상세 페이지 이동 핸들러 (수정된 부분)
+  // 상세 페이지 이동 핸들러
   const handleDetailMove = () => {
-    onClose(); // 1. 모달을 먼저 닫고
-    navigate('/analysis'); // 2. 페이지를 이동합니다
+    onClose();
+    // 쿼리 스트링을 포함하여 이동 -> AnalysisPage에서 자동으로 검색 실행됨
+    navigate(`/analysis?keyword=${data.keyword}`);
   };
 
+  // 날짜 포맷팅 (YYYYMMDD -> MM.DD)
+  const formatDateLabel = (dateStr) => {
+    if (!dateStr) return '';
+    return `${dateStr.substring(4, 6)}.${dateStr.substring(6, 8)}`;
+  };
 
   return (
-    // 배경 (Backdrop)
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity">
-      
-      {/* 모달 컨테이너 (너비를 이미지 비율에 맞춰 조정) */}
-      <div className="bg-white w-[550px] max-h-[90vh] rounded-2xl shadow-2xl overflow-y-auto relative p-8 scrollbar-hide">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-[fadeIn_0.2s_ease-out]">
+      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
-        {/* 닫기 버튼 (우측 상단) */}
-        <button 
-          onClick={onClose}
-          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
         {/* 1. 헤더 영역 */}
-        <div className="mb-8">
-          {/* 긍부정 신호등 뱃지 */}
-          <div className="inline-block bg-orange-100 text-orange-600 text-xs font-bold px-2 py-1 rounded mb-2">
-            긍부정 신호등
+        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+          <div>
+             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full mb-1 inline-block">
+               No.{data?.rank || '-'} 급상승 키워드
+             </span>
+             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+               {data?.keyword}
+             </h2>
           </div>
-          {/* 키워드 타이틀 (녹색 강조) */}
-          <h2 className="text-3xl font-extrabold text-green-500 tracking-tight">
-            {content.title}
-          </h2>
-        </div>
-
-        {/* 2. AI 분석 요약 */}
-        <div className="mb-8">
-          <h3 className="flex items-center gap-2 text-md font-bold text-violet-600 mb-3">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            AI 분석 요약
-          </h3>
-          {/* 왼쪽 보라색 라인이 있는 회색 박스 */}
-          <div className="bg-gray-50 rounded-r-lg border-l-4 border-violet-500 p-4 text-sm text-gray-700 leading-relaxed min-h-[80px] flex items-center">
-             {content.desc || content.summary || "해당 키워드가 이슈가 된 이유 요약"}
-          </div>
-        </div>
-
-        {/* 3. 키워드 언급량 추이 (그래프) */}
-        <div className="mb-8">
-          <h3 className="flex items-center gap-2 text-md font-bold text-violet-600 mb-3">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
-            키워드 언급량 추이
-          </h3>
-          <div className="bg-white p-2 rounded-xl border border-gray-100 relative h-48 flex items-end justify-center overflow-hidden">
-            {/* SVG 그래프 그리기 */}
-            <svg className="absolute bottom-0 left-0 w-full h-full" preserveAspectRatio="none">
-              {/* 그라데이션 정의 */}
-              <defs>
-                <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.2"/>
-                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0"/>
-                </linearGradient>
-              </defs>
-              {/* 채워진 영역 */}
-              <path d="M0,150 Q120,100 250,50 T500,80 V190 H0 Z" fill="url(#purpleGradient)" />
-              {/* 선 */}
-              <path d="M0,150 Q120,100 250,50 T500,80" fill="none" stroke="#8b5cf6" strokeWidth="3" strokeLinecap="round" />
-              {/* 포인트 점들 */}
-              <circle cx="20" cy="145" r="3" fill="white" stroke="#8b5cf6" strokeWidth="2" />
-              <circle cx="250" cy="50" r="3" fill="white" stroke="#8b5cf6" strokeWidth="2" />
-              <circle cx="480" cy="80" r="3" fill="white" stroke="#8b5cf6" strokeWidth="2" />
-            </svg>
-            
-            {/* X축 레이블 */}
-            <div className="absolute bottom-2 w-full flex justify-between px-4 text-xs text-gray-400 font-medium">
-              <span>D-3</span>
-              <span>D-2</span>
-              <span>D-1</span>
-              <span className="text-violet-600 font-bold">Today</span>
-              <span>Future</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 4. 키워드 언급 실제 사례 */}
-        <div className="mb-8">
-          <h3 className="flex items-center gap-2 text-md font-bold text-violet-600 mb-3">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-            키워드 언급 실제 사례
-          </h3>
-          <div className="space-y-3">
-            {/* 사례 1 */}
-            <div className="flex items-center gap-3 border border-gray-200 p-3 rounded-xl shadow-sm bg-white">
-              <span className="bg-gray-100 text-gray-500 text-xs px-2 py-1 rounded font-bold whitespace-nowrap">
-                {content.examples ? content.examples[0]?.platform : "플랫폼명"}
-              </span>
-              <span className="text-sm font-medium text-gray-800 truncate">
-                {content.examples ? content.examples[0]?.text : "실제 댓글 내용이 여기에 들어갑니다."}
-              </span>
-            </div>
-            {/* 사례 2 */}
-            <div className="flex items-center gap-3 border border-gray-200 p-3 rounded-xl shadow-sm bg-white">
-              <span className="bg-gray-100 text-gray-500 text-xs px-2 py-1 rounded font-bold whitespace-nowrap">
-                {content.examples ? content.examples[1]?.platform : "플랫폼명"}
-              </span>
-              <span className="text-sm font-medium text-gray-800 truncate">
-                {content.examples ? content.examples[1]?.text : "사용자들의 실제 반응을 보여줍니다."}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 5. 하단 버튼 영역 */}
-        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-          <button className="px-5 py-3 rounded-lg border border-gray-200 text-gray-700 text-sm font-bold hover:bg-gray-50 transition-colors shadow-sm">
-            즐겨찾기 저장
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-gray-600">
+            <X size={24} weight="bold"/>
           </button>
+        </div>
+
+        {/* 2. 스크롤 가능한 본문 영역 */}
+        <div className="overflow-y-auto p-6 space-y-6">
           
-          {/* ✅ 수정된 버튼: 클릭 시 함수(닫기+이동) 실행 */}
+          {/* (1) 긍부정 신호등 (기능 미구현 - 더미 UI 유지) */}
+          <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+             <div className="flex justify-between items-center mb-3">
+               <h3 className="font-bold text-gray-700 text-sm flex items-center gap-1">
+                 <Smiley size={18} className="text-gray-500"/> 여론 신호등
+               </h3>
+             </div>
+             <div className="flex gap-2">
+                {/* 긍정 (활성화 예시) */}
+                <div className="flex-1 bg-white border border-green-100 p-3 rounded-xl flex flex-col items-center justify-center shadow-sm opacity-100 ring-2 ring-green-500 ring-offset-2">
+                   <div className="w-3 h-3 rounded-full bg-green-500 mb-2 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                   <span className="text-xs font-bold text-green-700">긍정적</span>
+                   <span className="text-[10px] text-gray-400">65%</span>
+                </div>
+                {/* 중립 */}
+                <div className="flex-1 bg-white border border-gray-100 p-3 rounded-xl flex flex-col items-center justify-center opacity-50 grayscale">
+                   <div className="w-3 h-3 rounded-full bg-gray-400 mb-2"></div>
+                   <span className="text-xs font-bold text-gray-600">중립</span>
+                </div>
+                {/* 부정 */}
+                <div className="flex-1 bg-white border border-gray-100 p-3 rounded-xl flex flex-col items-center justify-center opacity-50 grayscale">
+                   <div className="w-3 h-3 rounded-full bg-red-400 mb-2"></div>
+                   <span className="text-xs font-bold text-gray-600">부정적</span>
+                </div>
+             </div>
+          </div>
+
+          {/* (2) 언급량 추이 (차트 연동) */}
+          <div>
+            <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+              <ChartLineUp size={18} className="text-indigo-500"/> 최근 3일 언급량 추이
+            </h3>
+            <div className="h-40 w-full bg-white border border-gray-100 rounded-2xl p-2 shadow-sm">
+              {loading ? (
+                 <div className="h-full flex items-center justify-center text-xs text-gray-400">데이터 로딩 중...</div>
+              ) : detailData?.history ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={detailData.history}>
+                    <Tooltip 
+                      contentStyle={{borderRadius:'8px', border:'none', boxShadow:'0 4px 10px rgba(0,0,0,0.1)', fontSize:'12px', padding:'8px'}}
+                      labelStyle={{color:'#999', marginBottom:'4px'}}
+                    />
+                    <XAxis dataKey="date" tickFormatter={formatDateLabel} hide />
+                    <Line 
+                      type="monotone" 
+                      dataKey="mentions" 
+                      stroke="#6366f1" 
+                      strokeWidth={3} 
+                      dot={{r:3, fill:'#6366f1', strokeWidth:2, stroke:'#fff'}} 
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-xs text-gray-400">차트 데이터 없음</div>
+              )}
+            </div>
+          </div>
+
+          {/* (3) AI 요약 (더미 데이터) */}
+          <div>
+             <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+              <TrendUp size={18} className="text-orange-500"/> AI 트렌드 요약
+            </h3>
+            <div className="bg-orange-50 p-4 rounded-xl text-sm text-gray-700 leading-relaxed border border-orange-100">
+               <span className="font-bold text-orange-700 mr-1">💡 Insight:</span>
+               현재 해당 키워드는 소셜 미디어와 커뮤니티에서 동시에 급상승하고 있습니다. 
+               주로 2030 세대의 관심도가 높으며, 긍정적인 바이럴이 확산되는 추세입니다. 
+               (이 내용은 현재 더미 데이터입니다.)
+            </div>
+          </div>
+
+          {/* (4) 실제 언급 사례 (데이터 연동) */}
+          <div>
+             <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+              <ChatCircle size={18} className="text-blue-500"/> 실제 반응 미리보기
+            </h3>
+            <div className="space-y-3">
+              {loading ? (
+                <div className="text-center py-4 text-xs text-gray-400">반응 불러오는 중...</div>
+              ) : detailData?.comments && detailData.comments.length > 0 ? (
+                detailData.comments.slice(0, 2).map((comment, idx) => ( // 상위 2개만 노출
+                  <div key={idx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-2">
+                     <div className="flex items-center gap-2">
+                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          comment.source.includes('youtube') 
+                          ? 'bg-red-100 text-red-600' 
+                          : 'bg-green-100 text-green-600'
+                       }`}>
+                         {comment.source}
+                       </span>
+                     </div>
+                     <p className="text-sm text-gray-600 line-clamp-2">
+                       "{comment.text}"
+                     </p>
+                  </div>
+                ))
+              ) : (
+                 <div className="text-center py-4 text-xs text-gray-400">관련 반응 데이터가 없습니다.</div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* 3. 하단 버튼 (고정) */}
+        <div className="p-4 border-t border-gray-100 bg-gray-50">
           <button 
-            className="px-5 py-3 rounded-lg bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 transition-colors shadow-md"
-            onClick={handleDetailMove} 
+            onClick={handleDetailMove}
+            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-lg shadow-indigo-200"
           >
-            해당 키워드의 상세페이지 이동
+            상세 분석 리포트 보러가기 <ArrowRight weight="bold"/>
           </button>
         </div>
 
