@@ -1,0 +1,67 @@
+/* src/styles/utilities.css */
+
+@layer utilities {
+  
+  /* ===== CreationPage 레이아웃 ===== */
+  .creation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    height: calc(100vh - 180px);
+    align-items: start;
+  }
+
+  /* 1024px 이하에서 1열로 */
+  @media (max-width: 1024px) {
+    .creation-grid {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+  }
+
+  /* ===== AnalysisPage: blur 효과 ===== */
+  .blur-disabled {
+    @apply blur-md opacity-50 pointer-events-none select-none grayscale-[0.3];
+  }
+
+  .blur-enabled {
+    @apply blur-0 opacity-100 pointer-events-auto select-auto grayscale-0;
+  }
+
+  /* ===== Overlay 중앙 정렬 ===== */
+  .overlay-center {
+    @apply absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none;
+  }
+
+  /* ===== 가로 스크롤 ===== */
+  .scroll-x {
+    @apply overflow-x-auto pb-2;
+  }
+
+  /* 스크롤바 숨기기 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ===== 텍스트 자르기 (line-clamp) ===== */
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}

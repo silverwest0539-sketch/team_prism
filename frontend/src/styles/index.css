@@ -1,0 +1,10 @@
+/* src/styles/index.css */
+/* 커스텀 CSS 파일 import */
+@import "./components.css";
+@import "./utilities.css";
+
+/* Tailwind 기본 레이어 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+

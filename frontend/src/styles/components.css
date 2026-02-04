@@ -1,0 +1,272 @@
+/* src/styles/components.css */
+
+@layer components {
+
+  /* ===== 페이지 래퍼 ===== */
+  
+  /* 페이지 전체 배경 및 레이아웃 
+   * 사용: HomePage, AnalysisPage, MyPage
+   */
+  .page {
+    @apply bg-gray-50 min-h-screen p-8;
+  }
+
+  /* 최대 너비 7xl 컨테이너 
+   * 사용: AnalysisPage (메인 콘텐츠 영역)
+   */
+  .container-7xl {
+    @apply w-full max-w-7xl mx-auto;
+  }
+
+  /* ===== 카드 ===== */
+  
+  /* 기본 카드 스타일 (border-gray-200)
+   * 사용: AnalysisPage (차트 카드, 정보 카드)
+   */
+  .card {
+    @apply bg-white p-6 rounded-2xl border border-gray-200 shadow-sm;
+  }
+
+  /* 부드러운 카드 스타일 (border-gray-100) 
+   * 사용: HomePage (트렌드 카드, 플랫폼 카드)
+   * 사용: MyPage (프로필, 메뉴, 설정 카드)
+   * 사용: LoginPage, SignupPage (로그인/회원가입 폼 카드)
+   */
+  .card-soft {
+    @apply bg-white rounded-2xl p-6 shadow-sm border border-gray-100;
+  }
+
+  /* 카드 호버 효과 
+   * 사용: AnalysisPage (InfoCard 컴포넌트)
+   */
+  .card-hover {
+    @apply hover:shadow-md transition-shadow;
+  }
+
+  /* 카드 내부 헤더 여백 
+   * 사용: AnalysisPage (차트 섹션 헤더)
+   * 사용: MyPage (구독, 보안 카드 헤더)
+   */
+  .card-header {
+    @apply mb-4;
+  }
+
+  /* ===== 섹션 타이틀 ===== */
+  
+  /* 기본 섹션 제목 
+   * 사용: AnalysisPage (차트 제목, 뉴스/유튜브 섹션)
+   */
+  .section-title {
+    @apply font-bold text-gray-800 flex items-center gap-2;
+  }
+
+  /* 큰 섹션 제목 
+   * 사용: HomePage (트렌드 키워드, 플랫폼별 키워드, 유튜브 섹션)
+   * 사용: MyPage (구독 멤버십, 보안 설정)
+   */
+  .section-title-lg {
+    @apply font-bold text-lg flex items-center gap-2;
+  }
+
+  /* ===== Form 입력 필드 (로그인/회원가입) ===== */
+  
+  /* 폼 입력 필드 
+   * 사용: LoginPage (닉네임, 비밀번호 입력)
+   * 사용: SignupPage (이름, 닉네임, 이메일, 비밀번호 입력)
+   */
+  .form-input {
+    @apply w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition;
+  }
+
+  /* 폼 레이블 
+   * 사용: LoginPage, SignupPage (모든 input 레이블)
+   */
+  .form-label {
+    @apply block text-sm font-bold text-gray-700 mb-1;
+  }
+
+  /* ===== 검색 입력 ===== */
+  
+  /* 검색 입력 필드 (pill 모양)
+   * 사용: AnalysisPage (상단 키워드 검색)
+   */
+  .search-input {
+    @apply w-full pl-12 pr-4 py-3 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm transition-all;
+  }
+
+  /* 일반 pill 형태 입력 
+   * 사용: SearchBar 컴포넌트 (기본 스타일)
+   */
+  .input-pill {
+    @apply w-full py-3 pl-12 pr-4 rounded-full border border-gray-200 focus:outline-none focus:border-blue-500 shadow-sm text-sm bg-white;
+  }
+
+  /* 날짜 입력 필드 
+   * 사용: AnalysisPage (분석 기간 선택 input[type="date"])
+   */
+  .date-input {
+    @apply bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-indigo-500 transition;
+  }
+
+  /* 셀렉트 박스 
+   * 사용: AnalysisPage (플랫폼 선택 드롭다운)
+   */
+  .select {
+    @apply w-full appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-2 pl-3 pr-8 rounded-lg text-sm focus:outline-none focus:border-indigo-500 font-bold cursor-pointer hover:bg-gray-100 transition;
+  }
+
+  /* ===== 버튼 ===== */
+  
+  /* 기본 버튼 스타일 
+   * 사용: AnalysisPage (내보내기 버튼 등)
+   * 사용: MyPage (플랜 업그레이드 버튼)
+   */
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition shadow-sm font-medium;
+  }
+
+  /* 아웃라인 버튼 
+   * 사용: AnalysisPage (내보내기 버튼)
+   */
+  .btn-outline {
+    @apply bg-white border border-gray-200 text-gray-600 hover:bg-gray-50;
+  }
+
+  /* 프라이머리 버튼 (indigo)
+   * 사용: MyPage (플랜 업그레이드)
+   */
+  .btn-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-700;
+  }
+
+  /* 인증 페이지 메인 버튼 
+   * 사용: LoginPage (로그인 버튼)
+   * 사용: SignupPage (회원가입 완료, 인증 버튼)
+   */
+  .btn-auth-primary {
+    @apply w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition;
+  }
+
+  /* 인증 페이지 보조 버튼 
+   * 사용: SignupPage (중복확인 버튼)
+   */
+  .btn-auth-secondary {
+    @apply bg-gray-200 text-gray-700 px-4 py-3 rounded-lg font-bold hover:bg-gray-300 whitespace-nowrap;
+  }
+
+  /* 카카오 로그인 버튼 
+   * 사용: LoginPage
+   */
+  .btn-kakao {
+    @apply w-full bg-[#FEE500] text-[#3c1e1e] font-bold py-3 rounded-lg text-sm hover:bg-[#FDD000] transition;
+  }
+
+  /* 네이버 로그인 버튼 
+   * 사용: LoginPage
+   */
+  .btn-naver {
+    @apply w-full bg-[#03C75A] text-white font-bold py-3 rounded-lg text-sm hover:bg-[#02B350] transition;
+  }
+
+  /* 아이콘 버튼 (원형)
+   * 사용: AnalysisPage (알림 벨 버튼)
+   */
+  .icon-btn {
+    @apply relative p-2 text-gray-600 rounded-full transition;
+  }
+
+  /* 아이콘 버튼 호버 효과 
+   * 사용: AnalysisPage (알림 벨 버튼 호버)
+   */
+  .icon-btn-hover {
+    @apply hover:bg-gray-100;
+  }
+
+  /* ===== 리스트 / 행 ===== */
+  
+  /* 기본 리스트 아이템 (justify-between)
+   * 사용: 미래 확장용
+   */
+  .list-item {
+    @apply w-full flex flex-row flex-nowrap items-center justify-between text-sm cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors;
+  }
+
+  /* 리스트 아이템 (items-start)
+   * 사용: 미래 확장용
+   */
+  .list-item-start {
+    @apply flex items-start gap-4 text-sm cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors;
+  }
+
+  /* 호버 가능한 행 
+   * 사용: AnalysisPage (뉴스 링크, 유튜브 반응)
+   */
+  .row-hover {
+    @apply p-3 hover:bg-gray-50 rounded-lg transition cursor-pointer;
+  }
+
+  /* ===== Pills / Badges ===== */
+  
+  /* Pill 스타일 (둥근 뱃지)
+   * 사용: CreationPage (키워드 뱃지)
+   * 사용: AnalysisPage (랭킹 뱃지)
+   */
+  .pill {
+    @apply text-sm px-3 py-1 rounded-full font-bold;
+  }
+
+  /* Badge 스타일 (작은 라벨)
+   * 사용: AnalysisPage (뉴스 소스 라벨)
+   */
+  .badge {
+    @apply inline-flex items-center px-2 py-1 rounded text-xs font-bold;
+  }
+
+  /* ===== 탭 ===== */
+  
+  /* 탭 래퍼 (회색 배경)
+   * 사용: HomePage (유튜브/커뮤니티 탭)
+   */
+  .tab-wrap {
+    @apply flex bg-gray-100 p-1 rounded-lg items-center relative;
+  }
+
+  /* 탭 버튼 
+   * 사용: HomePage (유튜브/커뮤니티 버튼)
+   */
+  .tab-btn {
+    @apply px-4 py-1.5 text-xs font-bold rounded-md transition-all duration-200;
+  }
+
+  /* 활성화된 탭 스타일 
+   * 사용: HomePage (선택된 탭)
+   */
+  .tab-active {
+    @apply bg-white shadow-sm;
+  }
+
+  /* ===== Chips (카테고리 버튼) ===== */
+  
+  /* 칩 버튼 (카테고리 필터)
+   * 사용: HomePage (유튜브 카테고리 버튼)
+   */
+  .chip {
+    @apply px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors;
+  }
+
+  /* 활성화된 칩 
+   * 사용: HomePage (선택된 카테고리)
+   */
+  .chip-active {
+    @apply bg-black text-white shadow-md;
+  }
+
+  /* ===== Thumbnail ===== */
+  
+  /* 썸네일 플레이스홀더 
+   * 사용: AnalysisPage (유튜브 반응 섹션)
+   */
+  .thumb {
+    @apply w-20 h-12 bg-gray-200 rounded-md flex-shrink-0 flex items-center justify-center text-gray-400 text-xs;
+  }
+}

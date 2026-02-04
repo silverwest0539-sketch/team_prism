@@ -1,10 +1,10 @@
 // src/pages/MyPage.jsx
 import React from 'react';
-import { User, CreditCard, Bell, Settings, LogOut, Shield } from 'lucide-react';
+import { User, CreditCard, Bell, LogOut, Shield } from 'lucide-react';
 
 const MyPage = () => {
   return (
-    <div className="w-full min-h-screen bg-gray-50 p-8 font-sans text-gray-800">
+    <div className="page">
       
       {/* 헤더 */}
       <div className="mb-8">
@@ -14,10 +14,9 @@ const MyPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* 왼쪽: 프로필 카드 (1열 차지) */}
+        {/* 왼쪽: 프로필 카드 */}
         <div className="md:col-span-1 space-y-6">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center">
-            {/* 프로필 이미지 영역 */}
+          <div className="card-soft flex flex-col items-center text-center">
             <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4 text-3xl font-bold">
                M
             </div>
@@ -30,7 +29,7 @@ const MyPage = () => {
           </div>
 
           {/* 메뉴 리스트 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="card-soft overflow-hidden p-0">
              <div className="p-4 border-b border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-gray-50">
                 <User size={18} className="text-gray-500" />
                 <span className="text-sm font-medium">계정 정보</span>
@@ -50,12 +49,12 @@ const MyPage = () => {
           </div>
         </div>
 
-        {/* 오른쪽: 상세 설정 내용 (2열 차지) */}
+        {/* 오른쪽: 상세 설정 */}
         <div className="md:col-span-2 space-y-6">
           
           {/* 구독 상태 카드 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+          <div className="card-soft">
+             <h3 className="section-title-lg card-header">
                 <CreditCard className="text-blue-500" size={20}/> 구독 멤버십
              </h3>
              <div className="bg-gray-50 rounded-xl p-5 flex justify-between items-center mb-4">
@@ -63,7 +62,7 @@ const MyPage = () => {
                    <p className="text-sm text-gray-500">현재 이용중인 플랜</p>
                    <p className="text-xl font-bold text-gray-900 mt-1">Pro Plan</p>
                 </div>
-                <button className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition">
+                <button className="btn btn-primary">
                    플랜 업그레이드
                 </button>
              </div>
@@ -83,8 +82,8 @@ const MyPage = () => {
           </div>
 
           {/* 보안 설정 카드 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+          <div className="card-soft">
+             <h3 className="section-title-lg card-header">
                 <Shield className="text-green-500" size={20}/> 보안 설정
              </h3>
              
@@ -101,7 +100,7 @@ const MyPage = () => {
                       <p className="font-medium text-sm">2단계 인증</p>
                       <p className="text-xs text-gray-400">계정을 더 안전하게 보호하세요.</p>
                    </div>
-                   {/* 토글 스위치 모양 (CSS로 구현) */}
+                   {/* 토글 스위치 */}
                    <div className="w-10 h-5 bg-gray-300 rounded-full relative cursor-pointer">
                       <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5"></div>
                    </div>

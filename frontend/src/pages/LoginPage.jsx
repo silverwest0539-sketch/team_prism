@@ -7,13 +7,12 @@ const LoginPage = () => {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // 로그인 처리 로직 후 메인으로 이동 (예시)
     navigate('/home'); 
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-8 border border-gray-200">
+      <div className="card-soft w-full max-w-md shadow-lg">
         
         {/* 헤더 */}
         <div className="text-center mb-10">
@@ -24,39 +23,36 @@ const LoginPage = () => {
         {/* 로그인 폼 */}
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">닉네임</label>
+            <label className="form-label">닉네임</label>
             <input 
               type="text" 
               placeholder="닉네임을 입력하세요"
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="form-input"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">비밀번호</label>
+            <label className="form-label">비밀번호</label>
             <input 
               type="password" 
               placeholder="비밀번호를 입력하세요"
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="form-input"
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="w-full bg-indigo-600 text-white font-bold text-lg py-3 rounded-lg hover:bg-indigo-700 transition"
-          >
+          <button type="submit" className="btn-auth-primary text-lg">
             로그인
           </button>
         </form>
 
-        {/* 소셜 로그인 예시 (디자인 요소로 추가, 필요없으면 삭제 가능) */}
+        {/* 소셜 로그인 */}
         <div className="mt-6 space-y-2">
-            <button className="w-full bg-[#FEE500] text-[#3c1e1e] font-bold py-3 rounded-lg text-sm">
-               카카오톡으로 시작하기
-            </button>
-             <button className="w-full bg-[#03C75A] text-white font-bold py-3 rounded-lg text-sm">
-               네이버로 시작하기
-            </button>
+          <button className="btn-kakao">
+            카카오톡으로 시작하기
+          </button>
+          <button className="btn-naver">
+            네이버로 시작하기
+          </button>
         </div>
 
         {/* 하단 링크 */}
