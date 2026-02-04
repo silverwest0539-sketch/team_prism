@@ -216,6 +216,71 @@ app.get('/api/youtube/list', (req, res) => {
   res.json(formattedData);
 });
 
+// [AnalysisPage] 특정 키워드 상세 분석 API
+// 사용법: /api/analysis?keyword=쿠팡
+app.get('/api/analysis', (req, res) => {
+  const { keyword } = req.query;
+  const data = getData(); // 전체 데이터 가져오기
+
+  if (!keyword) {
+    return res.status(400).json({ error: '키워드가 필요합니다.' });
+  }
+
+  // 1. 해당 키워드와 일치하는 모든 날짜의 데이터 찾기
+  const keywordHistory = data.filter(item => item.Keyword === keyword);
+
+  if (keywordHistory.length === 0) {
+    return res.json({ found: false, message: '데이터가 없습니다.' });
+  }
+
+  // 2. 날짜 오름차순 정렬 (그래프 그리기 좋게 1/30 -> 1/31 -> 2/1)
+  keywordHistory.sort((a, b) => a.Date.localeCompare(b.Date));
+
+  // 3. 가장 최신 데이터 (현재 상태 표시용)
+  const currentData = keywordHistory[keywordHistory.length - 1];
+
+  // 4. 플랫폼 분포 계산 (Platform_List 활용)
+  // 예: "dc_lol,fmkorea" -> { dc_lol: 1, fmkorea: 1 }
+  const platformCount = {};
+  if (currentData.Platform_List) {
+      const platforms = currentData.Platform_List.split(',');
+      platforms.forEach(p => {
+          const cleanP = p.trim();
+          platformCount[cleanP] = (platformCount[cleanP] || 0) + 1;
+      });
+  }
+
+  // 5. 실제 댓글 예시 파싱 (Examples 컬럼 활용)
+  const examples = [];
+  if (currentData.Examples) {
+      currentData.Examples.forEach(ex => {
+          const match = ex.match(/^\[(.*?)\]/);
+          if (match) {
+              examples.push({
+                  source: match[1],
+                  text: ex.replace(/^\[.*?\](\(comment\)|\(post\))?\s*/, ''),
+              });
+          }
+      });
+  }
+
+  // 최종 응답 구성
+  res.json({
+    found: true,
+    keyword: currentData.Keyword,
+    rank: currentData.Rank,
+    totalMentions: currentData.Mentions, // 최신 날짜 기준
+    score: currentData.Score,
+    history: keywordHistory.map(h => ({
+        date: h.Date, // "20260201"
+        mentions: h.Mentions,
+        score: h.Score,
+        rank: h.Rank
+    })),
+    platforms: platformCount,
+    comments: examples.slice(0, 10) // 최대 10개만
+  });
+});
 
 // 서버 시작
 loadCSVData().then(() => {

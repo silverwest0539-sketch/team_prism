@@ -129,7 +129,6 @@ const HomePage = ({ openModal = () => {} }) => {
                   <span className="font-bold text-blue-600 w-3">{item.rank}</span>
                   <div>
                     <p className="font-medium text-gray-900">{item.keyword}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{item.volume}</p>
                   </div>
                 </div>
                 <div className={`text-xs font-bold ${item.isUp ? 'text-red-500' : item.isUp === false ? 'text-blue-500' : 'text-gray-400'}`}>
