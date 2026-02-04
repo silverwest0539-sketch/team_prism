@@ -18,6 +18,13 @@ export default function SummaryModal({ isOpen, onClose, data }) {
     ]
   };
 
+  // 상세 페이지 이동 핸들러 (수정된 부분)
+  const handleDetailMove = () => {
+    onClose(); // 1. 모달을 먼저 닫고
+    navigate('/analysis'); // 2. 페이지를 이동합니다
+  };
+
+
   return (
     // 배경 (Backdrop)
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity">
@@ -129,9 +136,11 @@ export default function SummaryModal({ isOpen, onClose, data }) {
           <button className="px-5 py-3 rounded-lg border border-gray-200 text-gray-700 text-sm font-bold hover:bg-gray-50 transition-colors shadow-sm">
             즐겨찾기 저장
           </button>
+          
+          {/* ✅ 수정된 버튼: 클릭 시 함수(닫기+이동) 실행 */}
           <button 
             className="px-5 py-3 rounded-lg bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 transition-colors shadow-md"
-            onClick={() => navigate('/analysis')}
+            onClick={handleDetailMove} 
           >
             해당 키워드의 상세페이지 이동
           </button>
