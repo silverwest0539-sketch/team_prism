@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import {
-  Bell, Star, Copy,
-  ArrowsClockwise, BookmarkSimple, Export, PlayCircle,
-  CaretLeft, ChartLineUp, Newspaper
+  Bell, ArrowsClockwise, BookmarkSimple, Export, PlayCircle, CaretLeft,
+  ChartLineUp, Newspaper, Star, Copy
 } from '@phosphor-icons/react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
