@@ -1,23 +1,27 @@
+// src/components/analysis/SummaryModal.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  X, ArrowRight, CaretRight, 
+  X, ArrowRight, 
   TrendUp, ChatCircle, ChartLineUp,
-  Smiley, SmileySad, SmileyMeh // 감정 표현용 아이콘
+  Smiley, SmileySad, SmileyMeh,
+  Star // 1. Star 아이콘 추가
 } from '@phosphor-icons/react';
 import { 
   LineChart, Line, Tooltip, ResponsiveContainer, XAxis 
 } from 'recharts';
 
-export default function SummaryModal({ isOpen, onClose, data }) { // data는 HomePage에서 넘겨준 기본 정보 (keyword, rank 등)
+export default function SummaryModal({ isOpen, onClose, data }) { 
   const navigate = useNavigate();
-  const [detailData, setDetailData] = useState(null); // 차트와 댓글을 위한 상세 데이터
+  const [detailData, setDetailData] = useState(null); 
   const [loading, setLoading] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false); // 2. 즐겨찾기 상태 관리
 
-  // 모달이 열리면 해당 키워드의 '상세 데이터'를 서버에서 가져옴 (차트, 댓글용)
+  // 모달 데이터 로딩 로직
   useEffect(() => {
     if (isOpen && data?.keyword) {
       setLoading(true);
+      // API 호출 (데모용 URL)
       fetch(`http://localhost:5000/api/analysis?keyword=${data.keyword}`)
         .then(res => res.json())
         .then(result => {
@@ -30,24 +34,30 @@ export default function SummaryModal({ isOpen, onClose, data }) { // data는 Hom
           console.error("모달 데이터 로딩 실패:", err);
           setLoading(false);
         });
+      
+      // (옵션) 실제로는 여기서 해당 키워드가 이미 즐겨찾기 되어있는지 확인하는 API 호출이 필요함
+      setIsBookmarked(false); // 초기화
     } else {
-      setDetailData(null); // 모달 닫히면 초기화
+      setDetailData(null); 
     }
   }, [isOpen, data]);
 
   if (!isOpen) return null;
 
-  // 상세 페이지 이동 핸들러
   const handleDetailMove = () => {
     onClose();
-    // 쿼리 스트링을 포함하여 이동 -> AnalysisPage에서 자동으로 검색 실행됨
     navigate(`/analysis?keyword=${data.keyword}`);
   };
 
-  // 날짜 포맷팅 (YYYYMMDD -> MM.DD)
   const formatDateLabel = (dateStr) => {
     if (!dateStr) return '';
     return `${dateStr.substring(4, 6)}.${dateStr.substring(6, 8)}`;
+  };
+
+  // 3. 즐겨찾기 토글 핸들러
+  const toggleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    // TODO: 여기에 백엔드로 즐겨찾기 추가/삭제 요청을 보내는 로직 추가
   };
 
   return (
@@ -56,6 +66,7 @@ export default function SummaryModal({ isOpen, onClose, data }) { // data는 Hom
         
         {/* 1. 헤더 영역 */}
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+          {/* 타이틀 영역 */}
           <div>
              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full mb-1 inline-block">
                No.{data?.rank || '-'} 급상승 키워드
@@ -64,15 +75,41 @@ export default function SummaryModal({ isOpen, onClose, data }) { // data는 Hom
                {data?.keyword}
              </h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-gray-600">
-            <X size={24} weight="bold"/>
-          </button>
+
+          {/* 우측 버튼 영역 (즐겨찾기 + 닫기) */}
+          <div className="flex items-center gap-2">
+            
+            {/* 4. 즐겨찾기 버튼 추가 */}
+            <button 
+              onClick={toggleBookmark}
+              className={`p-2 rounded-full transition-all duration-200 group ${
+                isBookmarked 
+                  ? "bg-yellow-50 text-yellow-500 hover:bg-yellow-100" 
+                  : "bg-transparent text-gray-300 hover:bg-gray-100 hover:text-yellow-400"
+              }`}
+              title="관심 키워드 저장"
+            >
+              <Star 
+                size={24} 
+                weight={isBookmarked ? "fill" : "bold"} // 상태에 따라 채워진 별/빈 별 변경
+                className={`transition-transform duration-200 ${isBookmarked ? "scale-110" : "group-hover:scale-110"}`}
+              />
+            </button>
+
+            {/* 기존 닫기 버튼 */}
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-gray-600"
+            >
+              <X size={24} weight="bold"/>
+            </button>
+          </div>
         </div>
 
         {/* 2. 스크롤 가능한 본문 영역 */}
         <div className="overflow-y-auto p-6 space-y-6">
           
-          {/* (1) 긍부정 신호등 (기능 미구현 - 더미 UI 유지) */}
+          {/* (1) 긍부정 신호등 */}
           <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
              <div className="flex justify-between items-center mb-3">
                <h3 className="font-bold text-gray-700 text-sm flex items-center gap-1">
@@ -80,18 +117,15 @@ export default function SummaryModal({ isOpen, onClose, data }) { // data는 Hom
                </h3>
              </div>
              <div className="flex gap-2">
-                {/* 긍정 (활성화 예시) */}
                 <div className="flex-1 bg-white border border-green-100 p-3 rounded-xl flex flex-col items-center justify-center shadow-sm opacity-100 ring-2 ring-green-500 ring-offset-2">
                    <div className="w-3 h-3 rounded-full bg-green-500 mb-2 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
                    <span className="text-xs font-bold text-green-700">긍정적</span>
                    <span className="text-[10px] text-gray-400">65%</span>
                 </div>
-                {/* 중립 */}
                 <div className="flex-1 bg-white border border-gray-100 p-3 rounded-xl flex flex-col items-center justify-center opacity-50 grayscale">
                    <div className="w-3 h-3 rounded-full bg-gray-400 mb-2"></div>
                    <span className="text-xs font-bold text-gray-600">중립</span>
                 </div>
-                {/* 부정 */}
                 <div className="flex-1 bg-white border border-gray-100 p-3 rounded-xl flex flex-col items-center justify-center opacity-50 grayscale">
                    <div className="w-3 h-3 rounded-full bg-red-400 mb-2"></div>
                    <span className="text-xs font-bold text-gray-600">부정적</span>
@@ -99,7 +133,7 @@ export default function SummaryModal({ isOpen, onClose, data }) { // data는 Hom
              </div>
           </div>
 
-          {/* (2) 언급량 추이 (차트 연동) */}
+          {/* (2) 언급량 추이 */}
           <div>
             <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
               <ChartLineUp size={18} className="text-indigo-500"/> 최근 3일 언급량 추이
@@ -130,7 +164,7 @@ export default function SummaryModal({ isOpen, onClose, data }) { // data는 Hom
             </div>
           </div>
 
-          {/* (3) AI 요약 (더미 데이터) */}
+          {/* (3) AI 요약 */}
           <div>
              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
               <TrendUp size={18} className="text-orange-500"/> AI 트렌드 요약
@@ -143,7 +177,7 @@ export default function SummaryModal({ isOpen, onClose, data }) { // data는 Hom
             </div>
           </div>
 
-          {/* (4) 실제 언급 사례 (데이터 연동) */}
+          {/* (4) 실제 반응 미리보기 */}
           <div>
              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
               <ChatCircle size={18} className="text-blue-500"/> 실제 반응 미리보기
@@ -152,7 +186,7 @@ export default function SummaryModal({ isOpen, onClose, data }) { // data는 Hom
               {loading ? (
                 <div className="text-center py-4 text-xs text-gray-400">반응 불러오는 중...</div>
               ) : detailData?.comments && detailData.comments.length > 0 ? (
-                detailData.comments.slice(0, 2).map((comment, idx) => ( // 상위 2개만 노출
+                detailData.comments.slice(0, 2).map((comment, idx) => (
                   <div key={idx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-2">
                      <div className="flex items-center gap-2">
                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -176,7 +210,7 @@ export default function SummaryModal({ isOpen, onClose, data }) { // data는 Hom
 
         </div>
 
-        {/* 3. 하단 버튼 (고정) */}
+        {/* 3. 하단 버튼 */}
         <div className="p-4 border-t border-gray-100 bg-gray-50">
           <button 
             onClick={handleDetailMove}

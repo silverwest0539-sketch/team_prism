@@ -12,12 +12,12 @@ const HomePage = ({ openModal = () => {} }) => {
   const [youtubeVideos, setYoutubeVideos] = useState([]);
   const [youtubeCategory, setYoutubeCategory] = useState('전체');
 
-  // ✅ 추가된 상태: 드롭다운 열림/닫힘
+  // 드롭다운 열림/닫힘
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // ✅ [수정됨] 실제 작업된 커뮤니티 목록으로 업데이트
+  // 커뮤니티 목록
   const platformLabels = {
-    'community': '커뮤니티 전체', // "전체보기" 기능을 위해 유지
+    'community': '커뮤니티 전체',
     'dcinside': '디시인사이드',
     'theqoo': '더쿠',
     'natepan': '네이트판',
@@ -73,10 +73,8 @@ const HomePage = ({ openModal = () => {} }) => {
   }, [youtubeCategory]);
 
   return (
-    // 드롭다운이 짤리지 않게 min-h-screen 유지, 클릭 이벤트 버블링 등 고려
     <div 
         className="w-full min-h-screen bg-gray-50 p-8 font-sans text-gray-800"
-        // (선택사항) 배경 클릭 시 드롭다운 닫기
         onClick={() => isDropdownOpen && setIsDropdownOpen(false)}
     >
       
@@ -106,31 +104,33 @@ const HomePage = ({ openModal = () => {} }) => {
         
         {/* 카드 1: 트렌드 키워드 */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
+          {/* ✅ [수정 핵심 1] 헤더 높이 고정 (h-10) */}
+          <div className="flex justify-between items-center mb-6 h-10">
             <h2 className="font-bold text-lg flex items-center gap-2 border-b-2 border-transparent hover:border-black transition-colors">
               트렌드 키워드 Top 5
             </h2>
             <span className="text-xs text-gray-400">실시간 기준</span>
           </div>
-          <ul className="space-y-6">
+          
+          <ul className="flex flex-col gap-2">
             {risingKeywords.map((item, index) => (
               <li 
                 key={index} 
                 onClick={() => openModal({ 
-                  keyword: item.keyword, // 여기서 keyword를 넘겨줘야 모달이 받습니다!
+                  keyword: item.keyword,
                   rank: item.rank,
-                  score: item.score, // 필요하다면 점수 등도 전달
-                  title: item.keyword, // (선택) 타이틀 용도
-                  desc: `${item.keyword}에 대한 트렌드 요약입니다.` // (선택)
-              })}
-                className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors"
+                  score: item.score,
+                  title: item.keyword,
+                  desc: `${item.keyword}에 대한 트렌드 요약입니다.`
+                })}
+                // h-12 고정 높이
+                className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
               >
                 <div className="flex items-center gap-4">
-                  <span className="font-bold text-blue-600 w-3">{item.rank}</span>
-                  <div>
-                    <p className="font-medium text-gray-900">{item.keyword}</p>
-                  </div>
+                  <span className="font-bold text-blue-600 w-3 text-center">{item.rank}</span>
+                  <p className="font-medium text-gray-900">{item.keyword}</p>
                 </div>
+                {/* 등락폭 */}
                 <div className={`text-xs font-bold ${item.isUp ? 'text-red-500' : item.isUp === false ? 'text-blue-500' : 'text-gray-400'}`}>
                   {item.change}
                 </div>
@@ -140,19 +140,19 @@ const HomePage = ({ openModal = () => {} }) => {
         </div>
 
         {/* 카드 2: 플랫폼별 키워드 */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative"> {/* relative 확인 */}
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative">
+          
+          {/* ✅ [수정 핵심 1] 헤더 높이 고정 (h-10) - 왼쪽과 동일하게 맞춤 */}
+          <div className="flex justify-between items-center mb-6 h-10">
             <h2 className="font-bold text-lg flex items-center gap-2">
               플랫폼별 키워드
             </h2>
             
-            {/* ✅ 커스텀 드롭다운이 적용된 탭 버튼 그룹 */}
+            {/* 탭 버튼 그룹 (드롭다운) */}
             <div 
                 className="flex bg-gray-100 p-1 rounded-lg items-center relative z-10"
-                onClick={(e) => e.stopPropagation()} // 부모의 배경 클릭 이벤트 전파 방지
+                onClick={(e) => e.stopPropagation()} 
             >
-                
-                {/* 1. 유튜브 버튼 */}
                 <button 
                   onClick={() => {
                     setSelectedPlatform('youtube');
@@ -167,10 +167,8 @@ const HomePage = ({ openModal = () => {} }) => {
                   유튜브
                 </button>
 
-                {/* 구분선 */}
                 <div className="w-[1px] h-3 bg-gray-300 mx-1"></div>
 
-                {/* 2. 커뮤니티 커스텀 드롭다운 */}
                 <div className="relative">
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -180,13 +178,11 @@ const HomePage = ({ openModal = () => {} }) => {
                         : 'text-gray-500 hover:text-gray-800'
                     }`}
                   >
-                    {/* 현재 선택된 값 표시 */}
                     <span>
                       {selectedPlatform === 'youtube' 
                         ? '커뮤니티' 
                         : platformLabels[selectedPlatform] || '커뮤니티'}
                     </span>
-                    {/* 화살표 아이콘 */}
                     <svg 
                       className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
                       fill="none" 
@@ -197,7 +193,6 @@ const HomePage = ({ openModal = () => {} }) => {
                     </svg>
                   </button>
 
-                  {/* 드롭다운 메뉴 (레이어 띄우기) */}
                   {isDropdownOpen && (
                     <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
                       {Object.entries(platformLabels).map(([key, label]) => (
@@ -220,7 +215,7 @@ const HomePage = ({ openModal = () => {} }) => {
             </div>
           </div>
 
-          <ul className="space-y-6">
+          <ul className="flex flex-col gap-2">
             {risingContents.map((item, index) => (
               <li 
                 key={index}
@@ -233,12 +228,22 @@ const HomePage = ({ openModal = () => {} }) => {
                       { text: "요약분석", color: "bg-purple-100 text-purple-600" },
                     ]
                 })}
-                className="flex items-start gap-4 text-sm cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors"
+                // h-12 고정 높이
+                className="flex items-center gap-4 text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
               >
-                <span className="font-bold text-blue-600 mt-0.5">{item.rank}</span>
-                <div>
-                  <p className="font-medium text-gray-900">{item.title}</p>
-                  <p className="text-xs text-gray-400 mt-1">{item.stats}</p>
+                {/* 랭킹 숫자 (좌측 카드와 동일한 스타일 유지) */}
+                <span className="font-bold text-blue-600 w-3 text-center">{item.rank}</span>
+                
+                {/* ✅ [수정 핵심 2] 가로 배치 + 여백 추가 */}
+                <div className="flex items-baseline overflow-hidden">
+                   {/* 제목 */}
+                   <span className="font-medium text-gray-900 whitespace-nowrap">
+                      {item.title}
+                   </span>
+                   {/* 여백(ml-3)과 함께 상세 내용 표시 */}
+                   <span className="text-xs text-gray-400 truncate ml-3">
+                      {item.stats}
+                   </span>
                 </div>
               </li>
             ))}
