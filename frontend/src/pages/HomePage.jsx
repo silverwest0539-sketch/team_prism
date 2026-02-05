@@ -131,17 +131,6 @@ const HomePage = () => {
               className="tab-wrap"
               onClick={(e) => e.stopPropagation()} 
             >
-              <button 
-                onClick={() => {
-                  setSelectedPlatform('youtube');
-                  setIsDropdownOpen(false);
-                }}
-                className={`tab-btn ${selectedPlatform === 'youtube' ? 'tab-active text-red-600' : 'text-gray-500 hover:text-gray-800'}`}
-              >
-                유튜브
-              </button>
-
-              <div className="w-[1px] h-3 bg-gray-300 mx-1"></div>
 
               <div className="relative">
                 <button
