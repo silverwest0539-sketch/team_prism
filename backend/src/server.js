@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { loadCSVData, getData, getYoutubeData } = require('./dataLoader');
+const { loadCSVData, getData, getYoutubeData, getPlatformKeywordData } = require('./dataLoader');
 const Parser = require('rss-parser');
 const parser = new Parser({
   customFields: {
@@ -57,6 +57,49 @@ app.get('/api/trends/rising', (req, res) => {
   });
 
   res.json(response);
+});
+
+// 플랫폼별 상위 키워드 API
+app.get('/api/trends/platform', (req, res) => {
+  const data = getPlatformKeywordData(); 
+  if (!data || data.length === 0) return res.json([]);
+
+  const reqPlatform = req.query.platform || 'all'; 
+
+  // 플랫폼 매핑
+  const platformMap = {
+    'youtube': '유튜브',
+    'dcinside': '롤갤러리',
+    'theqoo': '더쿠',
+    'natepan': '네이트',
+    'fmkorea': 'fm코리아',
+    'ruliweb': '루리웹',
+    'chzzk': '치지직',
+    'x': 'x'
+  };
+
+  // 1. 데이터 키값 정규화 (대문자 -> 소문자 통일)
+  // 예: Item.Keyword -> item.keyword, Item.Count -> item.count
+  const normalizedData = data.map(item => ({
+    platform: item.platform || item.Platform || 'Unknown',
+    keyword: item.keyword || item.Keyword || '키워드 없음',
+    count: item.count || item.Count || item.mentions || item.Mentions || 0,
+    comments: item.comments || item.Comments || []
+  }));
+
+  let filteredData = normalizedData;
+
+  // 2. 필터링
+  if (reqPlatform !== 'all' && reqPlatform !== 'community') {
+    const targetPlatformName = platformMap[reqPlatform] || reqPlatform;
+    filteredData = normalizedData.filter(item => item.platform === targetPlatformName);
+  }
+
+  // 3. 정렬 (count 기준)
+  filteredData.sort((a, b) => b.count - a.count);
+
+  // 4. 반환
+  res.json(filteredData.slice(0, 5));
 });
 
 // 2. [AnalysisPage] 차트 및 검색용 전체 데이터 API
@@ -225,51 +268,110 @@ app.get('/api/youtube/list', (req, res) => {
 
 // [AnalysisPage] 특정 키워드 상세 분석 API
 // 사용법: /api/analysis?keyword=쿠팡
+// [AnalysisPage] 상세 분석 API (댓글 통합 로직 추가)
 app.get('/api/analysis', (req, res) => {
-  const { keyword } = req.query;
-  const data = getData(); // 전체 데이터 가져오기
-
+  const { keyword, type } = req.query; // type: 'trend' 또는 'platform'
+  
   if (!keyword) {
     return res.status(400).json({ error: '키워드가 필요합니다.' });
   }
 
-  // 1. 해당 키워드와 일치하는 모든 날짜의 데이터 찾기
-  const keywordHistory = data.filter(item => item.Keyword === keyword);
+  const csvData = getData(); 
+  const platformRawData = getPlatformKeywordData(); 
+  
+  let realKeyword = keyword;
+  let trendData = null;
+  let matchedPlatforms = [];
 
-  if (keywordHistory.length === 0) {
-    return res.json({ found: false, message: '데이터가 없습니다.' });
+  // 1. [데이터 검색] 클릭한 타입에 따라 검색 우선순위 조정
+  if (type === 'platform') {
+    // A. 플랫폼 클릭 시: JSON 데이터 우선
+    matchedPlatforms = platformRawData.filter(item => item.keyword === keyword);
+    
+    // CSV는 보조 정보 (없어도 됨)
+    trendData = csvData.find(item => item.Keyword === keyword);
+    if (!trendData) trendData = { Rank: 0, Mentions: 0, Score: 0 }; 
+
+  } else {
+    // B. 통합 클릭 시: CSV 데이터 우선
+    trendData = csvData.find(item => item.Keyword === keyword);
+    if (!trendData) {
+      trendData = csvData.find(item => item.Keyword && item.Keyword.includes(keyword));
+    }
+
+    if (!trendData) {
+      return res.json({ found: false, message: '트렌드 데이터를 찾을 수 없습니다.' });
+    }
+    
+    realKeyword = trendData.Keyword;
+    // JSON 데이터 가져오기 (키워드 일치하는 모든 플랫폼)
+    matchedPlatforms = platformRawData.filter(item => item.keyword === realKeyword);
   }
 
-  // 2. 날짜 오름차순 정렬 (그래프 그리기 좋게 1/30 -> 1/31 -> 2/1)
-  keywordHistory.sort((a, b) => a.Date.localeCompare(b.Date));
+  // 2. [댓글 데이터 구성] ⭐ 여기가 핵심 수정 포인트! ⭐
+  // 각 플랫폼별로 흩어져 있는 댓글들을 하나의 배열로 모아줍니다.
+  let allComments = [];
 
-  // 3. 가장 최신 데이터 (현재 상태 표시용)
-  const currentData = keywordHistory[keywordHistory.length - 1];
-
-  // 4. 플랫폼 분포 계산 (Platform_List 활용)
-  // 예: "dc_lol,fmkorea" -> { dc_lol: 1, fmkorea: 1 }
-  const platformCount = {};
-  if (currentData.Platform_List) {
-      const platforms = currentData.Platform_List.split(',');
-      platforms.forEach(p => {
-          const cleanP = p.trim();
-          platformCount[cleanP] = (platformCount[cleanP] || 0) + 1;
-      });
+  if (matchedPlatforms.length > 0) {
+    // JSON 데이터가 있으면 여기서 댓글 수집
+    matchedPlatforms.forEach(p => {
+      if (p.comments && Array.isArray(p.comments)) {
+        p.comments.forEach(c => {
+          allComments.push({
+            source: p.platform, // 예: "유튜브", "더쿠"
+            text: c             // 댓글 내용
+          });
+        });
+      }
+    });
+  } 
+  
+  // 만약 JSON에 댓글이 없고 CSV(통합데이터)에 예시가 있다면 백업으로 사용
+  if (allComments.length === 0 && trendData && trendData.Examples) {
+     allComments = trendData.Examples.split('||').map(ex => {
+        // CSV 포맷: "[platform](comment) 내용" 파싱
+        const match = ex.match(/\[(.*?)\]\(comment\)\s*(.*)/);
+        if (match) {
+          return { source: match[1], text: match[2] };
+        }
+        return null;
+     }).filter(item => item !== null);
   }
 
-  // 5. 실제 댓글 예시 파싱 (Examples 컬럼 활용)
-  const examples = [];
-  if (currentData.Examples) {
-      currentData.Examples.forEach(ex => {
-          const match = ex.match(/^\[(.*?)\]/);
-          if (match) {
-              examples.push({
-                  source: match[1],
-                  text: ex.replace(/^\[.*?\](\(comment\)|\(post\))?\s*/, ''),
-              });
-          }
-      });
-  }
+  // 3. [히스토리 데이터] 그래프용
+  const keywordHistory = csvData
+    .filter(item => item.Keyword === realKeyword)
+    .sort((a, b) => a.Date.localeCompare(b.Date))
+    .map(h => ({
+      date: h.Date,
+      mentions: h.Mentions,
+      score: h.Score,
+      rank: h.Rank
+    }));
+
+  // 4. [응답 전송]
+  res.json({
+    found: true,
+    keyword: realKeyword,
+    
+    rank: trendData.Rank,           
+    totalMentions: trendData.Mentions, 
+    score: trendData.Score,
+    
+    history: keywordHistory,        
+    
+    // ⭐ 모달이 기다리던 'comments' 필드를 직접 넣어줍니다.
+    comments: allComments, 
+
+    // (참고용) 플랫폼별 상세 구조
+    platformDetails: matchedPlatforms.map(p => ({
+      platform: p.platform,
+      count: p.count,
+      comments: p.comments || []
+    }))
+  });
+});
+  
 
 // 6. [AnalysisPage] 뉴스 RSS API (구글 뉴스 검색 활용)
 app.get('/api/news', async (req, res) => {
@@ -315,23 +417,7 @@ app.get('/api/news', async (req, res) => {
   }
 });
 
-  // 최종 응답 구성
-  res.json({
-    found: true,
-    keyword: currentData.Keyword,
-    rank: currentData.Rank,
-    totalMentions: currentData.Mentions, // 최신 날짜 기준
-    score: currentData.Score,
-    history: keywordHistory.map(h => ({
-        date: h.Date, // "20260201"
-        mentions: h.Mentions,
-        score: h.Score,
-        rank: h.Rank
-    })),
-    platforms: platformCount,
-    comments: examples.slice(0, 10) // 최대 10개만
-  });
-});
+
 
 // 서버 시작
 loadCSVData().then(() => {

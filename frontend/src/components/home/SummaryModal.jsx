@@ -22,7 +22,8 @@ export default function SummaryModal({ isOpen, onClose, data }) {
     if (isOpen && data?.keyword) {
       setLoading(true);
       // API 호출 (데모용 URL)
-      fetch(`http://localhost:5000/api/analysis?keyword=${data.keyword}`)
+      const typeParam = data.type || 'trend'
+      fetch(`http://localhost:5000/api/analysis?keyword=${data.keyword}&type=${typeParam}`)
         .then(res => res.json())
         .then(result => {
           if (result.found) {

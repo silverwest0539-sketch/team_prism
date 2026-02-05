@@ -10,7 +10,7 @@ const HomePage = () => {
   
   // 상태 관리
   const [risingKeywords, setRisingKeywords] = useState([]); 
-  const [risingContents, setRisingContents] = useState([]); 
+  const [risingPlatforms, setRisingPlatforms] = useState([]); 
   const [selectedPlatform, setSelectedPlatform] = useState('youtube'); 
   const [youtubeVideos, setYoutubeVideos] = useState([]);
   const [youtubeCategory, setYoutubeCategory] = useState('전체');
@@ -21,13 +21,13 @@ const HomePage = () => {
   const [selectedKeyword, setSelectedKeyword] = useState(null);
 
   const platformLabels = {
-    'community': '커뮤니티 전체',
-    'dcinside': '디시인사이드',
+    'youtube': '유튜브',
+    'dcinside': '롤갤러리',
     'theqoo': '더쿠',
     'natepan': '네이트판',
     'fmkorea': 'fmkorea',
     'ruliweb': '루리웹',
-    'x': 'X'
+    'x': 'x'
   };
 
   const youtubecategories = ['전체', '게임', '라이프', '음악', '일상', '코미디'];
@@ -48,14 +48,14 @@ const HomePage = () => {
   }, []);
 
   useEffect(() => {
-    let url = 'http://localhost:5000/api/contents/rising';
+    let url = 'http://localhost:5000/api/trends/platform';
     if (selectedPlatform !== 'all') {
       url += `?platform=${selectedPlatform}`;
     }
 
     fetch(url)
       .then(res => res.json())
-      .then(data => setRisingContents(data))
+      .then(data => setRisingPlatforms(data))
       .catch(err => console.error(err));
   }, [selectedPlatform]);
 
@@ -103,7 +103,8 @@ const HomePage = () => {
                   rank: item.rank,
                   score: item.score,
                   title: item.keyword,
-                  desc: `${item.keyword}에 대한 트렌드 요약입니다.`
+                  desc: `${item.keyword}에 대한 트렌드 요약입니다.`,
+                  type: 'trend'
                 })}
                 className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
               >
@@ -189,28 +190,27 @@ const HomePage = () => {
           </div>
 
           <ul className="flex flex-col gap-2">
-            {risingContents.map((item, index) => (
+            {risingPlatforms.map((item, index) => (
               <li 
-                key={index}
+                key={index} 
                 onClick={() => openModal({ 
-                  title: item.title, 
-                  desc: `영상 '${item.title}' 분석 리포트`,
-                  badges: [
-                    { text: "플랫폼키워드", color: "bg-red-100 text-red-600" },
-                    { text: "24시간", color: "bg-gray-100 text-gray-600" },
-                    { text: "요약분석", color: "bg-purple-100 text-purple-600" },
-                  ]
+                  keyword: item.keyword,
+                  rank: index +1,
+                  score: item.count,
+                  title: item.keyword,
+                  desc: `${item.keyword}에 대한 트렌드 요약입니다.`,
+                  type : 'platform'
                 })}
                 className="flex items-center gap-4 text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
               >
-                <span className="font-bold text-blue-600 w-3 text-center">{item.rank}</span>
+                <span className="font-bold text-blue-600 w-3 text-center">{item.rank || index + 1 }</span>
                 
                 <div className="flex items-baseline overflow-hidden">
                   <span className="font-medium text-gray-900 whitespace-nowrap">
-                    {item.title}
+                    {item.keyword}
                   </span>
                   <span className="text-xs text-gray-400 truncate ml-3">
-                    {item.stats}
+                    {item.count? `${item.count}회` : ''}
                   </span>
                 </div>
               </li>
