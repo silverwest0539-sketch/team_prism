@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const Sidebar = ({ onOpenSummary = () => {} }) => {  // ✅ 기본값
+const Sidebar = ({ onOpenSummary = () => { } }) => {  // ✅ 기본값
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,7 +34,7 @@ const Sidebar = ({ onOpenSummary = () => {} }) => {  // ✅ 기본값
           컨텐츠 생성
         </div>
 
-        <div className="text-gray-500 hover:text-blue-600 cursor-pointer font-medium p-3 rounded-lg">
+        <div className={getMenuClass('/scrap')} onClick={() => navigate('/scrap')}>
           내 스크랩
         </div>
       </nav>

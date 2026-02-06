@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage'; // 👈 1. HomePage import 확인
 import CreationPage from './pages/CreationPage';
 import AnalysisPage from './pages/AnalysisPage';
 import MyPage from './pages/MyPage'; // 👈 1. MyPage import 추가
+import ScrapPage from './pages/ScrapPage'; // 스크랩 페이지
 
 function App() {
   return (
@@ -22,7 +23,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
 
         {/* ===== 사이드바 있는 페이지들 (메인 서비스) ===== */}
-        
+
         {/* 1. 홈 화면 (로그인 후 이동할 경로) */}
         <Route path="/home" element={
           <Layout>
@@ -41,6 +42,13 @@ function App() {
         <Route path="/creation" element={
           <Layout>
             <CreationPage />
+          </Layout>
+        } />
+
+        {/* 👇 4. 스크랩 페이지 라우트 추가 */}
+        <Route path="/scrap" element={
+          <Layout>
+            <ScrapPage />
           </Layout>
         } />
 
