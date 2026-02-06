@@ -198,9 +198,6 @@ const HomePage = () => {
                   <span className="font-medium text-gray-900 whitespace-nowrap">
                     {item.keyword}
                   </span>
-                  <span className="text-xs text-gray-400 truncate ml-3">
-                    {item.count? `${item.count}회` : ''}
-                  </span>
                 </div>
               </li>
             ))}
