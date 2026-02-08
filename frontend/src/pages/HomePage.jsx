@@ -20,15 +20,26 @@ const HomePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState(null);
 
-  const platformLabels = {
-    'youtube': '유튜브',
-    'dcinside': '롤갤러리',
-    'theqoo': '더쿠',
-    'natepan': '네이트판',
-    'fmkorea': 'fmkorea',
-    'ruliweb': '루리웹',
-    'x': 'x'
-  };
+  
+const [searchTerm, setSearchTerm] = useState('');
+
+const handleSearch = (e) => {
+  if (e.key === 'Enter') {
+    // 여기에 검색 실행 로직을 작성하세요 (예: 페이지 이동, API 호출 등)
+    console.log('검색 실행:', searchTerm);
+  }
+};
+
+  const MAIN_PLATFORM_OPTIONS = [
+    { label: '전체 플랫폼', value: 'all' },
+    { label: '유튜브', value: 'youtube' },
+    { label: '더쿠', value: 'theqoo' },
+    { label: '디시인사이드', value: 'dcinside' }, // 상세: dc -> 메인: dcinside 유지
+    { label: '루리웹', value: 'ruliweb' },
+    { label: '네이트판', value: 'natepan' }, // 상세: nate -> 메인: natepan 유지
+    { label: 'FM코리아', value: 'fmkorea' },
+    { label: 'X (트위터)', value: 'x' }, // 상세: x_trends -> 메인: x 유지
+  ];
 
   const youtubecategories = ['전체', '게임', '라이프', '음악', '일상', '코미디'];
 
@@ -74,7 +85,12 @@ const HomePage = () => {
       
       {/* 상단 헤더 */}
       <div className="flex justify-between items-start mb-8">
-        <SearchBar placeholder="관심있는 키워드나 주제를 검색해보세요..." />
+        <SearchBar 
+          placeholder="관심있는 키워드나 주제를 검색해보세요..." 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={handleSearch}
+        />
         
         <div className="absolute right-8 top-8">
           <HeaderActions showNotificationText notificationText="Cont..." />
@@ -136,15 +152,15 @@ const HomePage = () => {
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`tab-btn flex items-center gap-1 ${
-                    selectedPlatform !== 'youtube'
-                      ? 'tab-active text-green-600'
+                    // [수정] 유튜브/다른커뮤니티 구분 없이, 드롭다운이 열려있거나 값이 선택되어 있으면 활성화 색상(초록) 적용
+                    isDropdownOpen || selectedPlatform 
+                      ? 'tab-active text-green-600' 
                       : 'text-gray-500 hover:text-gray-800'
                   }`}
                 >
-                  <span>
-                    {selectedPlatform === 'youtube' 
-                      ? '커뮤니티' 
-                      : platformLabels[selectedPlatform] || '커뮤니티'}
+                  <span className="font-medium">
+                    {/* [수정] 복잡한 삼항연산자 제거 -> 선택된 값의 Label을 그대로 표시 */}
+                    {MAIN_PLATFORM_OPTIONS.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
                   </span>
                   <svg 
                     className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
@@ -158,18 +174,18 @@ const HomePage = () => {
 
                 {isDropdownOpen && (
                   <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
-                    {Object.entries(platformLabels).map(([key, label]) => (
+                    {MAIN_PLATFORM_OPTIONS.map((option) => (
                       <button
-                        key={key}
+                        key={option.value}
                         onClick={() => {
-                          setSelectedPlatform(key);
+                          setSelectedPlatform(option.value);
                           setIsDropdownOpen(false);
                         }}
                         className={`w-full text-left px-4 py-2.5 text-xs hover:bg-gray-50 transition-colors ${
-                          selectedPlatform === key ? 'text-green-600 font-bold bg-green-50' : 'text-gray-600'
+                          selectedPlatform === option.value ? 'text-green-600 font-bold bg-green-50' : 'text-gray-600'
                         }`}
                       >
-                        {label}
+                        {option.label}
                       </button>
                     ))}
                   </div>
