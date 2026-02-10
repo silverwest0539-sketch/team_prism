@@ -1,13 +1,31 @@
 // src/pages/AnalysisPage.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import {
-  Bell, ArrowsClockwise, BookmarkSimple, Export, PlayCircle, CaretLeft,
-  ChartLineUp, Newspaper, Star, Copy
+  Bell,
+  ArrowsClockwise,
+  BookmarkSimple,
+  Export,
+  PlayCircle,
+  CaretLeft,
+  CaretRight,
+  ChartLineUp,
+  Newspaper,
+  Star,
+  Copy,
 } from '@phosphor-icons/react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from 'recharts';
 
 // 공통 컴포넌트
@@ -21,9 +39,12 @@ const DUMMY_DATA = {
   score: 0,
   totalMentions: 0,
   history: [
-    { date: '20240101', mentions: 20 }, { date: '20240102', mentions: 40 },
-    { date: '20240103', mentions: 30 }, { date: '20240104', mentions: 70 },
-    { date: '20240105', mentions: 50 }, { date: '20240106', mentions: 90 },
+    { date: '20240101', mentions: 20 },
+    { date: '20240102', mentions: 40 },
+    { date: '20240103', mentions: 30 },
+    { date: '20240104', mentions: 70 },
+    { date: '20240105', mentions: 50 },
+    { date: '20240106', mentions: 90 },
   ],
   comments: [],
 };
@@ -53,55 +74,77 @@ const InfoCard = ({ title, value, subText, color }) => (
   </div>
 );
 
-const WORD_CLOUD_DATA = [
-  { text: "가성비", size: "text-2xl", color: "text-blue-600" },
-  { text: "추천", size: "text-lg", color: "text-gray-600" },
-  { text: "디자인", size: "text-xl", color: "text-indigo-500" },
-  { text: "배송", size: "text-sm", color: "text-green-500" },
-  { text: "선물", size: "text-3xl", color: "text-purple-600" },
-  { text: "가격", size: "text-2xl", color: "text-gray-700" },
-];
-
 const SENTIMENT_DATA = [
   { name: '긍정', value: 65, color: '#4F46E5' },
   { name: '중립', value: 25, color: '#9CA3AF' },
   { name: '부정', value: 10, color: '#EF4444' },
 ];
 
- // 간단한 워드클라우드 컴포넌트 (외부 라이브러리 없이 구현)
-  const SimpleWordCloud = ({ words }) => {
-    if (!words || words.length === 0) return <div className="flex justify-center items-center h-full text-gray-400 text-sm">데이터 부족</div>;
+// 간단한 워드클라우드 컴포넌트 (외부 라이브러리 없이 구현)
+const SimpleWordCloud = ({ words }) => {
+  if (!words || words.length === 0)
+    return <div className="flex justify-center items-center h-full text-gray-400 text-sm">데이터 부족</div>;
 
-    // 폰트 크기 계산용 (최소 12px, 최대 24px)
-    const maxVal = Math.max(...words.map(w => w.value));
-    const minVal = Math.min(...words.map(w => w.value));
-    
-    const getFontSize = (val) => {
-      if (maxVal === minVal) return 16;
-      return 12 + ((val - minVal) / (maxVal - minVal)) * 14; 
-    };
+  const maxVal = Math.max(...words.map((w) => w.value));
+  const minVal = Math.min(...words.map((w) => w.value));
 
-    const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6'];
-
-    return (
-      <div className="flex flex-wrap gap-2 justify-center content-center h-full p-4 overflow-hidden">
-        {words.slice(0, 15).map((w, i) => ( // 상위 30개만 표시
-          <span 
-            key={i} 
-            style={{ 
-              fontSize: `${getFontSize(w.value)}px`,
-              color: colors[i % colors.length],
-              opacity: 0.8 + (w.value / maxVal) * 0.2
-            }}
-            className="font-bold cursor-default hover:scale-110 transition-transform duration-200 whitespace-nowrap"
-            title={`${w.value}회 언급`}
-          >
-            {w.text}
-          </span>
-        ))}
-      </div>
-    );
+  const getFontSize = (val) => {
+    if (maxVal === minVal) return 16;
+    return 12 + ((val - minVal) / (maxVal - minVal)) * 14;
   };
+
+  const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6'];
+
+  return (
+    <div className="flex flex-wrap gap-2 justify-center content-center h-full p-4 overflow-hidden">
+      {words.slice(0, 15).map((w, i) => (
+        <span
+          key={i}
+          style={{
+            fontSize: `${getFontSize(w.value)}px`,
+            color: colors[i % colors.length],
+            opacity: 0.8 + (w.value / maxVal) * 0.2,
+          }}
+          className="font-bold cursor-default hover:scale-110 transition-transform duration-200 whitespace-nowrap"
+          title={`${w.value}회 언급`}
+        >
+          {w.text}
+        </span>
+      ))}
+    </div>
+  );
+};
+
+// --- Ellipsis Pagination Helper ---
+const DOTS = 'dots';
+
+function getPaginationItems(currentPage, totalPages, siblingCount = 1) {
+  if (totalPages <= 1) return [1];
+
+  // 전체 페이지가 적으면 그대로 출력
+  const maxVisible = 2 * siblingCount + 5; // 1, ..., (siblings), ..., last
+  if (totalPages <= maxVisible) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const leftSibling = Math.max(currentPage - siblingCount, 2);
+  const rightSibling = Math.min(currentPage + siblingCount, totalPages - 1);
+
+  const showLeftDots = leftSibling > 2;
+  const showRightDots = rightSibling < totalPages - 1;
+
+  const items = [1];
+
+  if (showLeftDots) items.push(DOTS);
+
+  for (let p = leftSibling; p <= rightSibling; p++) items.push(p);
+
+  if (showRightDots) items.push(DOTS);
+
+  items.push(totalPages);
+
+  return items;
+}
 
 const AnalysisPage = () => {
   const [searchParams] = useSearchParams();
@@ -116,149 +159,142 @@ const AnalysisPage = () => {
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [news, setNews] = useState([]);
 
+  // ✅ 페이지네이션(7개 고정)
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 7;
+
+  const commentsTopRef = useRef(null);
+
   // 데이터 불러오기
   const fetchData = (currentStart, currentEnd) => {
     if (!keyword) return;
 
     setLoading(true);
 
-    // 날짜 파라미터 구성
     let query = `keyword=${keyword}`;
     if (currentStart) query += `&startDate=${currentStart}`;
     if (currentEnd) query += `&endDate=${currentEnd}`;
 
     Promise.all([
-      fetch(`http://localhost:5000/api/analysis?${query}`).then(res => res.json()),
-      fetch(`http://localhost:5000/api/news?${query}`).then(res => res.json())
-    ]).then(([analysisData, newsData]) => {
-      
-      if (analysisData.found) {
-        setData(analysisData);
-        // ⚠️ 중요: 처음 로딩할 때만(날짜가 비어있을 때만) 히스토리 날짜로 초기화
-        // 이렇게 안 하면 내가 날짜를 바꿀 때마다 다시 히스토리 전체 기간으로 돌아가버림
-        if (!currentStart && analysisData.history?.length > 0) {
-          setStartDate(formatDateForInput(analysisData.history[0].date));
-          setEndDate(formatDateForInput(analysisData.history[analysisData.history.length - 1].date));
+      fetch(`http://localhost:5000/api/analysis?${query}`).then((res) => res.json()),
+      fetch(`http://localhost:5000/api/news?${query}`).then((res) => res.json()),
+    ])
+      .then(([analysisData, newsData]) => {
+        if (analysisData.found) {
+          setData(analysisData);
+          if (!currentStart && analysisData.history?.length > 0) {
+            setStartDate(formatDateForInput(analysisData.history[0].date));
+            setEndDate(formatDateForInput(analysisData.history[analysisData.history.length - 1].date));
+          }
+        } else {
+          setData(null);
         }
-      } else {
-        setData(null);
-      }
-      
-      setNews(newsData || []);
-      setLoading(false);
-    }).catch(err => {
-      console.error(err);
-      setLoading(false);
-    });
+
+        setNews(newsData || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   };
 
-  // 2. 초기 로드 (키워드 변경 시)
+  // 초기 로드 (키워드 변경 시)
   useEffect(() => {
-    // 날짜 없이 호출 -> 서버가 전체 기간 데이터 줌 -> 이후 setStartDate로 날짜 세팅됨
-    setStartDate(''); 
+    setStartDate('');
     setEndDate('');
-    fetchData('', ''); 
+    setCurrentPage(1);
+    fetchData('', '');
   }, [keyword]);
 
-  // useEffect(() => {
-  //   if (!keyword) {
-  //     setData(null);
-  //     setNews([]);
-  //     setLoading(false);
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   Promise.all([
-  //     fetch(`http://localhost:5000/api/analysis?keyword=${keyword}`).then(res => res.json()),
-  //     fetch(`http://localhost:5000/api/news?keyword=${keyword}`).then(res => res.json())
-  //   ])
-  //     .then(([analysisResult, newsResult]) => {
-  //       if (analysisResult.found) {
-  //         setData(analysisResult);
-  //         if (analysisResult.history && analysisResult.history.length > 0) {
-  //           setStartDate(formatDateForInput(analysisResult.history[0].date));
-  //           setEndDate(formatDateForInput(analysisResult.history[analysisResult.history.length - 1].date));
-  //         }
-  //       } else {
-  //         setData(null);
-  //       }
-
-  //       setNews(newsResult || []);
-  //       setLoading(false);
-  //     })
-  //     .catch(err => {
-  //       console.error(err);
-  //       setLoading(false);
-  //     });
-  // }, [keyword]);
-
-  // 검색 핸들러
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
       navigate(`/analysis?keyword=${searchTerm}`);
     }
   };
 
-  // 사용자가 날짜를 변경했을 때 핸들러 (수동 적용)
   const handleDateApply = () => {
-      console.log("📅 날짜 필터 적용:", startDate, "~", endDate);
-      fetchData(startDate, endDate);
+    fetchData(startDate, endDate);
+    setCurrentPage(1);
   };
 
   // 데이터 필터링
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
 
-    if (!data) return {
-      ...sourceData,
-      history: sourceData.history,
-      youtubeComments: [],
-      otherComments: []
-    };
+    if (!data) {
+      return {
+        ...sourceData,
+        history: sourceData.history,
+        comments: [],
+        youtubeComments: [],
+        otherComments: [],
+        wordCloud: [],
+        videos: [],
+      };
+    }
 
-    const historyFiltered = data.history.filter(h => {
+    const historyFiltered = data.history.filter((h) => {
       const d = formatDateForInput(h.date);
       return (!startDate || d >= startDate) && (!endDate || d <= endDate);
     });
 
+    // ✅ 플랫폼 필터를 comments에 반영
     let allComments = sourceData.comments || [];
     if (selectedPlatform !== 'all') {
-      allComments = allComments.filter(c => c.source.includes(selectedPlatform));
+      allComments = allComments.filter((c) => (c?.source || '').includes(selectedPlatform));
     }
 
-    const youtubeComments = data.comments.filter(c => c.source.includes('youtube'));
-    const otherComments = data.comments.filter(c => !c.source.includes('youtube'));
+    const youtubeComments = (allComments || []).filter((c) => (c?.source || '').includes('youtube'));
+    const otherComments = (allComments || []).filter((c) => !(c?.source || '').includes('youtube'));
 
     return {
       ...data,
       history: historyFiltered,
+      comments: allComments,
       youtubeComments: youtubeComments.slice(0, 4),
       otherComments: otherComments.slice(0, 6),
       wordCloud: data.wordCloud || [],
-      videos: data.videos || []
+      videos: data.videos || [],
     };
   }, [data, startDate, endDate, selectedPlatform]);
 
- 
-
-  // 1. 왼쪽: 관련 유튜브 반응 (영상 들어갈 자리)
-  // 현재는 비워둡니다 (빈 배열). 나중에 영상 데이터가 준비되면 이곳에 연결합니다.
-  const youtubeReactions = useMemo(() => {
-    return []; 
-  }, []);
-
-  // 2. 오른쪽: 실제 사용 사례 (모든 텍스트 댓글)
-  // 기존에는 유튜브를 제외했지만, 이제는 '모든' 댓글을 이곳에 보여줍니다.
+  // 오른쪽: 실제 사용 사례 (모든 텍스트 댓글)
   const usageExamples = useMemo(() => {
     if (!filteredData?.comments) return [];
-    return filteredData.comments; 
+    return filteredData.comments;
   }, [filteredData]);
+
+  // 페이지네이션 계산
+  const totalItems = usageExamples.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+
+  // currentPage가 totalPages보다 커지는 케이스 방어(플랫폼 변경 등)
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(1);
+  }, [totalPages, currentPage]);
+
+  const currentUsageExamples = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return usageExamples.slice(startIndex, endIndex);
+  }, [usageExamples, currentPage]);
+
+  const paginationItems = useMemo(
+    () => getPaginationItems(currentPage, totalPages, 1),
+    [currentPage, totalPages]
+  );
+
+  const goToPage = (p) => {
+    setCurrentPage(p);
+    // UX: 페이지 변경 시 리스트 상단으로
+    requestAnimationFrame(() => {
+      commentsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   return (
     <div className="page space-y-6">
-
       {/* 상단 헤더 */}
       <header className="flex justify-between items-center mb-4">
         <Link to="/home" className="mr-4 p-2 bg-white rounded-full text-gray-500 hover:text-indigo-600 shadow-sm transition">
@@ -283,17 +319,17 @@ const AnalysisPage = () => {
       </header>
 
       {/* 메인 콘텐츠 */}
-      <div className={`container-7xl transition-all duration-500 ease-in-out flex flex-col gap-8 ${!keyword ? 'blur-disabled' : 'blur-enabled'
-        }`}>
-
+      <div
+        className={`container-7xl transition-all duration-500 ease-in-out flex flex-col gap-8 ${
+          !keyword ? 'blur-disabled' : 'blur-enabled'
+        }`}
+      >
         {/* 타이틀 */}
         <div className="flex justify-between items-end mb-2">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-1 flex items-center gap-3">
-              {keyword || "검색 키워드 예시"}
-              <span className="pill bg-indigo-50 text-indigo-600">
-                #{filteredData.rank || '-'}위
-              </span>
+              {keyword || '검색 키워드 예시'}
+              <span className="pill bg-indigo-50 text-indigo-600">#{filteredData.rank || '-'}위</span>
             </h1>
           </div>
           <div className="flex gap-2">
@@ -324,7 +360,12 @@ const AnalysisPage = () => {
                 <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="date-input" />
                 ~
                 <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="date-input" />
-                <button onClick={handleDateApply} className="bg-white hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 text-xs px-2 py-1 rounded shadow-sm transition-all" >조회</button>
+                <button
+                  onClick={handleDateApply}
+                  className="bg-white hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 text-xs px-2 py-1 rounded shadow-sm transition-all"
+                >
+                  조회
+                </button>
               </div>
               <div className="text-xs text-gray-400">직접 기간 설정 가능</div>
             </div>
@@ -338,10 +379,15 @@ const AnalysisPage = () => {
               <select
                 className="select"
                 value={selectedPlatform}
-                onChange={(e) => setSelectedPlatform(e.target.value)}
+                onChange={(e) => {
+                  setSelectedPlatform(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
-                {PLATFORM_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                {PLATFORM_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -360,10 +406,30 @@ const AnalysisPage = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={filteredData?.history}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                  <XAxis dataKey="date" tickFormatter={formatDateLabel} axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} dy={10} />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={formatDateLabel}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                    dy={10}
+                  />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                  <Line type="monotone" dataKey="mentions" stroke="#4F46E5" strokeWidth={3} dot={{ r: 4, fill: '#4F46E5', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="mentions"
+                    stroke="#4F46E5"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#4F46E5', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 6 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -374,7 +440,7 @@ const AnalysisPage = () => {
               <BookmarkSimple className="text-yellow-500" /> 워드 클라우드
             </h3>
             <div className="flex-1 flex flex-wrap content-center justify-center gap-2 overflow-hidden">
-              <SimpleWordCloud words={filteredData.wordCloud}/>
+              <SimpleWordCloud words={filteredData.wordCloud} />
             </div>
           </div>
 
@@ -386,7 +452,9 @@ const AnalysisPage = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={SENTIMENT_DATA} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
-                    {SENTIMENT_DATA.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                    {SENTIMENT_DATA.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
                   </Pie>
                   <Tooltip />
                   <Legend verticalAlign="bottom" height={24} iconSize={8} />
@@ -397,7 +465,8 @@ const AnalysisPage = () => {
         </div>
 
         {/* 하단 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* 왼쪽 */}
           <div className="card">
             <h3 className="section-title mb-4 pb-2 border-b flex justify-between">
               <span>AI 트렌드 요약</span>
@@ -439,69 +508,131 @@ const AnalysisPage = () => {
               )}
             </div>
 
-            <div>
-                <h3 className="section-title mb-4 border-b pb-2 flex items-center gap-2">
-                  <PlayCircle size={20} className="text-red-500" /> 관련 유튜브 반응
-                </h3>
-                <div className="space-y-4">
-                  {/* 비디오가 있으면 보여줌 (API 실패시 서버가 로컬 데이터로 대체해서 보냄) */}
-                  {filteredData.videos && filteredData.videos.length > 0 ? (
-                    filteredData.videos.map((video) => (
-                      <a 
-                        key={video.id}
-                        href={video.views === 0 ? '#' : `https://www.youtube.com/watch?v=${video.id}`} // 로컬 데이터면 링크 비활성 또는 검색으로 유도 가능
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex gap-4 group cursor-pointer"
-                      >
-                        <div className="w-32 h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative">
-                          <img src={video.thumbnail} alt="" className="w-full h-full object-cover" />
-                          {video.views > 0 && <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 rounded">Video</div>}
+            <div className="mt-8">
+              <h3 className="section-title mb-4 border-b pb-2 flex items-center gap-2">
+                <PlayCircle size={20} className="text-red-500" /> 관련 유튜브 반응
+              </h3>
+              <div className="space-y-4">
+                {filteredData.videos && filteredData.videos.length > 0 ? (
+                  filteredData.videos.slice(0, 3).map((video) => (
+                    <a
+                      key={video.id}
+                      href={video.views === 0 ? '#' : `https://www.youtube.com/watch?v=${video.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex gap-4 group cursor-pointer"
+                    >
+                      <div className="w-32 h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative">
+                        <img src={video.thumbnail} alt="" className="w-full h-full object-cover" />
+                        {video.views > 0 && (
+                          <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 rounded">Video</div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition leading-snug">
+                          {video.title}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
+                          <span className="truncate max-w-[100px]">{video.channel}</span>
+                          {video.views > 0 && <span>• 조회수 {formatViews(video.views)}</span>}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition leading-snug">
-                            {video.title}
-                          </h4>
-                          <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
-                            <span className="truncate max-w-[100px]">{video.channel}</span>
-                            {video.views > 0 && <span>• 조회수 {formatViews(video.views)}</span>}
-                          </div>
-                        </div>
-                      </a>
-                    ))
-                  ) : (
-                    <div className="text-gray-400 text-sm py-4 text-center bg-gray-50 rounded-lg">
-                      관련 유튜브 영상을 찾을 수 없습니다.
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    </a>
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm py-4 text-center bg-gray-50 rounded-lg">
+                    관련 유튜브 영상을 찾을 수 없습니다.
+                  </div>
+                )}
               </div>
+            </div>
           </div>
 
-          <div className="card">
-            <h3 className="section-title mb-4 pb-2 border-b">실제 사용 사례 (커뮤니티)</h3>
-            <div className="space-y-4">
-              {usageExamples?.length > 0 ? (
-                usageExamples.slice(0, 14).map((comment, i) => (
-                  <div key={i} className="group">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-bold text-gray-700">
-                        반응 {i + 1} <span className="text-xs font-normal text-gray-400 ml-1">({comment.source})</span>
-                      </span>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Star size={14} className="text-gray-400 hover:text-yellow-400 cursor-pointer" />
-                        <Copy size={14} className="text-gray-400 hover:text-indigo-600 cursor-pointer" />
+          {/* 오른쪽: 실제 사용 사례 (커뮤니티) */}
+          <div className="card h-fit flex flex-col">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b">
+              <h3 className="section-title">실제 사용 사례 (커뮤니티)</h3>
+              <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-full">총 {totalItems}건</span>
+            </div>
+
+            <div ref={commentsTopRef} />
+
+            <div className="space-y-4 flex-1">
+              {currentUsageExamples?.length > 0 ? (
+                currentUsageExamples.map((comment, i) => {
+                  const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
+
+                  return (
+                    <div key={i} className="group">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-bold text-gray-700">
+                          반응 {globalIndex}{' '}
+                          <span className="text-xs font-normal text-gray-400 ml-1">({comment.source})</span>
+                        </span>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Star size={14} className="text-gray-400 hover:text-yellow-400 cursor-pointer" />
+                          <Copy size={14} className="text-gray-400 hover:text-indigo-600 cursor-pointer" />
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent group-hover:border-indigo-100 group-hover:bg-indigo-50/30 transition-all">
+                        "{comment.text}"
                       </div>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent group-hover:border-indigo-100 group-hover:bg-indigo-50/30 transition-all">
-                      "{comment.text}"
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="text-center py-10 text-gray-400">데이터가 없습니다.</div>
               )}
             </div>
+
+            {/* Ellipsis Pagination */}
+            {totalPages > 1 && (
+              <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => goToPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent"
+                  aria-label="이전 페이지"
+                >
+                  <CaretLeft size={16} weight="bold" />
+                </button>
+
+                {paginationItems.map((it, idx) => {
+                  if (it === DOTS) {
+                    return (
+                      <span key={`dots-${idx}`} className="px-2 text-xs text-gray-400 select-none">
+                        ...
+                      </span>
+                    );
+                  }
+
+                  const pageNum = it;
+                  const isActive = pageNum === currentPage;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => goToPage(pageNum)}
+                      className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-medium transition-all
+                        ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-indigo-600'}`}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent"
+                  aria-label="다음 페이지"
+                >
+                  <CaretRight size={16} weight="bold" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -517,7 +648,8 @@ const AnalysisPage = () => {
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">분석할 키워드를 입력해주세요</h2>
             <p className="text-gray-500">
-              상단 검색창에 검색어를 입력하면<br />
+              상단 검색창에 검색어를 입력하면
+              <br />
               빅데이터 분석 리포트가 즉시 생성됩니다.
             </p>
           </div>
