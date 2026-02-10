@@ -158,6 +158,8 @@ const AnalysisPage = () => {
   const [endDate, setEndDate] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [news, setNews] = useState([]);
+  const [aiSummary, setAiSummary] = useState(''); // AI 요약 텍스트
+  const [isAiLoading, setIsAiLoading] = useState(false); // 로딩 상태
 
   // ✅ 페이지네이션(7개 고정)
   const [currentPage, setCurrentPage] = useState(1);
@@ -201,11 +203,29 @@ const AnalysisPage = () => {
 
   // 초기 로드 (키워드 변경 시)
   useEffect(() => {
+    setAiSummary(null);       // AI 요약 텍스트 초기화
+    setIsAiLoading(true)
     setStartDate('');
     setEndDate('');
     setCurrentPage(1);
     fetchData('', '');
+    fetchAiSummary(keyword);
   }, [keyword]);
+
+    const fetchAiSummary = async (targetKeyword) => {
+    setIsAiLoading(true);
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/summary?keyword=${targetKeyword}`);
+      const data = await res.json();
+      setAiSummary(data.summary);
+    } catch (err) {
+      console.error("AI Summary Error:", err);
+      setAiSummary("요약 정보를 불러오는데 실패했습니다.");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
@@ -292,6 +312,7 @@ const AnalysisPage = () => {
       commentsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
+
 
   return (
     <div className="page space-y-6">
@@ -473,8 +494,42 @@ const AnalysisPage = () => {
               <span className="text-xs font-normal text-gray-400 mt-1">Updated 10m ago</span>
             </h3>
             <div className="p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-500 text-sm text-gray-700 leading-relaxed mb-6">
-              <strong>"{keyword}"</strong>에 대한 분석 결과, 최근 다양한 채널을 중심으로 긍정적인 반응이 확산되고 있습니다.
-              특히 '가성비'와 '디자인' 키워드가 함께 언급되는 빈도가 높습니다.
+              {/* 조건 1: 로딩 중이면 -> 로딩 애니메이션만 보여줌 
+                조건 2: 로딩 끝남 & 데이터 있음 -> 결과 텍스트 보여줌
+                조건 3: 로딩 끝남 & 데이터 없음 -> 아무것도 안 보여주거나 안내 문구
+              */}
+              
+              {isAiLoading ? (
+                /* 로딩 중일 때 보여줄 화면 */
+                <div className="flex flex-col items-center justify-center py-4 gap-3">
+                  <div className="flex gap-2">
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-75"></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-150"></div>
+                  </div>
+                  <span className="text-xs text-indigo-400 font-medium animate-pulse">
+                    AI가 데이터를 분석하여 리포트를 작성 중입니다...
+                  </span>
+                </div>
+              ) : (
+                /* 로딩이 완전히 끝났을 때만 출력 */
+                aiSummary ? (
+                  <div className="animate-fade-in-up">
+                      {aiSummary.split('\n').map((line, i) => {
+                          // 빈 줄은 무시
+                          if (!line.trim()) return null;
+                          return (
+                              <p key={i} className="mb-2 pl-2 border-l-2 border-indigo-200">
+                                  {line}
+                              </p>
+                          );
+                      })}
+                  </div>
+                ) : (
+                  /* 초기 상태거나 데이터 없을 때 */
+                  <p className="text-gray-400 text-center text-xs">키워드를 분석할 준비가 되었습니다.</p>
+                )
+              )}
             </div>
 
             <h3 className="section-title mb-4 pb-2 border-b">

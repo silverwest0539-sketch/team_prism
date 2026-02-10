@@ -640,7 +640,141 @@ app.get('/api/news', async (req, res) => {
   }
 });
 
+// ✅ 7. [AI] LM Studio 연동 요약 API (노이즈 필터링 강화 모드)
+app.get('/api/summary', async (req, res) => {
+  const { keyword } = req.query;
+  if (!keyword) return res.status(400).json({ error: 'Keyword required' });
 
+  try {
+    // -------------------------------------------------------
+    // 1️⃣ 데이터 수집 (기존 동일)
+    // -------------------------------------------------------
+    const currentItem = findKeywordOverAll(keyword);
+    if (!currentItem) return res.json({ summary: "데이터가 부족하여 분석할 수 없습니다." });
+
+    const historyMap = getHistoryData();
+    const dates = Object.keys(historyMap).sort();
+    
+    let collectedComments = [];
+    let platformStats = {};
+
+    dates.forEach(date => {
+        const dayData = historyMap[date];
+        if (dayData.integrated) {
+            const item = dayData.integrated.find(i => i.Keyword === keyword);
+            if (item?.Examples) collectedComments.push(...item.Examples);
+        }
+        if (dayData.platform) {
+            Object.keys(dayData.platform).forEach(pKey => {
+                const pList = Array.isArray(dayData.platform[pKey]) ? dayData.platform[pKey] : [];
+                const pItem = pList.find(pi => (pi.Keyword || pi.keyword) === keyword);
+                if (pItem) {
+                    const count = parseInt(pItem.Total_Mentions || pItem.Count || 0, 10);
+                    platformStats[pKey] = (platformStats[pKey] || 0) + count;
+                    if (pItem.Examples) collectedComments.push(...pItem.Examples);
+                }
+            });
+        }
+    });
+
+    let topPlatform = "알 수 없음";
+    let maxCount = -1;
+    Object.entries(platformStats).forEach(([plat, count]) => {
+        if (count > maxCount) {
+            maxCount = count;
+            topPlatform = plat;
+        }
+    });
+
+    // -------------------------------------------------------
+    // 2️⃣ 데이터 셔플
+    // -------------------------------------------------------
+    const shuffleArray = (array) => {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    };
+
+    const uniqueComments = [...new Set(collectedComments)];
+    const refinedComments = shuffleArray(uniqueComments)
+        .map(c => c.replace(/\n/g, ' ').trim()) 
+        .filter(c => c.length > 10) 
+        .slice(0, 20) // 노이즈를 거르기 위해 데이터를 좀 더 넉넉히 줌 (15개)
+        .map(c => c.length > 100 ? c.substring(0, 100) : c);
+
+    const commentsForPrompt = refinedComments.length > 0 
+        ? refinedComments.map(c => `- "${c}"`).join('\n')
+        : "관련 댓글 데이터가 없습니다.";
+
+    // -------------------------------------------------------
+    // 3️⃣ Prompt Engineering (노이즈 필터링 핵심!)
+    // -------------------------------------------------------
+    
+    const systemPrompt = `
+    당신은 군더더기 없이 핵심만 보고하는 '트렌드 브리핑 봇'입니다.
+    서론과 결론을 빼고, **딱 3문장**으로 요약하세요.
+    말투는 "~함", "~임" 체를 사용하여 간결함을 유지하세요.
+    `;
+    
+    const userPrompt = `
+    [키워드]: ${keyword}
+    [확산처]: ${topPlatform}
+    [댓글]:
+    ${commentsForPrompt}
+
+    위 내용을 종합하여 **총 200자 이내, 3문장**으로 요약해.
+
+    [문장 구성 규칙]
+    1. **첫 문장 (정체)**: 키워드의 정체와 화제 원인 요약. (외모/패션 언급 금지)
+    2. **두 번째 문장 (반응)**: 대중의 반응 요약 및 짧은 인용 1개 포함.
+    3. **세 번째 문장 (주의점)**: 
+       - 대상이 **상품**이면 가격, 맛, 재고 이슈 언급.
+       - 대상이 **인물/뉴스**면 논란, 사실 확인 필요성 언급.
+       - (경고: 인물에게 맛/가격 이야기를 붙이지 말 것.)
+
+    [출력 예시]
+    최근 유튜브에서 유행 중인 '두쫀쿠'는 쫀득한 식감으로 입소문을 타고 있음. 대다수 유저가 "식감이 예술이다"라며 호평하지만, 편의점 재고가 부족해 구하기 어렵다는 불만도 있음. 유행 주기가 짧을 수 있으니 신속한 마케팅이 필요함.
+    `;
+
+    // -------------------------------------------------------
+    // 4️⃣ LM Studio 전송
+    // -------------------------------------------------------
+    console.log(`🤖 AI 요약 요청 [${keyword}] (Noise Filter Mode)`);
+    
+    const myPcIp = "192.168.219.107";
+
+    const llmResponse = await axios.post(`http://${myPcIp}:1234/v1/chat/completions`, {
+      model: "local-model",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      temperature: 0.1, // 창의성 최소화 -> 지시사항(필터링)을 칼같이 지킴
+      max_tokens: 500
+    });
+
+    let rawContent = llmResponse.data.choices[0].message.content;
+
+    // -------------------------------------------------------
+    // 5️⃣ 후처리
+    // -------------------------------------------------------
+    let finalSummary = rawContent.trim();
+    finalSummary = finalSummary.replace(/^\d+\.\s*/gm, ''); // 혹시 모를 번호 제거
+    finalSummary = finalSummary.replace(/\[.*?\]/g, '');
+
+    // 플랫폼 정보 추가
+    finalSummary += `\n\n(🔥 주요 확산 플랫폼: ${topPlatform})`;
+
+    console.log("✅ AI 요약 완료!");
+    res.json({ summary: finalSummary });
+
+  } catch (error) {
+    console.error("❌ 오류:", error.message);
+    res.json({ summary: "분석 중 오류가 발생했습니다." });
+  }
+});
 
 // 서버 시작
 loadTrendData().then(() => {
