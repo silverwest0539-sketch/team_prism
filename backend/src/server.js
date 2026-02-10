@@ -291,7 +291,7 @@ app.get('/api/videos', async (req, res) => {
 
     // 2. 프론트엔드 형식에 맞춰 데이터 가공
     const videos = response.data.items.map(item => ({
-      video_id: item.id,
+      id: item.id,
       title: item.snippet.title,
       channel: item.snippet.channelTitle,
       views: item.statistics.viewCount || 0,
