@@ -18,6 +18,8 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
+let searchCache = {}; // { '쿠팡': { data: [...], timestamp: 12345678 } }
+
 // 날짜 변환 유틸리티 (YYYY-MM-DD -> ISO 8601)
 // 유튜브 API는 "2024-01-01T00:00:00Z" 형식이 필요합니다.
 const toISODate = (dateStr, isEnd = false) => {
@@ -250,207 +252,248 @@ app.get('/api/contents/rising', (req, res) => {
 });
 
 // [HomePage] 유튜브 리스트 API (추가)
-app.get('/api/youtube/list', (req, res) => {
-  const videoData = getYoutubeData();
-  const category = req.query.category || '전체'; // 프론트에서 보낸 한글 카테고리
+app.get('/api/videos', async (req, res) => {
+  const { category } = req.query;
+  const API_KEY = process.env.YOUTUBE_API_KEY; // API 키 가져오기
 
-  // 1. [핵심] 한글 버튼 -> 유튜브 데이터의 영어 카테고리 매핑
+  // 카테고리 이름 -> 유튜브 카테고리 ID 매핑
   const categoryMap = {
-    '게임': ['Gaming'],
-    '음악': ['Music'],
-    '라이프': ['Howto_Style'], 
-    '일상': ['People_Blogs'], 
-    '코미디': ['Comedy', 'Entertainment'],
-    '전체': []
+    '전체': '', // 전체는 ID 없음 (기본값)
+    '음악': '10',
+    '엔터테인먼트': '24',
+    '게임': '20',
+    '뉴스': '25',
+    '스포츠': '17',
+    '영화/드라마': '1', // 영화/애니메이션
+    '브이로그': '22', // 인물/블로그
   };
 
-  let filteredData = videoData;
+  const categoryId = categoryMap[category] || '';
 
-  // 2. 카테고리 필터링 (scraped_category_name 활용)
-  if (category !== '전체') {
-    const targetCategories = categoryMap[category] || [];
+  try {
+    // 1. 유튜브 인기 동영상 API 호출 (chart=mostPopular)
+    const apiParams = {
+      part: 'snippet,statistics',
+      chart: 'mostPopular',
+      regionCode: 'KR',
+      maxResults: 12,
+      key: API_KEY
+    };
 
-    filteredData = videoData.filter(video => {
-      // ✅ [핵심 수정] 데이터의 카테고리에서 공백 제거 (.trim())
-      const rawCategory = video.scraped_category_name || "";
-      const cleanCategory = rawCategory.trim(); 
+    // categoryId가 빈 문자열('')이 아닐 때만 파라미터에 추가
+    if (categoryId) {
+      apiParams.videoCategoryId = categoryId;
+    }
 
-      // 1) 카테고리 이름이 일치하는지 확인
-      const isCategoryMatch = targetCategories.includes(cleanCategory);
-      
-      return isCategoryMatch 
+    const response = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+      params: apiParams // 수정된 params 객체 사용
     });
+
+    // 2. 프론트엔드 형식에 맞춰 데이터 가공
+    const videos = response.data.items.map(item => ({
+      video_id: item.id,
+      title: item.snippet.title,
+      channel: item.snippet.channelTitle,
+      views: item.statistics.viewCount || 0,
+      publish_time: item.snippet.publishedAt,
+      thumbnail: item.snippet.thumbnails.medium.url,
+      scraped_category_name: category || '인기'
+    }));
+
+    res.json(videos);
+
+  } catch (error) {
+    console.error("유튜브 인기 동영상 로드 실패:", error.message);
+    // 에러 발생 시 빈 배열 반환 (화면이 깨지지 않게)
+    res.json([]);
   }
-
-  // video_id 기준 중복 제거 로직
-  // Set을 사용하여 이미 담은 ID는 건너뜁니다.
-  const uniqueData = [];
-  const seenIds = new Set();
-
-  filteredData.forEach(video => {
-    if (!seenIds.has(video.video_id)) {
-      seenIds.add(video.video_id); // ID 등록
-      uniqueData.push(video);      // 데이터 담기
-    }
-  });
-  
-  filteredData = uniqueData;
- 
-    // if (targetCategories) {
-    //   filteredData = videoData.filter(video => {
-    //     // 데이터에 있는 카테고리 값 (없을 경우 대비해 안전하게 처리)
-    //     const videoCategory = video.scraped_category_name || "";
-        
-    //     // 매핑된 리스트 중에 포함되는지 확인 (예: 'Gaming'이 리스트에 있나?)
-    //     return targetCategories.includes(videoCategory);
-    //   });
-    // }
-  // }
-
-  // 3. 조회수 기준 내림차순 정렬 & 데이터 가공
-  filteredData.sort((a, b) => {
-    // 정규식: 한글이 한 글자라도 포함되어 있는지 확인
-    const koreanRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
-    
-    // 제목이나 채널명에 한글이 있는지 체크 (제목만 검사하려면 a.title만 쓰면 됩니다)
-    const isAKorean = koreanRegex.test(a.title) || koreanRegex.test(a.channel);
-    const isBKorean = koreanRegex.test(b.title) || koreanRegex.test(b.channel);
-
-    // [1단계] 언어 우선순위 비교
-    // A는 한글이고 B는 영어면 -> A가 앞으로 (-1)
-    if (isAKorean && !isBKorean) {
-      return -1; 
-    }
-    // A는 영어고 B는 한글이면 -> B가 앞으로 (1)
-    if (!isAKorean && isBKorean) {
-      return 1;
-    }
-
-    // [2단계] 언어 조건이 같다면(둘 다 한글 or 둘 다 영어), 조회수 비교
-    return b.stats.views - a.stats.views;
-  });
-  
-  // 필요한 데이터만 정제해서 전송 (선택사항)
-  const formattedData = filteredData.map(video => ({
-    id: video.video_id,
-    title: video.title,
-    channel: video.channel,
-    views: video.stats.views,
-    publish_time: video.publish_time,
-    category: video.scraped_category_name, // 확인용
-    // 유튜브 썸네일 URL 공식: https://img.youtube.com/vi/[video_id]/[옵션].jpg
-    thumbnail: `https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`
-  }));
-
-  res.json(formattedData);
 });
+
+// app.get('/api/youtube/list', (req, res) => {
+//   const videoData = getYoutubeData();
+//   const category = req.query.category || '전체'; // 프론트에서 보낸 한글 카테고리
+
+//   // 1. [핵심] 한글 버튼 -> 유튜브 데이터의 영어 카테고리 매핑
+//   const categoryMap = {
+//     '게임': ['Gaming'],
+//     '음악': ['Music'],
+//     '라이프': ['Howto_Style'], 
+//     '일상': ['People_Blogs'], 
+//     '코미디': ['Comedy', 'Entertainment'],
+//     '전체': []
+//   };
+
+//   let filteredData = videoData;
+
+//   // 2. 카테고리 필터링 (scraped_category_name 활용)
+//   if (category !== '전체') {
+//     const targetCategories = categoryMap[category] || [];
+
+//     filteredData = videoData.filter(video => {
+//       // ✅ [핵심 수정] 데이터의 카테고리에서 공백 제거 (.trim())
+//       const rawCategory = video.scraped_category_name || "";
+//       const cleanCategory = rawCategory.trim(); 
+
+//       // 1) 카테고리 이름이 일치하는지 확인
+//       const isCategoryMatch = targetCategories.includes(cleanCategory);
+      
+//       return isCategoryMatch 
+//     });
+//   }
+
+//   // video_id 기준 중복 제거 로직
+//   // Set을 사용하여 이미 담은 ID는 건너뜁니다.
+//   const uniqueData = [];
+//   const seenIds = new Set();
+
+//   filteredData.forEach(video => {
+//     if (!seenIds.has(video.video_id)) {
+//       seenIds.add(video.video_id); // ID 등록
+//       uniqueData.push(video);      // 데이터 담기
+//     }
+//   });
+  
+//   filteredData = uniqueData;
+ 
+//     // if (targetCategories) {
+//     //   filteredData = videoData.filter(video => {
+//     //     // 데이터에 있는 카테고리 값 (없을 경우 대비해 안전하게 처리)
+//     //     const videoCategory = video.scraped_category_name || "";
+        
+//     //     // 매핑된 리스트 중에 포함되는지 확인 (예: 'Gaming'이 리스트에 있나?)
+//     //     return targetCategories.includes(videoCategory);
+//     //   });
+//     // }
+//   // }
+
+//   // 3. 조회수 기준 내림차순 정렬 & 데이터 가공
+//   filteredData.sort((a, b) => {
+//     // 정규식: 한글이 한 글자라도 포함되어 있는지 확인
+//     const koreanRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
+    
+//     // 제목이나 채널명에 한글이 있는지 체크 (제목만 검사하려면 a.title만 쓰면 됩니다)
+//     const isAKorean = koreanRegex.test(a.title) || koreanRegex.test(a.channel);
+//     const isBKorean = koreanRegex.test(b.title) || koreanRegex.test(b.channel);
+
+//     // [1단계] 언어 우선순위 비교
+//     // A는 한글이고 B는 영어면 -> A가 앞으로 (-1)
+//     if (isAKorean && !isBKorean) {
+//       return -1; 
+//     }
+//     // A는 영어고 B는 한글이면 -> B가 앞으로 (1)
+//     if (!isAKorean && isBKorean) {
+//       return 1;
+//     }
+
+//     // [2단계] 언어 조건이 같다면(둘 다 한글 or 둘 다 영어), 조회수 비교
+//     return b.stats.views - a.stats.views;
+//   });
+  
+//   // 필요한 데이터만 정제해서 전송 (선택사항)
+//   const formattedData = filteredData.map(video => ({
+//     id: video.video_id,
+//     title: video.title,
+//     channel: video.channel,
+//     views: video.stats.views,
+//     publish_time: video.publish_time,
+//     category: video.scraped_category_name, // 확인용
+//     // 유튜브 썸네일 URL 공식: https://img.youtube.com/vi/[video_id]/[옵션].jpg
+//     thumbnail: `https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`
+//   }));
+
+//   res.json(formattedData);
+// });
 
 // [AnalysisPage] 특정 키워드 상세 분석 API
 // 사용법: /api/analysis?keyword=쿠팡
 // [AnalysisPage] 상세 분석 API (댓글 통합 로직 추가)
+// [AnalysisPage] 상세 분석 API
 app.get('/api/analysis', async (req, res) => {
   const { keyword, startDate, endDate } = req.query;
-  const API_KEY = process.env.YOUTUBE_API_KEY;
+  const API_KEY = process.env.YOUTUBE_API_KEY; // API 키 로드
 
   if (!keyword) return res.status(400).json({ error: 'Keyword required' });
 
-  // 1. 전체 데이터 범위에서 키워드 찾기 (통합 + 플랫폼 전체)
-  const currentItem = findKeywordOverAll(keyword);
-
-  if (!currentItem) {
-    return res.json({ found: false, message: "데이터 없음" });
+  // -----------------------------------------------------------
+  // ✅ 1. 캐시 확인 (API 비용 절약 핵심 로직)
+  // -----------------------------------------------------------
+  const now = Date.now();
+  // 날짜 필터가 없고(전체 기간), 캐시에 데이터가 있으며, 1시간(60분)이 지나지 않았다면?
+  if (!startDate && !endDate && searchCache[keyword] && (now - searchCache[keyword].timestamp < 60 * 60 * 1000)) {
+     console.log(`📦 [Cache] 캐시된 데이터 반환: ${keyword}`);
+     return res.json(searchCache[keyword].data);
   }
+  // -----------------------------------------------------------
 
-  // 2. 히스토리 데이터 준비
-  const historyMap = getHistoryData();
-  const dates = Object.keys(historyMap).sort();
+  try {
+    // 1. [로컬 분석] 키워드 기본 정보 찾기
+    const currentItem = findKeywordOverAll(keyword);
+    if (!currentItem) return res.json({ found: false, message: "데이터 없음" });
 
-  // (A) 그래프용 히스토리 데이터 생성
-  const history = dates.map(date => {
-    const dayData = historyMap[date];
-    let foundVal = 0;
-    
-    // 1순위: 통합 데이터에서 찾기
-    const dayIntegrated = dayData.integrated || [];
-    let found = dayIntegrated.find(item => item.Keyword === keyword);
-    
-    // 2순위: 통합에 없으면 플랫폼 데이터에서 찾기 (그래프가 끊기지 않게)
-    if (!found && dayData.platform) {
-        const platforms = dayData.platform;
-        for (const pKey of Object.keys(platforms)) {
-            const pList = Array.isArray(platforms[pKey]) ? platforms[pKey] : [];
-            const pItem = pList.find(pi => (pi.Keyword || pi.keyword) === keyword);
-            if (pItem) {
-                // 플랫폼 데이터에는 Total_Mentions 혹은 Count로 저장되어 있음
-                found = { Mentions: pItem.Total_Mentions || pItem.Count || 0 };
-                break; 
+    // 2. [로컬 분석] 히스토리 데이터 구성
+    const historyMap = getHistoryData();
+    const dates = Object.keys(historyMap).sort();
+
+    const history = dates.map(date => {
+        const dayData = historyMap[date];
+        const dayIntegrated = dayData.integrated || [];
+        let found = dayIntegrated.find(item => item.Keyword === keyword);
+        
+        if (!found && dayData.platform) {
+            const platforms = dayData.platform;
+            for (const pKey of Object.keys(platforms)) {
+                const pList = Array.isArray(platforms[pKey]) ? platforms[pKey] : [];
+                const pItem = pList.find(pi => (pi.Keyword || pi.keyword) === keyword);
+                if (pItem) {
+                    found = { Mentions: pItem.Total_Mentions || pItem.Count || 0 };
+                    break; 
+                }
             }
         }
-    }
+        return {
+          date: date,
+          mentions: found ? (found.Mentions || found.Total_Mentions || 0) : 0
+        };
+    });
 
-    return {
-      date: date,
-      mentions: found ? (found.Mentions || found.Total_Mentions || 0) : 0
-    };
-  });
+    // 3. [로컬 분석] 댓글 수집 및 워드클라우드
+    let allRawComments = [];
+    dates.forEach(date => {
+        const dayData = historyMap[date];
+        if (dayData.integrated) {
+            const item = dayData.integrated.find(i => i.Keyword === keyword);
+            if (item?.Examples) allRawComments.push(...item.Examples);
+        }
+        if (dayData.platform) {
+            Object.keys(dayData.platform).forEach(pKey => {
+                const pList = dayData.platform[pKey];
+                const pItem = pList.find(i => (i.Keyword || i.keyword) === keyword);
+                if (pItem?.Examples) {
+                    allRawComments.push(...pItem.Examples.map(e => e.startsWith('[') ? e : `[${pKey}] ${e}`));
+                }
+            });
+        }
+    });
 
-  // (B) 댓글(Examples) 수집 - 여기가 핵심 수정 부분입니다
-  let allRawComments = [];
-  
-  dates.forEach(date => {
-      const dayData = historyMap[date];
+    const uniqueComments = [...new Set(allRawComments)];
+    const parsedComments = uniqueComments.map(ex => {
+      const match = ex.match(/^\[(.*?)\]\s*(.*)/);
+      return match ? { source: match[1], text: match[2] } : null;
+    }).filter(Boolean);
 
-      // 1. 통합 데이터(Integrated_Trends)의 댓글 수집
-      if (dayData.integrated) {
-          const integratedItem = dayData.integrated.find(item => item.Keyword === keyword);
-          if (integratedItem && integratedItem.Examples) {
-              allRawComments.push(...integratedItem.Examples);
-          }
-      }
+    const wordCloudData = extractWordCloudData(allRawComments, keyword);
 
-      // 2. 플랫폼 데이터(Platform_Trends)의 댓글 수집 (기존에 빠져있던 부분)
-      if (dayData.platform) {
-          // platform 객체 안의 모든 키(youtube, theqoo, fmkorea 등)를 순회
-          Object.keys(dayData.platform).forEach(pKey => {
-              const pList = dayData.platform[pKey];
-              if (Array.isArray(pList)) {
-                  const pItem = pList.find(item => (item.Keyword || item.keyword) === keyword);
-                  
-                  if (pItem && pItem.Examples) {
-                      // [theqoo] 같은 태그가 없으면 붙여줌 (프론트엔드 분류를 위해)
-                      const taggedExamples = pItem.Examples.map(ex => {
-                          if (ex.trim().startsWith('[')) return ex; 
-                          return `[${pKey}] ${ex}`; 
-                      });
-                      allRawComments.push(...taggedExamples);
-                  }
-              }
-          });
-      }
-  });
 
-  // 3. 중복 제거
-  const uniqueComments = [...new Set(allRawComments)];
-
-  // 4. 댓글 파싱 ("[소스] 내용" -> { source, text })
-  const parsedComments = uniqueComments.map(ex => {
-    const match = ex.match(/^\[(.*?)\]\s*(.*)/);
-    if (match) {
-      return { source: match[1], text: match[2] };
-    }
-    return null;
-  }).filter(Boolean);
-
-  // 워드클라우드 데이터 생성 (JSON 데이터 활용)
-  const wordCloudData = extractWordCloudData(allRawComments, keyword);
-
-  // 5. 유튜브 관련 영상 검색 (API 연동)
+    // -----------------------------------------------------------
+    // ✅ 4. 유튜브 영상 검색 (API 연동)
+    // -----------------------------------------------------------
     let relatedVideos = [];
+    
     if (API_KEY) {
       try {
-        console.log(`🚀 유튜브 검색: [${keyword}] 기간: ${startDate || '전체'} ~ ${endDate || '전체'}`);
+        console.log(`🚀 유튜브 검색 시작: [${keyword}] (기간: ${startDate || '전체'} ~ ${endDate || '전체'})`);
         
-        // 1. 검색 파라미터 정의 (이 부분이 누락되어 에러가 났었습니다)
+        // (1) 검색 파라미터 설정
         const searchParams = {
             part: 'snippet',
             q: keyword,
@@ -458,79 +501,92 @@ app.get('/api/analysis', async (req, res) => {
             maxResults: 3,
             key: API_KEY,
             regionCode: 'KR',
-            order: 'date' // 최신순
+            order: 'date' // 최신순 정렬
         };
 
-        // 날짜가 있으면 파라미터에 추가
+        // 날짜 필터가 있다면 파라미터에 추가 (toISODate 함수 필요)
         if (startDate) searchParams.publishedAfter = toISODate(startDate);
         if (endDate) searchParams.publishedBefore = toISODate(endDate, true);
 
-        // 2. 검색 API 호출
+        // (2) 검색 API 호출
         const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
-          params: searchParams // 이제 searchParams가 정의되어 있으므로 에러가 안 납니다.
+          params: searchParams
         });
-        // items가 없으면 여기서 안전하게 멈추도록 수정 (에러 방지)
-        if (!searchRes.data.items) {
-            console.error("❌ [치명적 문제] 응답에 'items' 목록이 없습니다!");
-            // 여기서 throw를 던져서 catch 블록으로 보냄
-            throw new Error("YouTube API 응답에 items가 누락되었습니다. (Quota 문제거나 키 설정 문제 가능성)");
-        }
         
+        console.log(`📦 검색된 영상 개수: ${searchRes.data.items.length}개`);
+        
+        // (3) 상세 정보(조회수) 조회를 위한 ID 추출
         const videoIds = searchRes.data.items.map(i => i.id.videoId).join(',');
         
         if (videoIds) {
           const videoRes = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
-            params: { part: 'snippet,statistics', id: videoIds, key: API_KEY.trim() }
+            params: {
+              part: 'snippet,statistics',
+              id: videoIds,
+              key: API_KEY
+            }
           });
-
+          
           relatedVideos = videoRes.data.items.map(item => ({
             id: item.id,
             title: item.snippet.title,
             channel: item.snippet.channelTitle,
-            views: item.statistics.viewCount,
+            views: item.statistics.viewCount, // 조회수
             thumbnail: item.snippet.thumbnails.medium.url,
             publish_time: item.snippet.publishedAt
           }));
         }
       } catch (err) {
-        console.error("\n❌ [유튜브 API 에러 발생] --------------------");
-        if (err.response) {
-            // 서버(구글)가 응답을 줬지만, 에러 코드(4xx, 5xx)인 경우
-            console.error(`1. 응답 상태 코드: ${err.response.status}`);
-            console.error("2. 에러 상세 내용:", JSON.stringify(err.response.data, null, 2));
-        } else if (err.request) {
-            // 요청은 갔지만 응답을 못 받은 경우 (네트워크 문제 등)
-            console.error("3. 응답 없음 (네트워크/방화벽 문제 가능성):", err.request);
-        } else {
-            // 설정 문제 등
-            console.error("4. 요청 설정 에러:", err.message);
-        }
-        console.log("---------------------------------------------");
-        console.log(`📡 [최종 응답 데이터 점검]`);
-        console.log(`   - 키워드: ${currentItem.Keyword}`);
-        console.log(`   - 영상 데이터 개수: ${relatedVideos.length}개`);
-        
-        if (relatedVideos.length > 0) {
-          console.log(`   - 첫 번째 영상 제목: ${relatedVideos[0].title}`);
-          console.log(`   - 첫 번째 영상 조회수: ${relatedVideos[0].views}`);
-        } else {
-          console.log("🚨 [경고] 영상 데이터가 0개입니다! (API 및 Fallback 모두 실패)");
-        }
-        console.error("---------------------------------------------\n");
+        console.error("❌ 유튜브 API 에러:", err.message);
+        // 에러가 나도 로컬 데이터는 보여주기 위해 relatedVideos는 빈 배열로 유지
       }
+    } else {
+        console.log("⚠️ API 키 없음: 유튜브 검색 생략");
     }
 
-  res.json({
-    found: true,
-    keyword: currentItem.Keyword,
-    rank: currentItem.Rank,
-    totalMentions: currentItem.Mentions || currentItem.Total_Mentions || 0,
-    score: currentItem.Score,
-    history: history,
-    comments: parsedComments, // 이제 플랫폼 전용 댓글도 포함됩니다.
-    wordCloud: wordCloudData, // 추가
-    videos: relatedVideos
-  });
+    // Fallback: API 실패 혹은 키 없음 시 로컬 댓글 데이터로 가짜 영상 데이터 생성 (선택 사항)
+    if (relatedVideos.length === 0) {
+        const youtubeComments = parsedComments.filter(c => c.source === 'youtube' || c.source === 'Youtube');
+        relatedVideos = youtubeComments.slice(0, 3).map((c, i) => ({
+            id: `local-${i}`,
+            title: c.text.length > 50 ? c.text.substring(0, 50) + "..." : c.text,
+            channel: 'YouTube 반응 (Local)',
+            views: 0,
+            thumbnail: 'https://via.placeholder.com/320x180/E5E7EB/9CA3AF?text=No+Video',
+            publish_time: new Date().toISOString()
+        }));
+    }
+
+    // -----------------------------------------------------------
+    // ✅ 5. 최종 응답 데이터 구성 및 캐싱
+    // -----------------------------------------------------------
+    const finalResponse = {
+      found: true,
+      keyword: currentItem.Keyword,
+      rank: currentItem.Rank,
+      totalMentions: currentItem.Mentions || currentItem.Total_Mentions || 0,
+      score: currentItem.Score,
+      history: history,
+      comments: parsedComments,
+      wordCloud: wordCloudData,
+      videos: relatedVideos 
+    };
+
+    // [캐싱 저장] 날짜 필터가 없는 '기본 검색'일 때만 저장합니다.
+    if (!startDate && !endDate) {
+        searchCache[keyword] = {
+            data: finalResponse,
+            timestamp: now
+        };
+        console.log(`💾 [Cache] 결과 저장 완료: ${keyword}`);
+    }
+
+    res.json(finalResponse);
+
+  } catch (error) {
+    console.error("서버 내부 에러:", error);
+    res.status(500).json({ error: 'Server Error' });
+  }
 });
   
 

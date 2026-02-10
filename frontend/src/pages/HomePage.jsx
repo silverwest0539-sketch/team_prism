@@ -41,7 +41,7 @@ const handleSearch = (e) => {
     { label: 'X (트위터)', value: 'x' }, // 상세: x_trends -> 메인: x 유지
   ];
 
-  const youtubecategories = ['전체', '게임', '라이프', '음악', '일상', '코미디'];
+  const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '영화/드라마', '브이로그'];
 
   const openModal = (data) => {
     setSelectedKeyword(data);
@@ -52,30 +52,32 @@ const handleSearch = (e) => {
 
   // API 호출
   useEffect(() => {
-    fetch('http://localhost:5000/api/trends/rising')
-      .then(res => res.json())
-      .then(data => setRisingKeywords(data.slice(0, 5))) 
-      .catch(err => console.error(err));
-  }, []);
+      const fetchData = async () => {
+        try {
+          // 1. 급상승 키워드 로드 (기존 유지)
+          const trendRes = await fetch('http://localhost:5000/api/trends/rising');
+          const trendData = await trendRes.json();
+          setRisingKeywords(trendData);
 
-  useEffect(() => {
-    let url = 'http://localhost:5000/api/trends/platform';
-    if (selectedPlatform !== 'all') {
-      url += `?platform=${selectedPlatform}`;
-    }
+          // 2. 급상승 플랫폼 로드 (기존 유지)
+          const platformRes = await fetch(`http://localhost:5000/api/trends/platform?platform=${selectedPlatform}`);
+          const platformData = await platformRes.json();
+          setRisingPlatforms(platformData);
 
-    fetch(url)
-      .then(res => res.json())
-      .then(data => setRisingPlatforms(data))
-      .catch(err => console.error(err));
-  }, [selectedPlatform]);
+          // ✅ 3. 유튜브 인기 동영상 로드 (카테고리 파라미터 추가!)
+          // 기존: fetch('http://localhost:5000/api/videos')
+          // 수정: 쿼리스트링으로 카테고리 전달
+          const videoRes = await fetch(`http://localhost:5000/api/videos?category=${encodeURIComponent(youtubeCategory)}`);
+          const videoData = await videoRes.json();
+          setYoutubeVideos(videoData);
 
-  useEffect(() => {
-    fetch(`http://localhost:5000/api/youtube/list?category=${youtubeCategory}`)
-      .then(res => res.json())
-      .then(data => setYoutubeVideos(data))
-      .catch(err => console.error("유튜브 데이터 로드 실패:", err));
-  }, [youtubeCategory]);
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        }
+      };
+
+      fetchData();
+    }, [selectedPlatform, youtubeCategory]);
 
   return (
     <div 
@@ -228,7 +230,7 @@ const handleSearch = (e) => {
         </h2>
 
         <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
-          {youtubecategories.map((cat) => (
+          {CATEGORY_TABS.map((cat) => (
             <button
               key={cat}
               onClick={() => setYoutubeCategory(cat)}
