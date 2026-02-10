@@ -14,7 +14,7 @@ import {
 import SearchBar from '../components/common/SearchBar';
 
 // 유틸리티
-import { formatDateLabel, formatDateForInput } from '../utils/formatters';
+import { formatDateLabel, formatDateForInput, formatViews } from '../utils/formatters';
 
 const DUMMY_DATA = {
   rank: '-',
@@ -68,6 +68,41 @@ const SENTIMENT_DATA = [
   { name: '부정', value: 10, color: '#EF4444' },
 ];
 
+ // 간단한 워드클라우드 컴포넌트 (외부 라이브러리 없이 구현)
+  const SimpleWordCloud = ({ words }) => {
+    if (!words || words.length === 0) return <div className="flex justify-center items-center h-full text-gray-400 text-sm">데이터 부족</div>;
+
+    // 폰트 크기 계산용 (최소 12px, 최대 24px)
+    const maxVal = Math.max(...words.map(w => w.value));
+    const minVal = Math.min(...words.map(w => w.value));
+    
+    const getFontSize = (val) => {
+      if (maxVal === minVal) return 16;
+      return 12 + ((val - minVal) / (maxVal - minVal)) * 14; 
+    };
+
+    const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6'];
+
+    return (
+      <div className="flex flex-wrap gap-2 justify-center content-center h-full p-4 overflow-hidden">
+        {words.slice(0, 15).map((w, i) => ( // 상위 30개만 표시
+          <span 
+            key={i} 
+            style={{ 
+              fontSize: `${getFontSize(w.value)}px`,
+              color: colors[i % colors.length],
+              opacity: 0.8 + (w.value / maxVal) * 0.2
+            }}
+            className="font-bold cursor-default hover:scale-110 transition-transform duration-200 whitespace-nowrap"
+            title={`${w.value}회 언급`}
+          >
+            {w.text}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
 const AnalysisPage = () => {
   const [searchParams] = useSearchParams();
   const keyword = searchParams.get('keyword');
@@ -82,45 +117,94 @@ const AnalysisPage = () => {
   const [news, setNews] = useState([]);
 
   // 데이터 불러오기
-  useEffect(() => {
-    if (!keyword) {
-      setData(null);
-      setNews([]);
-      setLoading(false);
-      return;
-    }
+  const fetchData = (currentStart, currentEnd) => {
+    if (!keyword) return;
 
     setLoading(true);
 
-    Promise.all([
-      fetch(`http://localhost:5000/api/analysis?keyword=${keyword}`).then(res => res.json()),
-      fetch(`http://localhost:5000/api/news?keyword=${keyword}`).then(res => res.json())
-    ])
-      .then(([analysisResult, newsResult]) => {
-        if (analysisResult.found) {
-          setData(analysisResult);
-          if (analysisResult.history && analysisResult.history.length > 0) {
-            setStartDate(formatDateForInput(analysisResult.history[0].date));
-            setEndDate(formatDateForInput(analysisResult.history[analysisResult.history.length - 1].date));
-          }
-        } else {
-          setData(null);
-        }
+    // 날짜 파라미터 구성
+    let query = `keyword=${keyword}`;
+    if (currentStart) query += `&startDate=${currentStart}`;
+    if (currentEnd) query += `&endDate=${currentEnd}`;
 
-        setNews(newsResult || []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+    Promise.all([
+      fetch(`http://localhost:5000/api/analysis?${query}`).then(res => res.json()),
+      fetch(`http://localhost:5000/api/news?${query}`).then(res => res.json())
+    ]).then(([analysisData, newsData]) => {
+      
+      if (analysisData.found) {
+        setData(analysisData);
+        // ⚠️ 중요: 처음 로딩할 때만(날짜가 비어있을 때만) 히스토리 날짜로 초기화
+        // 이렇게 안 하면 내가 날짜를 바꿀 때마다 다시 히스토리 전체 기간으로 돌아가버림
+        if (!currentStart && analysisData.history?.length > 0) {
+          setStartDate(formatDateForInput(analysisData.history[0].date));
+          setEndDate(formatDateForInput(analysisData.history[analysisData.history.length - 1].date));
+        }
+      } else {
+        setData(null);
+      }
+      
+      setNews(newsData || []);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  };
+
+  // 2. 초기 로드 (키워드 변경 시)
+  useEffect(() => {
+    // 날짜 없이 호출 -> 서버가 전체 기간 데이터 줌 -> 이후 setStartDate로 날짜 세팅됨
+    setStartDate(''); 
+    setEndDate('');
+    fetchData('', ''); 
   }, [keyword]);
+
+  // useEffect(() => {
+  //   if (!keyword) {
+  //     setData(null);
+  //     setNews([]);
+  //     setLoading(false);
+  //     return;
+  //   }
+
+  //   setLoading(true);
+
+  //   Promise.all([
+  //     fetch(`http://localhost:5000/api/analysis?keyword=${keyword}`).then(res => res.json()),
+  //     fetch(`http://localhost:5000/api/news?keyword=${keyword}`).then(res => res.json())
+  //   ])
+  //     .then(([analysisResult, newsResult]) => {
+  //       if (analysisResult.found) {
+  //         setData(analysisResult);
+  //         if (analysisResult.history && analysisResult.history.length > 0) {
+  //           setStartDate(formatDateForInput(analysisResult.history[0].date));
+  //           setEndDate(formatDateForInput(analysisResult.history[analysisResult.history.length - 1].date));
+  //         }
+  //       } else {
+  //         setData(null);
+  //       }
+
+  //       setNews(newsResult || []);
+  //       setLoading(false);
+  //     })
+  //     .catch(err => {
+  //       console.error(err);
+  //       setLoading(false);
+  //     });
+  // }, [keyword]);
 
   // 검색 핸들러
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
       navigate(`/analysis?keyword=${searchTerm}`);
     }
+  };
+
+  // 사용자가 날짜를 변경했을 때 핸들러 (수동 적용)
+  const handleDateApply = () => {
+      console.log("📅 날짜 필터 적용:", startDate, "~", endDate);
+      fetchData(startDate, endDate);
   };
 
   // 데이터 필터링
@@ -136,7 +220,7 @@ const AnalysisPage = () => {
 
     const historyFiltered = data.history.filter(h => {
       const d = formatDateForInput(h.date);
-      return d >= startDate && d <= endDate;
+      return (!startDate || d >= startDate) && (!endDate || d <= endDate);
     });
 
     let allComments = sourceData.comments || [];
@@ -151,9 +235,26 @@ const AnalysisPage = () => {
       ...data,
       history: historyFiltered,
       youtubeComments: youtubeComments.slice(0, 4),
-      otherComments: otherComments.slice(0, 6)
+      otherComments: otherComments.slice(0, 6),
+      wordCloud: data.wordCloud || [],
+      videos: data.videos || []
     };
   }, [data, startDate, endDate, selectedPlatform]);
+
+ 
+
+  // 1. 왼쪽: 관련 유튜브 반응 (영상 들어갈 자리)
+  // 현재는 비워둡니다 (빈 배열). 나중에 영상 데이터가 준비되면 이곳에 연결합니다.
+  const youtubeReactions = useMemo(() => {
+    return []; 
+  }, []);
+
+  // 2. 오른쪽: 실제 사용 사례 (모든 텍스트 댓글)
+  // 기존에는 유튜브를 제외했지만, 이제는 '모든' 댓글을 이곳에 보여줍니다.
+  const usageExamples = useMemo(() => {
+    if (!filteredData?.comments) return [];
+    return filteredData.comments; 
+  }, [filteredData]);
 
   return (
     <div className="page space-y-6">
@@ -223,6 +324,7 @@ const AnalysisPage = () => {
                 <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="date-input" />
                 ~
                 <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="date-input" />
+                <button onClick={handleDateApply} className="bg-white hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 text-xs px-2 py-1 rounded shadow-sm transition-all" >조회</button>
               </div>
               <div className="text-xs text-gray-400">직접 기간 설정 가능</div>
             </div>
@@ -272,9 +374,7 @@ const AnalysisPage = () => {
               <BookmarkSimple className="text-yellow-500" /> 워드 클라우드
             </h3>
             <div className="flex-1 flex flex-wrap content-center justify-center gap-2 overflow-hidden">
-              {WORD_CLOUD_DATA.map((w, i) => (
-                <span key={i} className={`${w.size} ${w.color} font-bold opacity-80`}>{w.text}</span>
-              ))}
+              <SimpleWordCloud words={filteredData.wordCloud}/>
             </div>
           </div>
 
@@ -339,35 +439,50 @@ const AnalysisPage = () => {
               )}
             </div>
 
-            <h3 className="section-title mb-4 pb-2 border-b mt-6">
-              <PlayCircle size={20} className="text-red-500" /> 관련 유튜브 반응
-            </h3>
-            <div className="space-y-3">
-              {filteredData?.youtubeComments?.length > 0 ? (
-                filteredData.youtubeComments.map((comment, i) => (
-                  <div key={i} className="flex items-start gap-3 row-hover">
-                    <div className="thumb">Thumbnail</div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
-                        "{comment.text}"
-                      </p>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
-                        <span>Youtube</span> • <span>조회수 {Math.floor(Math.random() * 100)}만회</span>
-                      </div>
+            <div>
+                <h3 className="section-title mb-4 border-b pb-2 flex items-center gap-2">
+                  <PlayCircle size={20} className="text-red-500" /> 관련 유튜브 반응
+                </h3>
+                <div className="space-y-4">
+                  {/* 비디오가 있으면 보여줌 (API 실패시 서버가 로컬 데이터로 대체해서 보냄) */}
+                  {filteredData.videos && filteredData.videos.length > 0 ? (
+                    filteredData.videos.map((video) => (
+                      <a 
+                        key={video.id}
+                        href={video.views === 0 ? '#' : `https://www.youtube.com/watch?v=${video.id}`} // 로컬 데이터면 링크 비활성 또는 검색으로 유도 가능
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex gap-4 group cursor-pointer"
+                      >
+                        <div className="w-32 h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative">
+                          <img src={video.thumbnail} alt="" className="w-full h-full object-cover" />
+                          {video.views > 0 && <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 rounded">Video</div>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition leading-snug">
+                            {video.title}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
+                            <span className="truncate max-w-[100px]">{video.channel}</span>
+                            {video.views > 0 && <span>• 조회수 {formatViews(video.views)}</span>}
+                          </div>
+                        </div>
+                      </a>
+                    ))
+                  ) : (
+                    <div className="text-gray-400 text-sm py-4 text-center bg-gray-50 rounded-lg">
+                      관련 유튜브 영상을 찾을 수 없습니다.
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">관련 유튜브 영상이 없습니다.</div>
-              )}
-            </div>
+                  )}
+                </div>
+              </div>
           </div>
 
           <div className="card">
             <h3 className="section-title mb-4 pb-2 border-b">실제 사용 사례 (커뮤니티)</h3>
             <div className="space-y-4">
-              {filteredData?.otherComments?.length > 0 ? (
-                filteredData.otherComments.map((comment, i) => (
+              {usageExamples?.length > 0 ? (
+                usageExamples.slice(0, 14).map((comment, i) => (
                   <div key={i} className="group">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm font-bold text-gray-700">

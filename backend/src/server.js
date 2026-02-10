@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const axios = require('axios')
+const path = require('path')
 const { loadTrendData, getLatestData, getYoutubeData, getHistoryData, getLatestPlatformData, findKeywordOverAll } = require('./dataLoader');
+const dotenvResult = require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const Parser = require('rss-parser');
 const parser = new Parser({
   customFields: {
@@ -14,6 +17,48 @@ const PORT = 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// 날짜 변환 유틸리티 (YYYY-MM-DD -> ISO 8601)
+// 유튜브 API는 "2024-01-01T00:00:00Z" 형식이 필요합니다.
+const toISODate = (dateStr, isEnd = false) => {
+  if (!dateStr) return undefined;
+  // 종료일이면 그 날의 마지막 시간(23:59:59)으로 설정
+  const time = isEnd ? '23:59:59' : '00:00:00';
+  return new Date(`${dateStr}T${time}Z`).toISOString();
+};
+
+// 워드클라우드용
+const extractWordCloudData = (comments, keyword) => {
+  if (!comments || comments.length === 0) return [];
+
+  // 1. 모든 텍스트 합치기 및 기본 정제
+  const text = comments.join(' ');
+  
+  // 2. 불필요한 태그, URL, 특수문자 제거
+  const cleanText = text
+    .replace(/\[.*?\]/g, '') // [youtube] 등 태그 제거
+    .replace(/http\S+/g, '') // URL 제거
+    .replace(/[^\w가-힣\s]/g, '') // 한글, 영문, 숫자, 공백 외 제거
+    .replace(/\s+/g, ' '); // 연속된 공백 하나로
+
+  // 3. 단어 단위로 쪼개기
+  const words = cleanText.split(' ');
+
+  // 4. 빈도수 계산
+  const frequency = {};
+  words.forEach(word => {
+    // 키워드 자체는 제외, 2글자 이상만 포함
+    if (word.length > 1 && word !== keyword) {
+      frequency[word] = (frequency[word] || 0) + 1;
+    }
+  });
+
+  // 5. 배열로 변환 및 정렬 (상위 50개)
+  return Object.entries(frequency)
+    .map(([text, value]) => ({ text, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 50);
+};
 
 // 1. [HomePage] 급상승 키워드 API (Top 5)
 app.get('/api/trends/rising', (req, res) => {
@@ -116,14 +161,14 @@ app.get('/api/trends/platform', (req, res) => {
   // })));
 
   const response = reqPlatform
-    .sort((a, b) => (b.Total_Mentions || 0) - (a.Total_Mentions || 0)) // 언급량 내림차순
+    .sort((a, b) => a.Rank - b.Rank) // 언급량 내림차순
     .slice(0, 5)
     .map((item, idx) => {
         const rawEx = item.Examples && item.Examples.length > 0 ? item.Examples[0] : "";
         const cleanEx = rawEx.replace(/^\[.*?\]\s*/, '');
         
         return {
-          rank: idx + 1,
+          rank: item.Rank,
           keyword: item.Keyword,
           count: item.Total_Mentions || 0, // ✅ 해당 플랫폼 내 언급량 사용
           platform: platform,
@@ -303,30 +348,42 @@ app.get('/api/youtube/list', (req, res) => {
 // [AnalysisPage] 특정 키워드 상세 분석 API
 // 사용법: /api/analysis?keyword=쿠팡
 // [AnalysisPage] 상세 분석 API (댓글 통합 로직 추가)
-app.get('/api/analysis', (req, res) => {
-  const { keyword } = req.query; // type: 'trend' 또는 'platform'
-  
-  if (!keyword) {
-    return res.status(400).json({ error: '키워드가 필요합니다.' });
+app.get('/api/analysis', async (req, res) => {
+  const { keyword, startDate, endDate } = req.query;
+  const API_KEY = process.env.YOUTUBE_API_KEY;
+
+  if (!keyword) return res.status(400).json({ error: 'Keyword required' });
+
+  // 1. 전체 데이터 범위에서 키워드 찾기 (통합 + 플랫폼 전체)
+  const currentItem = findKeywordOverAll(keyword);
+
+  if (!currentItem) {
+    return res.json({ found: false, message: "데이터 없음" });
   }
 
+  // 2. 히스토리 데이터 준비
   const historyMap = getHistoryData();
   const dates = Object.keys(historyMap).sort();
 
-  // A. 히스토리 데이터 생성 (그래프용)
+  // (A) 그래프용 히스토리 데이터 생성
   const history = dates.map(date => {
-    // 날짜별 통합 데이터 확인
-    const dayIntegrated = historyMap[date].integrated || [];
+    const dayData = historyMap[date];
+    let foundVal = 0;
+    
+    // 1순위: 통합 데이터에서 찾기
+    const dayIntegrated = dayData.integrated || [];
     let found = dayIntegrated.find(item => item.Keyword === keyword);
     
-    // 통합에 없으면 플랫폼 데이터에서도 찾아봄 (선택 사항: 그래프를 더 풍성하게 하려면)
-    if (!found && historyMap[date].platform) {
-        const platforms = historyMap[date].platform;
+    // 2순위: 통합에 없으면 플랫폼 데이터에서 찾기 (그래프가 끊기지 않게)
+    if (!found && dayData.platform) {
+        const platforms = dayData.platform;
         for (const pKey of Object.keys(platforms)) {
-            const pItem = platforms[pKey].find(pi => pi.Keyword === keyword);
+            const pList = Array.isArray(platforms[pKey]) ? platforms[pKey] : [];
+            const pItem = pList.find(pi => (pi.Keyword || pi.keyword) === keyword);
             if (pItem) {
-                found = { Mentions: pItem.Total_Mentions || 0 };
-                break;
+                // 플랫폼 데이터에는 Total_Mentions 혹은 Count로 저장되어 있음
+                found = { Mentions: pItem.Total_Mentions || pItem.Count || 0 };
+                break; 
             }
         }
     }
@@ -337,56 +394,161 @@ app.get('/api/analysis', (req, res) => {
     };
   });
 
-  // B. 최신 상세 정보 가져오기
-  const latestData = getLatestData();
-  let currentItem = latestData.find(item => item.Keyword === keyword);
-  let comments = [];
+  // (B) 댓글(Examples) 수집 - 여기가 핵심 수정 부분입니다
+  let allRawComments = [];
+  
+  dates.forEach(date => {
+      const dayData = historyMap[date];
 
-  if (!currentItem) {
-    return res.json({ found: false, message: "데이터 없음" });
-  }
-
-// C. 댓글(Examples) 파싱: "[플랫폼] 텍스트" -> { source, text }
-  if (currentItem.Examples && Array.isArray(currentItem.Examples)) {
-      comments = [...comments, ...currentItem.Examples];
-  }
-
-  let parsedComments = [];
-  if (currentItem.Examples && Array.isArray(currentItem.Examples)) {
-    parsedComments = currentItem.Examples.map(ex => {
-      // 정규식: 대괄호 안의 내용과 그 뒤의 내용 분리
-      const match = ex.match(/^\[(.*?)\]\s*(.*)/);
-      if (match) {
-        return { 
-          source: match[1], // 예: youtube, dc_lol
-          text: match[2]    // 댓글 내용
-        };
+      // 1. 통합 데이터(Integrated_Trends)의 댓글 수집
+      if (dayData.integrated) {
+          const integratedItem = dayData.integrated.find(item => item.Keyword === keyword);
+          if (integratedItem && integratedItem.Examples) {
+              allRawComments.push(...integratedItem.Examples);
+          }
       }
-      return null;
-    }).filter(item => item !== null); // 매칭 안된 것 제거
-  }
+
+      // 2. 플랫폼 데이터(Platform_Trends)의 댓글 수집 (기존에 빠져있던 부분)
+      if (dayData.platform) {
+          // platform 객체 안의 모든 키(youtube, theqoo, fmkorea 등)를 순회
+          Object.keys(dayData.platform).forEach(pKey => {
+              const pList = dayData.platform[pKey];
+              if (Array.isArray(pList)) {
+                  const pItem = pList.find(item => (item.Keyword || item.keyword) === keyword);
+                  
+                  if (pItem && pItem.Examples) {
+                      // [theqoo] 같은 태그가 없으면 붙여줌 (프론트엔드 분류를 위해)
+                      const taggedExamples = pItem.Examples.map(ex => {
+                          if (ex.trim().startsWith('[')) return ex; 
+                          return `[${pKey}] ${ex}`; 
+                      });
+                      allRawComments.push(...taggedExamples);
+                  }
+              }
+          });
+      }
+  });
+
+  // 3. 중복 제거
+  const uniqueComments = [...new Set(allRawComments)];
+
+  // 4. 댓글 파싱 ("[소스] 내용" -> { source, text })
+  const parsedComments = uniqueComments.map(ex => {
+    const match = ex.match(/^\[(.*?)\]\s*(.*)/);
+    if (match) {
+      return { source: match[1], text: match[2] };
+    }
+    return null;
+  }).filter(Boolean);
+
+  // 워드클라우드 데이터 생성 (JSON 데이터 활용)
+  const wordCloudData = extractWordCloudData(allRawComments, keyword);
+
+  // 5. 유튜브 관련 영상 검색 (API 연동)
+    let relatedVideos = [];
+    if (API_KEY) {
+      try {
+        console.log(`🚀 유튜브 검색: [${keyword}] 기간: ${startDate || '전체'} ~ ${endDate || '전체'}`);
+        
+        // 1. 검색 파라미터 정의 (이 부분이 누락되어 에러가 났었습니다)
+        const searchParams = {
+            part: 'snippet',
+            q: keyword,
+            type: 'video',
+            maxResults: 3,
+            key: API_KEY,
+            regionCode: 'KR',
+            order: 'date' // 최신순
+        };
+
+        // 날짜가 있으면 파라미터에 추가
+        if (startDate) searchParams.publishedAfter = toISODate(startDate);
+        if (endDate) searchParams.publishedBefore = toISODate(endDate, true);
+
+        // 2. 검색 API 호출
+        const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+          params: searchParams // 이제 searchParams가 정의되어 있으므로 에러가 안 납니다.
+        });
+        // items가 없으면 여기서 안전하게 멈추도록 수정 (에러 방지)
+        if (!searchRes.data.items) {
+            console.error("❌ [치명적 문제] 응답에 'items' 목록이 없습니다!");
+            // 여기서 throw를 던져서 catch 블록으로 보냄
+            throw new Error("YouTube API 응답에 items가 누락되었습니다. (Quota 문제거나 키 설정 문제 가능성)");
+        }
+        
+        const videoIds = searchRes.data.items.map(i => i.id.videoId).join(',');
+        
+        if (videoIds) {
+          const videoRes = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+            params: { part: 'snippet,statistics', id: videoIds, key: API_KEY.trim() }
+          });
+
+          relatedVideos = videoRes.data.items.map(item => ({
+            id: item.id,
+            title: item.snippet.title,
+            channel: item.snippet.channelTitle,
+            views: item.statistics.viewCount,
+            thumbnail: item.snippet.thumbnails.medium.url,
+            publish_time: item.snippet.publishedAt
+          }));
+        }
+      } catch (err) {
+        console.error("\n❌ [유튜브 API 에러 발생] --------------------");
+        if (err.response) {
+            // 서버(구글)가 응답을 줬지만, 에러 코드(4xx, 5xx)인 경우
+            console.error(`1. 응답 상태 코드: ${err.response.status}`);
+            console.error("2. 에러 상세 내용:", JSON.stringify(err.response.data, null, 2));
+        } else if (err.request) {
+            // 요청은 갔지만 응답을 못 받은 경우 (네트워크 문제 등)
+            console.error("3. 응답 없음 (네트워크/방화벽 문제 가능성):", err.request);
+        } else {
+            // 설정 문제 등
+            console.error("4. 요청 설정 에러:", err.message);
+        }
+        console.log("---------------------------------------------");
+        console.log(`📡 [최종 응답 데이터 점검]`);
+        console.log(`   - 키워드: ${currentItem.Keyword}`);
+        console.log(`   - 영상 데이터 개수: ${relatedVideos.length}개`);
+        
+        if (relatedVideos.length > 0) {
+          console.log(`   - 첫 번째 영상 제목: ${relatedVideos[0].title}`);
+          console.log(`   - 첫 번째 영상 조회수: ${relatedVideos[0].views}`);
+        } else {
+          console.log("🚨 [경고] 영상 데이터가 0개입니다! (API 및 Fallback 모두 실패)");
+        }
+        console.error("---------------------------------------------\n");
+      }
+    }
 
   res.json({
     found: true,
     keyword: currentItem.Keyword,
     rank: currentItem.Rank,
-    totalMentions: currentItem.Mentions,
+    totalMentions: currentItem.Mentions || currentItem.Total_Mentions || 0,
     score: currentItem.Score,
-    history: history, // ✅ 히스토리 데이터 주입
-    comments: parsedComments // ✅ 파싱된 댓글 데이터 주입
-  }); 
+    history: history,
+    comments: parsedComments, // 이제 플랫폼 전용 댓글도 포함됩니다.
+    wordCloud: wordCloudData, // 추가
+    videos: relatedVideos
+  });
 });
   
 
 // 6. [AnalysisPage] 뉴스 RSS API (구글 뉴스 검색 활용)
 app.get('/api/news', async (req, res) => {
-  const { keyword } = req.query;
+  const { keyword, startDate, endDate } = req.query;
   if (!keyword) return res.json([]);
 
   try {
+    let query = `${keyword}`;
+    if (startDate) query += ` after:${startDate}`;
+    if (endDate) query += ` before:${endDate}`;
+
+    console.log(`📰 뉴스 검색 쿼리: ${query}`);
+
     // 구글 뉴스 RSS (네이버는 API 키 필요, 구글은 무료/공개)
     // 한글 검색을 위해 URL 인코딩 필수
-    const feedUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(keyword)}&hl=ko&gl=KR&ceid=KR:ko`;
+    const feedUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
     
     const feed = await parser.parseURL(feedUrl);
     
