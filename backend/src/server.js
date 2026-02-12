@@ -788,7 +788,7 @@ app.get('/api/summary', async (req, res) => {
     // -------------------------------------------------------
     console.log(`🤖 AI 요약 요청 [${keyword}] (Creator Advice Mode)`);
     
-    const llmResponse = await axios.post(`http://localhost:1234/v1/chat/completions`, {
+    const llmResponse = await axios.post(`http://192.168.219.107:1234/v1/chat/completions`, {
       model: "local-model",
       messages: [
         { role: "system", content: systemPrompt },
