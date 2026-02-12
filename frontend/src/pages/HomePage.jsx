@@ -1,5 +1,6 @@
 // src/pages/HomePage.jsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'
 import { PlayCircle } from 'lucide-react';
 import SearchBar from '../components/common/SearchBar';
 import HeaderActions from '../components/common/HeaderActions';
@@ -7,6 +8,7 @@ import SummaryModal from '../components/home/SummaryModal';
 import { formatViews, formatDate } from '../utils/formatters';
 
 const HomePage = () => {
+  const navigate = useNavigate();
   
   // 상태 관리
   const [risingKeywords, setRisingKeywords] = useState([]); 
@@ -24,9 +26,9 @@ const HomePage = () => {
 const [searchTerm, setSearchTerm] = useState('');
 
 const handleSearch = (e) => {
-  if (e.key === 'Enter') {
+  if (e.key === 'Enter' && searchTerm.trim()) {
     // 여기에 검색 실행 로직을 작성하세요 (예: 페이지 이동, API 호출 등)
-    console.log('검색 실행:', searchTerm);
+    navigate(`/analysis?keyword=${searchTerm.trim()}`)
   }
 };
 

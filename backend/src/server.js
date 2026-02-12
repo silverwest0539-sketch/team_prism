@@ -640,14 +640,14 @@ app.get('/api/news', async (req, res) => {
   }
 });
 
-// ✅ 7. [AI] LM Studio 연동 요약 API (노이즈 필터링 강화 모드)
+// ✅ 7. [AI] LM Studio 연동 요약 API (크리에이터 조언 & 붉은 강조 모드)
 app.get('/api/summary', async (req, res) => {
-  const { keyword } = req.query;
+  const { keyword, startDate, endDate } = req.query;
   if (!keyword) return res.status(400).json({ error: 'Keyword required' });
 
   try {
     // -------------------------------------------------------
-    // 1️⃣ 데이터 수집 (기존 동일)
+    // 1️⃣ 데이터 수집 (기존과 동일)
     // -------------------------------------------------------
     const currentItem = findKeywordOverAll(keyword);
     if (!currentItem) return res.json({ summary: "데이터가 부족하여 분석할 수 없습니다." });
@@ -687,7 +687,7 @@ app.get('/api/summary', async (req, res) => {
     });
 
     // -------------------------------------------------------
-    // 2️⃣ 데이터 셔플
+    // 2️⃣ 데이터 셔플 & 정제
     // -------------------------------------------------------
     const shuffleArray = (array) => {
         for (let i = array.length - 1; i > 0; i--) {
@@ -697,75 +697,135 @@ app.get('/api/summary', async (req, res) => {
         return array;
     };
 
-    const uniqueComments = [...new Set(collectedComments)];
-    const refinedComments = shuffleArray(uniqueComments)
+    const refinedComments = shuffleArray([...new Set(collectedComments)])
         .map(c => c.replace(/\n/g, ' ').trim()) 
         .filter(c => c.length > 10) 
-        .slice(0, 20) // 노이즈를 거르기 위해 데이터를 좀 더 넉넉히 줌 (15개)
-        .map(c => c.length > 100 ? c.substring(0, 100) : c);
+        .slice(0, 10) 
+        .map(c => c.length > 80 ? c.substring(0, 80) : c);
 
     const commentsForPrompt = refinedComments.length > 0 
         ? refinedComments.map(c => `- "${c}"`).join('\n')
         : "관련 댓글 데이터가 없습니다.";
 
     // -------------------------------------------------------
-    // 3️⃣ Prompt Engineering (노이즈 필터링 핵심!)
+    // 뉴스 데이터 수집 (구글 뉴스 RSS)
+    // -------------------------------------------------------
+    let newsContext = "관련된 최신 뉴스가 없습니다.";
+    try{
+      let newsQuery = `${keyword}`;
+      if (startDate) newsQuery += ` after:${startDate}`;
+      if (endDate) newsQuery += ` before:${endDate}`;
+
+      console.log(`뉴스 검색 시작 : ${newsQuery}`);
+
+      const feedUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(newsQuery)}&hl=ko&gl=KR&ceid=KR:ko`;
+      const feed = await parser.parseURL(feedUrl);
+
+      // 뉴스 기사 3개만 추출해서 프롬프트에 넣음
+      if (feed.items && feed.items.length > 0) {
+
+        // 2. 필터링된 기사 중 상위 3개만 사용
+        newsContext = feed.items.slice(0, 5).map(item => {
+          const title = item.title || "";
+          // 본문(Snippet)이 있으면 가져오고, 너무 길면 200자로 자름
+          let snippet = item.contentSnippet || item.content || "";
+          snippet = snippet.length > 200 ? snippet.substring(0, 200) + "..." : snippet;
+          
+          return `- [기사 제목] ${title}\n  [기사 내용] ${snippet}`;
+        }).join('\n\n');
+      }
+    } catch (newsErr) {
+        console.log("뉴스 수집 실패:", newsErr.message);
+    }
+
+    // -------------------------------------------------------
+    // 3️⃣ Prompt Engineering (크리에이터/마케터 포커스)
     // -------------------------------------------------------
     
     const systemPrompt = `
-    당신은 군더더기 없이 핵심만 보고하는 '트렌드 브리핑 봇'입니다.
-    서론과 결론을 빼고, **딱 3문장**으로 요약하세요.
-    말투는 "~함", "~임" 체를 사용하여 간결함을 유지하세요.
+    당신은 콘텐츠 크리에이터를 위한 '트렌드 분석 전문가'입니다.
+    오직 제공된 [뉴스 팩트]와 [대중 반응]을 종합하여 키워드를 콘텐츠로 다룰 때 필요한 정보를 브리핑하세요.
+    말투는 "~함", "~임" 체를 사용하여 보고서처럼 명확하게 작성하세요.
     `;
     
     const userPrompt = `
-    [키워드]: ${keyword}
-    [확산처]: ${topPlatform}
-    [댓글]:
+    [분석 키워드]: ${keyword}
+    [최신 뉴스 팩트]: ${newsContext}
+    [주요 확산처]: ${topPlatform}
+    [대중 반응]:
     ${commentsForPrompt}
 
-    위 내용을 종합하여 **총 200자 이내, 3문장**으로 요약해.
+    위 내용을 바탕으로 **총 450자 이내**로 명확하게 요약해.
 
-    [문장 구성 규칙]
-    1. **첫 문장 (정체)**: 키워드의 정체와 화제 원인 요약. (외모/패션 언급 금지)
-    2. **두 번째 문장 (반응)**: 대중의 반응 요약 및 짧은 인용 1개 포함.
-    3. **세 번째 문장 (주의점)**: 
-       - 대상이 **상품**이면 가격, 맛, 재고 이슈 언급.
-       - 대상이 **인물/뉴스**면 논란, 사실 확인 필요성 언급.
-       - (경고: 인물에게 맛/가격 이야기를 붙이지 말 것.)
+    [필수 문장 구성]
+    1. **정의 및 배경**:  
+       - **[줄임말 해독]**: 키워드가 줄임말이라면 뉴스 데이터를 분석해 **원래 단어**를 찾아 설명할 것.
+       - **(주의)** 뉴스 팩트에 '저렴하다'는 명확한 언급이 없다면, 절대 '가격이 저렴하다'고 추측해서 쓰지 말 것. (오히려 최근 유행 간식은 비싼 경우가 많음)
+
+    2. **여론 및 반응**: 
+       - 대중들의 감정(긍정/부정)과 주요 의견을 핵심만 요약함.
+       - **(해석 가이드)**: 
+         - "국밥 가격이다", "사악하다", "텅장된다" 등의 표현은 **'가격이 매우 비싸다'는 부정적/비판적 반응**으로 해석할 것. (절대 칭찬이나 가성비 좋다는 뜻이 아님)
+
+    3. **크리에이터 팁 & 주의점**: 
+       - 제작에 도움되는 꿀팁을 평범한 텍스트로 작성함.
+       - **(조건부 경고)**: 명확한 리스크(논란, 가짜뉴스 등)가 생길 수 있을 때만 해당 문장을 **<<< 와 >>>** 로 감싸서 출력함.
+
+    [스타일 제약]
+    1. **문장 끝을 절대 '다.'로 끝내지 말 것.** (~함, ~임 체 사용)
+    2. 없는 사실을 지어내지 말 것.
+    3. **(중요) 아래 [출력 예시]의 내용을 그대로 베끼지 말고, 반드시 분석 키워드인 '${keyword}'에 맞는 내용을 작성할 것.**
+    4. **같은 내용을 두 번 반복해서 출력하지 말 것.**
 
     [출력 예시]
-    최근 유튜브에서 유행 중인 '두쫀쿠'는 쫀득한 식감으로 입소문을 타고 있음. 대다수 유저가 "식감이 예술이다"라며 호평하지만, 편의점 재고가 부족해 구하기 어렵다는 불만도 있음. 유행 주기가 짧을 수 있으니 신속한 마케팅이 필요함.
+    정의 및 배경: '두쫀쿠'는 '두바이 쫀득 쿠키'의 줄임말로, 최근 편의점 신상으로 출시되어 품절 대란을 일으킴. 
+    여론 및 반응: 맛에 대해서는 호평하지만, 일부는 "쿠키 하나가 국밥 값이다"라며 높은 가격에 대해 불만을 표함.
+    크리에이터 팁 & 주의점: 편의점 앱 재고 조회 꿀팁을 함께 다루면 좋음.
     `;
 
     // -------------------------------------------------------
     // 4️⃣ LM Studio 전송
     // -------------------------------------------------------
-    console.log(`🤖 AI 요약 요청 [${keyword}] (Noise Filter Mode)`);
+    console.log(`🤖 AI 요약 요청 [${keyword}] (Creator Advice Mode)`);
     
-    const myPcIp = "192.168.219.107";
-
-    const llmResponse = await axios.post(`http://${myPcIp}:1234/v1/chat/completions`, {
+    const llmResponse = await axios.post(`http://localhost:1234/v1/chat/completions`, {
       model: "local-model",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      temperature: 0.1, // 창의성 최소화 -> 지시사항(필터링)을 칼같이 지킴
-      max_tokens: 500
+      temperature: 0.1, 
+      max_tokens: 1000
     });
 
     let rawContent = llmResponse.data.choices[0].message.content;
 
     // -------------------------------------------------------
-    // 5️⃣ 후처리
+    // 5️⃣ 후처리 (특수 기호를 HTML 스타일 태그로 변환)
     // -------------------------------------------------------
     let finalSummary = rawContent.trim();
-    finalSummary = finalSummary.replace(/^\d+\.\s*/gm, ''); // 혹시 모를 번호 제거
-    finalSummary = finalSummary.replace(/\[.*?\]/g, '');
+    // finalSummary = finalSummary.replace(/^\d+\.\s*/gm, '');
+
+    // [강제] 볼드체(**) 제거 
+    finalSummary = finalSummary.replace(/\*\*/g, '');
+
+    // [강제] 불필요한 헤더 제거 (혹시 AI가 또 출력했을 경우를 대비)
+    finalSummary = finalSummary.replace(/\[작성 양식\]/g, '').replace(/\[출력 예시\]/g, '');
+
+    // 🔥 [핵심] <<<문장>>> 을 찾아서 빨간색 볼드체 HTML로 변환
+    // Tailwind CSS 클래스 (text-red-600 font-bold) 또는 인라인 스타일 사용
+    finalSummary = finalSummary.replace(
+        /<<<(.*?)>>>/g, 
+        '<span style="color: #e11d48; font-weight: 800; background-color: #ffe4e6; padding: 2px 5px; border-radius: 4px;">⚠️ $1</span>'
+    );
+
+    finalSummary = finalSummary.replace(
+        /(★?주의할\s*점|★?주의사항|⚠️\s*주의|★?주의):\s*(.*)/g,
+        '<br><span style="color: #e11d48; font-weight: 800; background-color: #ffe4e6; padding: 2px 5px; border-radius: 4px;">⚠️ $2</span>'
+    );
 
     // 플랫폼 정보 추가
-    finalSummary += `\n\n(🔥 주요 확산 플랫폼: ${topPlatform})`;
+    finalSummary += `\n\n(🔥 Hot: ${topPlatform})`;
 
     console.log("✅ AI 요약 완료!");
     res.json({ summary: finalSummary });

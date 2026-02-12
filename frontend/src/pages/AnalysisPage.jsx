@@ -209,14 +209,18 @@ const AnalysisPage = () => {
     setEndDate('');
     setCurrentPage(1);
     fetchData('', '');
-    fetchAiSummary(keyword);
+    fetchAiSummary(keyword, '', '');
   }, [keyword]);
 
-    const fetchAiSummary = async (targetKeyword) => {
+  const fetchAiSummary = async (targetKeyword, start, end) => {
     setIsAiLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/summary?keyword=${targetKeyword}`);
+      let query = `keyword=${targetKeyword}`;
+      if (start) query += `&startDate=${start}`;
+      if (end) query += `&endDate=${end}`;
+
+      const res = await fetch(`http://localhost:5000/api/summary?${query}`);
       const data = await res.json();
       setAiSummary(data.summary);
     } catch (err) {
@@ -236,6 +240,7 @@ const AnalysisPage = () => {
   const handleDateApply = () => {
     fetchData(startDate, endDate);
     setCurrentPage(1);
+    fetchAiSummary(keyword, startDate, endDate)
   };
 
   // 데이터 필터링
@@ -312,6 +317,24 @@ const AnalysisPage = () => {
       commentsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
+
+  // 댓글 텍스트 포맷팅 (문장 단위 분리)
+  const formatComment = (text) => {
+    if (!text) return null;
+    // 문장 끝(. ? !) 뒤에 공백이 있을 때 분리
+    // @(멘션) 앞에서 분리 (유튜브 댓글 특성 고려)
+    const sentences = text.split(/(?<=[.?!])\s+|(?=@)/);
+
+    return sentences.map((sentence, idx) => {
+      const trimmed = sentence.trim();
+      if (!trimmed) return null;
+      return (
+        <p key={idx} className='mb-2 last:mb-o'>
+          {trimmed}
+        </p>
+      )
+    })
+  }
 
 
   return (
@@ -491,7 +514,7 @@ const AnalysisPage = () => {
           <div className="card">
             <h3 className="section-title mb-4 pb-2 border-b flex justify-between">
               <span>AI 트렌드 요약</span>
-              <span className="text-xs font-normal text-gray-400 mt-1">Updated 10m ago</span>
+              {/* <span className="text-xs font-normal text-gray-400 mt-1">Updated 10m ago</span> */}
             </h3>
             <div className="p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-500 text-sm text-gray-700 leading-relaxed mb-6">
               {/* 조건 1: 로딩 중이면 -> 로딩 애니메이션만 보여줌 
@@ -519,9 +542,7 @@ const AnalysisPage = () => {
                           // 빈 줄은 무시
                           if (!line.trim()) return null;
                           return (
-                              <p key={i} className="mb-2 pl-2 border-l-2 border-indigo-200">
-                                  {line}
-                              </p>
+                              <p key={i} className="mb-2 pl-2 border-l-2 border-indigo-200" dangerouslySetInnerHTML={{ __html: line }}></p>
                           );
                       })}
                   </div>
@@ -631,7 +652,7 @@ const AnalysisPage = () => {
                       </div>
 
                       <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent group-hover:border-indigo-100 group-hover:bg-indigo-50/30 transition-all">
-                        "{comment.text}"
+                        {formatComment(comment.text)}
                       </div>
                     </div>
                   );
