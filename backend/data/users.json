@@ -1,0 +1,11 @@
+{
+  "users": [
+    {
+      "id": "8c3f9a74-5d48-4cc5-a4cf-8f322f6e91de",
+      "nickname": "나는야테스터라네",
+      "email": "yui2345@tutanota.de",
+      "passwordHash": "f6b0fe62f7e0d84c88c752f6e116ca8d65f09d04f5298cbf4ce49f859b0f4f9b",
+      "createdAt": "2026-02-19T09:00:00.000Z"
+    }
+  ]
+}
