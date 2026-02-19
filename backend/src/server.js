@@ -34,7 +34,8 @@ const extractWordCloudData = (comments, keyword) => {
   if (!comments || comments.length === 0) return [];
 
   // 1. 모든 텍스트 합치기 및 기본 정제
-  const text = comments.join(' ');
+  const textList = comments.map(c => (typeof c === 'object' && c.text) ? c.text : c);
+  const text = textList.join(' ');
   
   // 2. 불필요한 태그, URL, 특수문자 제거
   const cleanText = text
@@ -94,8 +95,9 @@ app.get('/api/trends/rising', (req, res) => {
 
     // 예시 텍스트 추출 (Examples 배열의 첫 번째 값)
     const rawExample = item.Examples && item.Examples.length > 0 ? item.Examples[0] : "";
-    // [platform] 태그 제거 정규식
-    const cleanExample = rawExample.replace(/^\[.*?\]\s*/, '');
+    const cleanExample = typeof rawExample === 'object' 
+        ? rawExample.text 
+        : (rawExample || "").replace(/^\[.*?\]\s*/, '');
 
     return {
       rank: item.Rank, // 원본 랭크 사용
@@ -167,7 +169,9 @@ app.get('/api/trends/platform', (req, res) => {
     .slice(0, 5)
     .map((item, idx) => {
         const rawEx = item.Examples && item.Examples.length > 0 ? item.Examples[0] : "";
-        const cleanEx = rawEx.replace(/^\[.*?\]\s*/, '');
+        const cleanEx = typeof rawEx === 'object' 
+            ? rawEx.text 
+            : (rawEx || "").replace(/^\[.*?\]\s*/, '');
         
         return {
           rank: item.Rank,
@@ -213,17 +217,28 @@ app.get('/api/contents/rising', (req, res) => {
   targetData.forEach(item => {
     if (item.Examples && Array.isArray(item.Examples)) {
       item.Examples.forEach(ex => {
-        // 태그 추출 (예: [youtube])
-        const match = ex.match(/^\[(.*?)\]/); 
-        if (match) {
-          const source = match[1];
+        if (typeof ex === 'object' && ex !== null) {
+          // 객체일 경우 바로 사용
           contentList.push({
             keyword: item.Keyword,
-            source: source,
-            text: ex.replace(/^\[.*?\](\(comment\)|\(post\))?\s*/, ''),
+            source: ex.platform || '알 수 없음',
+            text: ex.text,
             score: item.Score, 
             mentions: item.Mentions
           });
+        } else if (typeof ex === 'string') {
+          // 문자열일 경우 정규식으로 추출
+          const match = ex.match(/^\[(.*?)\]/); 
+          if (match) {
+            const source = match[1];
+            contentList.push({
+              keyword: item.Keyword,
+              source: source,
+              text: ex.replace(/^\[.*?\](\(comment\)|\(post\))?\s*/, ''),
+              score: item.Score, 
+              mentions: item.Mentions
+            });
+          }
         }
       });
     }
@@ -545,31 +560,67 @@ app.get('/api/analysis', async (req, res) => {
     });
 
     // 3. [로컬 분석] 댓글 수집 및 워드클라우드
-    let allRawComments = [];
+    let rawCommentsMap = new Map(); // 중복 제거용 Map
+
     dates.forEach(date => {
         const dayData = historyMap[date];
+        
+        // 통합 데이터 처리
         if (dayData.integrated) {
             const item = dayData.integrated.find(i => i.Keyword === keyword);
-            if (item?.Examples) allRawComments.push(...item.Examples);
+            if (item?.Examples) {
+                item.Examples.forEach(ex => {
+                    const isObj = typeof ex === 'object' && ex !== null;
+                    const text = isObj ? ex.text : ex;
+                    if (!text) return;
+
+                    let source = isObj ? (ex.platform || '알 수 없음') : '알 수 없음';
+                    let link = isObj ? (ex.link || null) : null;
+                    let cleanText = text;
+
+                    if (!isObj && text.startsWith('[')) {
+                        const match = text.match(/^\[(.*?)\]\s*(.*)/);
+                        if (match) { source = match[1]; cleanText = match[2]; }
+                    }
+
+                    if (!rawCommentsMap.has(cleanText)) {
+                        rawCommentsMap.set(cleanText, { source, text: cleanText, link });
+                    }
+                });
+            }
         }
+        
+        // 플랫폼 데이터 처리
         if (dayData.platform) {
             Object.keys(dayData.platform).forEach(pKey => {
-                const pList = dayData.platform[pKey];
+                const pList = Array.isArray(dayData.platform[pKey]) ? dayData.platform[pKey] : [];
                 const pItem = pList.find(i => (i.Keyword || i.keyword) === keyword);
                 if (pItem?.Examples) {
-                    allRawComments.push(...pItem.Examples.map(e => e.startsWith('[') ? e : `[${pKey}] ${e}`));
+                    pItem.Examples.forEach(ex => {
+                        const isObj = typeof ex === 'object' && ex !== null;
+                        const text = isObj ? ex.text : ex;
+                        if (!text) return;
+
+                        let source = isObj ? (ex.platform || pKey) : pKey;
+                        let link = isObj ? (ex.link || null) : null;
+                        let cleanText = text;
+
+                        if (!isObj && text.startsWith('[')) {
+                            const match = text.match(/^\[(.*?)\]\s*(.*)/);
+                            if (match) { source = match[1]; cleanText = match[2]; }
+                        }
+
+                        if (!rawCommentsMap.has(cleanText)) {
+                            rawCommentsMap.set(cleanText, { source, text: cleanText, link });
+                        }
+                    });
                 }
             });
         }
     });
 
-    const uniqueComments = [...new Set(allRawComments)];
-    const parsedComments = uniqueComments.map(ex => {
-      const match = ex.match(/^\[(.*?)\]\s*(.*)/);
-      return match ? { source: match[1], text: match[2] } : null;
-    }).filter(Boolean);
-
-    const wordCloudData = extractWordCloudData(allRawComments, keyword);
+    const parsedComments = Array.from(rawCommentsMap.values());
+    const wordCloudData = extractWordCloudData(parsedComments, keyword);
 
 
     // -----------------------------------------------------------
@@ -786,7 +837,13 @@ app.get('/api/summary', async (req, res) => {
     };
 
     const refinedComments = shuffleArray([...new Set(collectedComments)])
-        .map(c => c.replace(/\n/g, ' ').trim()) 
+        .map(c => {
+            // [수정] c가 객체({ text, link... })이면 text만 꺼내고, 문자열이면 그대로 사용
+            const text = (typeof c === 'object' && c !== null && c.text) ? c.text : c;
+            // 문자열이 아닐 경우 빈 문자열 반환 (에러 방지)
+            if (typeof text !== 'string') return '';
+            return text.replace(/\n/g, ' ').trim();
+        }) 
         .filter(c => c.length > 10) 
         .slice(0, 10) 
         .map(c => c.length > 80 ? c.substring(0, 80) : c);

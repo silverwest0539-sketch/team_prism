@@ -654,6 +654,8 @@ const AnalysisPage = () => {
               {currentUsageExamples?.length > 0 ? (
                 currentUsageExamples.map((comment, i) => {
                   const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
+                  const sourceName = comment.platform || comment.source;
+                  const link = comment.link;
 
                   return (
                     <div key={i} className="group">
@@ -668,9 +670,25 @@ const AnalysisPage = () => {
                         </div>
                       </div>
 
-                      <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent group-hover:border-indigo-100 group-hover:bg-indigo-50/30 transition-all">
-                        {formatComment(comment.text)}
-                      </div>
+                      {link ? (
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent hover:border-indigo-400 hover:bg-indigo-50 hover:text-gray-900 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                          title="클릭하여 원문 보기"
+                        >
+                          {formatComment(comment.text)}
+                          <div className="mt-2 flex justify-end items-center gap-1 text-xs text-indigo-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span>원문 보러가기</span>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                          </div>
+                        </a>
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent group-hover:border-indigo-100 group-hover:bg-indigo-50/30 transition-all">
+                          {formatComment(comment.text)}
+                        </div>
+                      )}
                     </div>
                   );
                 })
