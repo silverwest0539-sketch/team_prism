@@ -6,6 +6,7 @@ import SearchBar from '../components/common/SearchBar';
 import HeaderActions from '../components/common/HeaderActions';
 import SummaryModal from '../components/home/SummaryModal';
 import { formatViews, formatDate } from '../utils/formatters';
+import { Star } from '@phosphor-icons/react';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -105,11 +106,8 @@ const HomePage = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={handleSearch}
-        />
-        
-        <div className="absolute right-8 top-8">
-          <HeaderActions showNotificationText notificationText="Cont..." />
-        </div>
+        />  
+
       </div>
 
       <h1 className="text-2xl font-bold mb-8">안녕하세요, 마케터님 👋</h1>

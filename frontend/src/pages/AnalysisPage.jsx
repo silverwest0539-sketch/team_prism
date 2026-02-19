@@ -349,26 +349,28 @@ const AnalysisPage = () => {
   return (
     <div className="page space-y-6">
       {/* 상단 헤더 */}
-      <header className="flex justify-between items-center mb-4">
-        <Link to="/home" className="mr-4 p-2 bg-white rounded-full text-gray-500 hover:text-indigo-600 shadow-sm transition">
+      {/* 1. justify-between을 제거하고 gap-4로 요소 간 간격을 줍니다. */}
+      <header className="flex items-center gap-4 mb-4">
+        <Link to="/home" className="p-2 bg-white rounded-full text-gray-500 hover:text-indigo-600 shadow-sm transition">
           <CaretLeft size={20} />
         </Link>
 
-        <SearchBar
-          placeholder="분석하고 싶은 키워드 검색 (예: 쿠팡)"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={handleSearch}
-          className="search-input"
-        />
-
-        <div className="flex items-center gap-4">
-          <button className="icon-btn icon-btn-hover">
-            <Bell size={24} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-          </button>
-          <div className="w-10 h-10 rounded-full bg-indigo-100 border-2 border-white shadow-sm"></div>
+        {/* 2. 검색창이 남은 공간을 채우도록 flex-1을 감싸거나 SearchBar에 적용합니다. */}
+        <div className="flex-1">
+          <SearchBar
+            placeholder="분석하고 싶은 키워드 검색 (예: 쿠팡)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleSearch}
+            className="search-input w-full" 
+          />
         </div>
+
+        {/* 
+           [삭제됨] 
+           이 위치에 있던 <div className="flex items-center gap-4">...</div> 
+           (알림 Bell 아이콘 및 사용자 원형 아이콘) 코드를 완전히 삭제했습니다.
+        */}
       </header>
 
       {/* 메인 콘텐츠 */}
@@ -385,10 +387,10 @@ const AnalysisPage = () => {
               <span className="pill bg-indigo-50 text-indigo-600">#{filteredData.rank || '-'}위</span>
             </h1>
           </div>
+          
+          {/* [수정됨] 스크린샷 요청에 따라 '내보내기' 버튼도 삭제했습니다. */}
           <div className="flex gap-2">
-            <button className="btn btn-outline">
-              <Export size={16} /> 내보내기
-            </button>
+             {/* 기존 <button>내보내기</button> 삭제함 */}
           </div>
         </div>
 
