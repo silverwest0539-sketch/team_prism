@@ -872,21 +872,50 @@ app.get('/api/summary', async (req, res) => {
     `;
 
     // -------------------------------------------------------
-    // 4️⃣ LM Studio 전송
+    // 4️⃣ AI API 요청 (OpenAI vs Local 분기 처리)
     // -------------------------------------------------------
-    console.log(`🤖 AI 요약 요청 [${keyword}] (Creator Advice Mode)`);
-    
-    const llmResponse = await axios.post(`http://192.168.219.107:1234/v1/chat/completions`, {
-      model: "local-model",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      temperature: 0.1, 
-      max_tokens: 1000
-    });
+    const provider = process.env.AI_PROVIDER || 'local'; // 기본값 local
+    let rawContent = "";
 
-    let rawContent = llmResponse.data.choices[0].message.content;
+    console.log(`🤖 AI 요약 요청 [${keyword}] (Mode: ${provider})`);
+
+    if (provider === 'openai') {
+      // [Option A] OpenAI GPT API 사용
+      const openaiResponse = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: "gpt-4o-mini", // 가성비 모델 (또는 "gpt-4o", "gpt-3.5-turbo")
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          temperature: 0.3, // 명확한 사실 전달을 위해 낮춤
+          max_tokens: 1000
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          }
+        }
+      );
+      rawContent = openaiResponse.data.choices[0].message.content;
+
+    } else {
+      // [Option B] 로컬 LM Studio 사용 (기존 코드)
+      const localUrl = process.env.LOCAL_LLM_URL || 'http://192.168.219.107:1234/v1/chat/completions';
+      
+      const localResponse = await axios.post(localUrl, {
+        model: "local-model",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 1000
+      });
+      rawContent = localResponse.data.choices[0].message.content;
+    }
 
     // -------------------------------------------------------
     // 5️⃣ 후처리 (특수 기호를 HTML 스타일 태그로 변환)
@@ -919,8 +948,13 @@ app.get('/api/summary', async (req, res) => {
     res.json({ summary: finalSummary });
 
   } catch (error) {
-    console.error("❌ 오류:", error.message);
-    res.json({ summary: "분석 중 오류가 발생했습니다." });
+    // 에러 상세 로그 출력 (OpenAI 에러 메시지 확인용)
+    if (error.response) {
+        console.error("❌ AI API 에러 응답:", error.response.status, error.response.data);
+    } else {
+        console.error("❌ 서버 내부 에러:", error.message);
+    }
+    res.json({ summary: "현재 AI 분석 서비스를 이용할 수 없습니다." });
   }
 });
 
