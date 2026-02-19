@@ -1,7 +1,7 @@
 // src/pages/HomePage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom'
-import { PlayCircle } from 'lucide-react';
+import { PlayCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import SearchBar from '../components/common/SearchBar';
 import HeaderActions from '../components/common/HeaderActions';
 import SummaryModal from '../components/home/SummaryModal';
@@ -22,15 +22,16 @@ const HomePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState(null);
 
-  
-const [searchTerm, setSearchTerm] = useState('');
+  const scrollRef = useRef(null);
 
-const handleSearch = (e) => {
-  if (e.key === 'Enter' && searchTerm.trim()) {
-    // 여기에 검색 실행 로직을 작성하세요 (예: 페이지 이동, API 호출 등)
-    navigate(`/analysis?keyword=${searchTerm.trim()}`)
-  }
-};
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' && searchTerm.trim()) {
+      // 여기에 검색 실행 로직을 작성하세요 (예: 페이지 이동, API 호출 등)
+      navigate(`/analysis?keyword=${searchTerm.trim()}`)
+    }
+  };
 
   const MAIN_PLATFORM_OPTIONS = [
     { label: '전체 플랫폼', value: 'all' },
@@ -43,7 +44,7 @@ const handleSearch = (e) => {
     { label: 'X (트위터)', value: 'x' }, // 상세: x_trends -> 메인: x 유지
   ];
 
-  const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '영화/드라마', '브이로그'];
+  const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '영화/드라마', '브이로그', '챌린지'];
 
   const openModal = (data) => {
     setSelectedKeyword(data);
@@ -51,6 +52,16 @@ const handleSearch = (e) => {
   };
 
   const closeModal = () => setIsModalOpen(false);
+
+  // 스크롤 핸들러 함수
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const { current } = scrollRef;
+      // 한 번 클릭 시 이동할 거리 (약 카드 1~2개 너비 + gap)
+      const scrollAmount = direction === 'left' ? -300 : 300;
+      current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   // API 호출
   useEffect(() => {
@@ -226,10 +237,14 @@ const handleSearch = (e) => {
       </div>
 
       {/* 유튜브 섹션 */}
-      <div className="mb-8">
-        <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1 mb-4">
-          유튜브 일일 급상승 동영상
-        </h2>
+      <div className="mb-8 relative group"> {/* group 클래스 추가: 호버 시 버튼 표시 등 활용 가능 */}
+        <div className="flex justify-between items-end mb-4">
+          <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">
+            유튜브 일일 급상승 동영상
+          </h2>
+          
+          {/* 카테고리 탭 (우측 정렬이 필요하면 여기서 조정, 현재는 원래 위치 유지 위해 아래 div 사용) */}
+        </div>
 
         <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
           {CATEGORY_TABS.map((cat) => (
@@ -243,42 +258,70 @@ const handleSearch = (e) => {
           ))}
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {youtubeVideos.slice(0, 5).map((video) => (
-            <a
-              key={video.id}
-              href={`https://www.youtube.com/watch?v=${video.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="video-card"
-            >
-              <div className="relative w-full aspect-video bg-gray-200">
-                <img
-                  src={video.thumbnail}
-                  alt={video.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <PlayCircle className="text-white w-10 h-10 drop-shadow-lg" />
-                </div>
-              </div>
+        {/* 슬라이더 컨테이너 */}
+        <div className="relative">
+          
+          {/* 왼쪽 화살표 버튼 */}
+          <button 
+            onClick={() => scroll('left')}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+            aria-label="Previous videos"
+          >
+            <ChevronLeft className="w-6 h-6 text-gray-600" />
+          </button>
 
-              <div className="p-4 flex flex-col justify-between flex-1">
-                <div>
-                  <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 mb-2">
-                    {video.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 font-medium">{video.channel}</p>
+          {/* 비디오 리스트 (Grid -> Flex & Scroll) */}
+          {/* slice(0, 5) -> slice(0, 10)으로 변경 */}
+          <div 
+            ref={scrollRef}
+            className="flex overflow-x-auto gap-4 scrollbar-hide scroll-smooth pb-4 px-1"
+          >
+            {youtubeVideos.slice(0, 10).map((video) => (
+              <a
+                key={video.id}
+                href={`https://www.youtube.com/watch?v=${video.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="video-card flex-none w-[100px] sm:w-[100px] lg:w-[19%] min-w-[100px]"
+              >
+                <div className="relative w-full aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
+                  <img
+                    src={video.thumbnail}
+                    alt={video.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
+                    <PlayCircle className="text-white w-10 h-10 drop-shadow-lg" />
+                  </div>
                 </div>
 
-                <div className="mt-2 text-[11px] text-gray-400">
-                  <span>{formatViews(video.views)}</span>
-                  <span>•</span>
-                  <span>{formatDate(video.publish_time)}</span>
+                <div className="p-4 flex flex-col justify-between flex-1 bg-white border-x border-b border-gray-100 rounded-b-lg">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 mb-2">
+                      {video.title}
+                    </h3>
+                    <p className="text-xs text-gray-500 font-medium">{video.channel}</p>
+                  </div>
+
+                  <div className="mt-2 text-[11px] text-gray-400">
+                    <span>{formatViews(video.views)}</span>
+                    <span>•</span>
+                    <span>{formatDate(video.publish_time)}</span>
+                  </div>
                 </div>
-              </div>
-            </a>
-          ))}
+              </a>
+            ))}
+          </div>
+
+          {/* 오른쪽 화살표 버튼 */}
+          <button 
+            onClick={() => scroll('right')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+            aria-label="Next videos"
+          >
+            <ChevronRight className="w-6 h-6 text-gray-600" />
+          </button>
+
         </div>
       </div>
 

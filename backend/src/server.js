@@ -251,64 +251,152 @@ app.get('/api/contents/rising', (req, res) => {
   res.json(response);
 });
 
+// 전역 변수로 비디오 캐시 저장소 선언
+let videoCache = {}; // 형식: { '챌린지': { data: [...], timestamp: 12345678 } }
+
 // [HomePage] 유튜브 리스트 API (추가)
 app.get('/api/videos', async (req, res) => {
   const { category } = req.query;
   const API_KEY = process.env.YOUTUBE_API_KEY; // API 키 가져오기
 
-  // 카테고리 이름 -> 유튜브 카테고리 ID 매핑
-  const categoryMap = {
-    '전체': '', // 전체는 ID 없음 (기본값)
-    '음악': '10',
-    '엔터테인먼트': '24',
-    '게임': '20',
-    '뉴스': '25',
-    '스포츠': '17',
-    '영화/드라마': '1', // 영화/애니메이션
-    '브이로그': '22', // 인물/블로그
-  };
+  // 캐시 유효 시간 : 2시간 (밀리초단위)
+  const CACHE_DURATION = 2 * 60 * 60 * 1000;
+  const now = Date.now()
 
-  const categoryId = categoryMap[category] || '';
+  // 캐시 확인 로직
+  // 해당 카테고리의 데이터가 있고, 2시간이 지나지 않았다면 캐시된 데이터 반환
+  if (videoCache[category] && (now - videoCache[category].timestamp < CACHE_DURATION)) {
+    console.log(`📦 [Video Cache] '${category}' - 캐시 데이터 반환 (API 호출 안함)`);
+    return res.json(videoCache[category].data);
+  }
+
+  console.log(`📡 [Youtube API] '${category}' - 새 데이터 요청 중...`);
 
   try {
-    // 1. 유튜브 인기 동영상 API 호출 (chart=mostPopular)
-    const apiParams = {
-      part: 'snippet,statistics',
-      chart: 'mostPopular',
-      regionCode: 'KR',
-      maxResults: 12,
-      key: API_KEY
-    };
+    let videos = [];
 
-    // categoryId가 빈 문자열('')이 아닐 때만 파라미터에 추가
-    if (categoryId) {
-      apiParams.videoCategoryId = categoryId;
+    // ✅ CASE 1: '챌린지' 탭일 경우 -> 검색 API 사용 (쇼츠 필터링)
+    if (category === '챌린지') {
+      // 일주일 전 날짜 계산
+      const date = new Date();
+      date.setDate(date.getDate() - 7) // 7일 전으로 설정
+      const publishedAfter = date.toISOString();
+
+      const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+        params: {
+          part: 'snippet',
+          q: '챌린지',           // 검색어
+          type: 'video',          // 동영상만
+          videoDuration: 'short', // ✅ 핵심: 4분 미만 (쇼츠 포함)
+          order: 'viewCount',     // 조회수 순 정렬
+          publishedAfter: publishedAfter, // 1주일 내 영상만 필터링
+          maxResults: 50,
+          regionCode: 'KR',
+          key: API_KEY
+        }
+      });
+
+      // ✅ [핵심] '#무슨무슨챌린지' 패턴만 찾고, 순수 '#챌린지'는 제외
+      const strictFilteredItems = response.data.items.filter(item => {
+        // 제목과 설명을 합쳐서 검사
+        const text = (item.snippet.title + " " + item.snippet.description);
+        
+        // 정규식 설명:
+        // 1. # : 해시태그로 시작
+        // 2. [^\s#]+ : 공백이나 #이 아닌 글자가 1개 이상 있음 (여기가 '무슨무슨'에 해당)
+        // 3. 챌린지 : 끝이 '챌린지'로 끝남
+        // 예: #슬릭백챌린지 (O), #챌린지 (X - 중간 글자가 없으므로)
+        const specificChallengeRegex = /#[^\s#]+챌린지/g;
+
+        const matches = text.match(specificChallengeRegex);
+
+        // 매칭된 태그가 하나라도 있으면 통과
+        // (단, 혹시라도 '#챌린지' 자체가 매칭되는 걸 방지하기 위해 이중 체크)
+        if (matches) {
+            // 추출된 태그들 중 '#챌린지'와 정확히 일치하지 않는 것이 하나라도 있으면 true
+            return matches.some(tag => tag !== '#챌린지');
+        }
+        
+        return false;
+      });
+
+      // 검색 API 응답 포맷 매핑
+      videos = strictFilteredItems.slice(0, 12).map(item => ({
+        id: item.id.videoId, // 검색 API는 id가 객체 형태임
+        title: item.snippet.title,
+        channel: item.snippet.channelTitle,
+        views: 0, // 검색 API는 조회수 미제공(상세 조회 비용 절약을 위해 0처리)
+        publish_time: item.snippet.publishedAt,
+        thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium.url,
+        scraped_category_name: '챌린지'
+      }));
+
+    } 
+    // ✅ CASE 2: 일반 카테고리 -> 인기 동영상 API 사용 (기존 로직)
+    else {
+      const categoryMap = {
+        '전체': '',
+        '음악': '10',
+        '엔터테인먼트': '24',
+        '게임': '20',
+        '뉴스': '25',
+        '스포츠': '17',
+        '영화/드라마': '1',
+        '브이로그': '22',
+      };
+
+      const categoryId = categoryMap[category] || '';
+
+      const apiParams = {
+        part: 'snippet,statistics',
+        chart: 'mostPopular',
+        regionCode: 'KR',
+        maxResults: 12,
+        key: API_KEY
+      };
+
+      if (categoryId) {
+        apiParams.videoCategoryId = categoryId;
+      }
+
+      const response = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+        params: apiParams
+      });
+
+      videos = response.data.items.map(item => ({
+        id: item.id, // 인기 동영상 API는 id가 문자열
+        title: item.snippet.title,
+        channel: item.snippet.channelTitle,
+        views: item.statistics.viewCount || 0,
+        publish_time: item.snippet.publishedAt,
+        thumbnail: item.snippet.thumbnails.medium.url,
+        scraped_category_name: category || '인기'
+      }));
     }
 
-    const response = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
-      params: apiParams // 수정된 params 객체 사용
-    });
-
-    // 2. 프론트엔드 형식에 맞춰 데이터 가공
-    const videos = response.data.items.map(item => ({
-      id: item.id,
-      title: item.snippet.title,
-      channel: item.snippet.channelTitle,
-      views: item.statistics.viewCount || 0,
-      publish_time: item.snippet.publishedAt,
-      thumbnail: item.snippet.thumbnails.medium.url,
-      scraped_category_name: category || '인기'
-    }));
+    // 데이터 캐싱 저장
+    // 성공적으로 데이터를 가져왔다면 메모리에 저장 (타임스탬프 갱신)
+    if (videos.length > 0) {
+      videoCache[category] = {
+        data: videos,
+        timestamp: Date.now()
+      };
+      console.log(`💾 [Video Cache] '${category}' - 데이터 저장 완료`);
+    }
 
     res.json(videos);
 
   } catch (error) {
-    console.error("유튜브 인기 동영상 로드 실패:", error.message);
-    // 에러 발생 시 빈 배열 반환 (화면이 깨지지 않게)
+    console.error(`❌ 유튜브 API 에러 (${category}):`, error.message);
+    
+    // 에러 발생 시, 만약 유효기간이 지났더라도 이전 캐시 데이터가 있다면(Fallback) 보여주는 것이 좋음
+    if (videoCache[category]) {
+        console.log(`⚠️ 에러 발생으로 만료된 캐시 데이터 반환`);
+        return res.json(videoCache[category].data);
+    }
     res.json([]);
   }
 });
-
 // app.get('/api/youtube/list', (req, res) => {
 //   const videoData = getYoutubeData();
 //   const category = req.query.category || '전체'; // 프론트에서 보낸 한글 카테고리

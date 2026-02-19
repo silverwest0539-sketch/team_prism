@@ -243,6 +243,16 @@ const AnalysisPage = () => {
     fetchAiSummary(keyword, startDate, endDate)
   };
 
+  // 날짜 초기화 핸들러
+  const handleDateReset = () => {
+    setStartDate(''); // 입력창 초기화
+    setEndDate('');   // 입력창 초기화
+    setCurrentPage(1);
+    fetchData('', ''); // 전체 기간으로 데이터 다시 요청
+    fetchAiSummary(keyword, '', ''); // AI 요약도 전체 기간으로 다시 요청
+  };
+
+
   // 데이터 필터링
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
@@ -335,8 +345,7 @@ const AnalysisPage = () => {
       )
     })
   }
-
-
+  
   return (
     <div className="page space-y-6">
       {/* 상단 헤더 */}
@@ -396,7 +405,13 @@ const AnalysisPage = () => {
             <div className="flex justify-between items-start">
               <h3 className="text-gray-500 font-medium text-sm">분석 기간</h3>
               <div className="p-2 rounded-lg bg-green-50 text-green-600">
-                <ArrowsClockwise size={20} weight="fill" />
+                <button 
+                  onClick={handleDateReset}
+                  className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors cursor-pointer"
+                  title="전체 기간으로 초기화"
+                >
+                  <ArrowsClockwise size={15} weight="fill" />
+                </button>
               </div>
             </div>
             <div>
