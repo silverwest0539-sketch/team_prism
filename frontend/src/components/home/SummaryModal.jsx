@@ -1,33 +1,42 @@
-// src/components/analysis/SummaryModal.jsx
-import React, { useEffect, useState } from 'react';
+// src/components/home/SummaryModal.jsx
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X, ArrowRight,
   TrendUp, ChatCircle, ChartLineUp,
   Smiley, SmileySad, SmileyMeh,
-  Star // 1. Star 아이콘 추가
+  Star, NotePencil, Check
 } from '@phosphor-icons/react';
 import {
   LineChart, Line, Tooltip, ResponsiveContainer, XAxis
 } from 'recharts';
-import { addScrap, removeScrap, isScrapped } from '../../utils/storage';
+import { addScrap, removeScrap, isScrapped, getScrap, updateScrap } from '../../utils/storage';
 
-export default function SummaryModal({ isOpen, onClose, data }) {
+export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const navigate = useNavigate();
   const [detailData, setDetailData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false); // 2. 즐겨찾기 상태 관리
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  // 메모 상태
+  const [memo, setMemo] = useState('');
+  const [isMemoOpen, setIsMemoOpen] = useState(false);
+  const [memoSaved, setMemoSaved] = useState(false);
+  const memoRef = useRef(null);
 
   // 모달 데이터 로딩 로직
   useEffect(() => {
     if (isOpen && data?.keyword) {
       setLoading(true);
-
-      // 스크랩 상태 확인 (LocalStorage 연동)
       setIsBookmarked(isScrapped(data.keyword));
 
-      // API 호출 (데모용 URL)
-      const typeParam = data.type || 'trend'
+      // 기존 메모 불러오기
+      const existing = getScrap(data.keyword);
+      setMemo(existing?.memo || '');
+      setIsMemoOpen(false);
+      setMemoSaved(false);
+
+      const typeParam = data.type || 'trend';
       fetch(`http://localhost:5000/api/analysis?keyword=${data.keyword}&type=${typeParam}`)
         .then(res => res.json())
         .then(result => {
@@ -40,9 +49,6 @@ export default function SummaryModal({ isOpen, onClose, data }) {
           console.error("모달 데이터 로딩 실패:", err);
           setLoading(false);
         });
-
-      // (옵션) 실제로는 여기서 해당 키워드가 이미 즐겨찾기 되어있는지 확인하는 API 호출이 필요함
-      setIsBookmarked(false); // 초기화
     } else {
       setDetailData(null);
     }
@@ -60,9 +66,7 @@ export default function SummaryModal({ isOpen, onClose, data }) {
     return `${dateStr.substring(4, 6)}.${dateStr.substring(6, 8)}`;
   };
 
-
-
-  // 3. 즐겨찾기 토글 핸들러
+  // 즐겨찾기 토글
   const toggleBookmark = () => {
     if (isBookmarked) {
       removeScrap(data.keyword);
@@ -76,15 +80,25 @@ export default function SummaryModal({ isOpen, onClose, data }) {
       });
       setIsBookmarked(true);
     }
+    onScrapChange?.();
+  };
+
+  // 메모 저장
+  const handleSaveMemo = () => {
+    if (isScrapped(data.keyword)) {
+      updateScrap(data.keyword, { memo });
+      setMemoSaved(true);
+      setTimeout(() => setMemoSaved(false), 1500);
+      onScrapChange?.();
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-[fadeIn_0.2s_ease-out]">
       <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
-        {/* 1. 헤더 영역 */}
+        {/* 헤더 영역 */}
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
-          {/* 타이틀 영역 */}
           <div>
             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full mb-1 inline-block">
               No.{data?.rank || '-'} 급상승 키워드
@@ -94,10 +108,8 @@ export default function SummaryModal({ isOpen, onClose, data }) {
             </h2>
           </div>
 
-          {/* 우측 버튼 영역 (즐겨찾기 + 닫기) */}
           <div className="flex items-center gap-2">
-
-            {/* 4. 즐겨찾기 버튼 추가 */}
+            {/* 즐겨찾기 버튼 */}
             <button
               onClick={toggleBookmark}
               className={`p-2 rounded-full transition-all duration-200 group ${isBookmarked
@@ -108,12 +120,12 @@ export default function SummaryModal({ isOpen, onClose, data }) {
             >
               <Star
                 size={24}
-                weight={isBookmarked ? "fill" : "bold"} // 상태에 따라 채워진 별/빈 별 변경
+                weight={isBookmarked ? "fill" : "bold"}
                 className={`transition-transform duration-200 ${isBookmarked ? "scale-110" : "group-hover:scale-110"}`}
               />
             </button>
 
-            {/* 기존 닫기 버튼 */}
+            {/* 닫기 버튼 */}
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-gray-600"
@@ -123,7 +135,7 @@ export default function SummaryModal({ isOpen, onClose, data }) {
           </div>
         </div>
 
-        {/* 2. 스크롤 가능한 본문 영역 */}
+        {/* 스크롤 가능한 본문 영역 */}
         <div className="overflow-y-auto p-6 space-y-6">
 
           {/* (1) 긍부정 신호등 */}
@@ -224,9 +236,59 @@ export default function SummaryModal({ isOpen, onClose, data }) {
             </div>
           </div>
 
+          {/* (5) 메모 섹션 (스크랩된 키워드만 표시) */}
+          {isBookmarked && (
+            <div>
+              <button
+                onClick={() => {
+                  setIsMemoOpen(!isMemoOpen);
+                  if (!isMemoOpen) setTimeout(() => memoRef.current?.focus(), 100);
+                }}
+                className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-indigo-600 transition-colors mb-3"
+              >
+                <NotePencil size={18} className="text-indigo-500" />
+                내 메모
+                <span className="text-xs font-normal text-gray-400">
+                  {memo ? '(작성됨)' : '(클릭하여 작성)'}
+                </span>
+              </button>
+
+              {isMemoOpen && (
+                <div className="space-y-2 animate-[fadeIn_0.15s_ease-out]">
+                  <textarea
+                    ref={memoRef}
+                    value={memo}
+                    onChange={(e) => setMemo(e.target.value)}
+                    placeholder="이 키워드에 대한 메모를 남겨보세요..."
+                    className="w-full p-3 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all"
+                    rows={3}
+                    maxLength={200}
+                  />
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-gray-400">{memo.length}/200</span>
+                    <button
+                      onClick={handleSaveMemo}
+                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                        memoSaved
+                          ? 'bg-green-100 text-green-600'
+                          : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
+                      }`}
+                    >
+                      {memoSaved ? (
+                        <><Check size={14} weight="bold" /> 저장됨</>
+                      ) : (
+                        '저장'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
 
-        {/* 3. 하단 버튼 */}
+        {/* 하단 버튼 */}
         <div className="p-4 border-t border-gray-100 bg-gray-50">
           <button
             onClick={handleDetailMove}
