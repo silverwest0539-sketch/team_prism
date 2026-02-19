@@ -1,114 +1,124 @@
 // src/pages/MyPage.jsx
 import React from 'react';
-import { User, CreditCard, Bell, LogOut, Shield } from 'lucide-react';
+import { User, Bell, Shield, Trash } from 'lucide-react';
 
 const MyPage = () => {
   return (
-    <div className="page">
+    <div className="page pb-20"> {/* 하단 여유 공간 추가 */}
       
-      {/* 헤더 */}
+      {/* 페이지 헤더 */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold">마이페이지</h1>
-        <p className="text-gray-500 text-sm mt-1">계정 정보와 구독 상태를 관리하세요.</p>
+        <p className="text-gray-500 text-sm mt-1">계정 정보와 보안 설정을 관리하세요.</p>
       </div>
 
+      {/* 메인 그리드 컨테이너 (3열 구조) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* 왼쪽: 프로필 카드 */}
-        <div className="md:col-span-1 space-y-6">
-          <div className="card-soft flex flex-col items-center text-center">
-            <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4 text-3xl font-bold">
+        {/* =========================================
+            [상단 Row] 프로필(1/3) + 보안설정(2/3)
+            h-full을 적용하여 서로 높이를 맞춤
+           ========================================= */}
+        
+        {/* 1. 왼쪽: 프로필 카드 */}
+        <div className="md:col-span-1">
+          <div className="card-soft h-full flex flex-col items-center justify-center text-center p-8">
+            <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4 text-3xl font-bold shadow-sm">
                M
             </div>
-            <h2 className="text-xl font-bold">마케터님</h2>
-            <p className="text-gray-500 text-sm mb-4">marketer@trendguard.ai</p>
+            <h2 className="text-xl font-bold text-gray-900">마케터님</h2>
+            <p className="text-gray-500 text-sm mb-8">marketer@trendguard.ai</p>
             
-            <button className="w-full py-2 px-4 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
+            <button className="w-full py-2.5 px-4 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition text-gray-700">
               프로필 편집
             </button>
           </div>
+        </div>
 
-          {/* 메뉴 리스트 */}
-          <div className="card-soft overflow-hidden p-0">
-             <div className="p-4 border-b border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-gray-50">
-                <User size={18} className="text-gray-500" />
-                <span className="text-sm font-medium">계정 정보</span>
+        {/* 2. 오른쪽: 보안 설정 (높이를 왼쪽과 맞추기 위해 h-full 사용) */}
+        <div className="md:col-span-2">
+          <div className="card-soft h-full flex flex-col">
+             <div className="p-6 border-b border-gray-100">
+                <h3 className="text-lg font-bold flex items-center gap-2 text-gray-900">
+                    <Shield className="text-green-600" size={20}/> 
+                    보안 설정
+                </h3>
              </div>
-             <div className="p-4 border-b border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-gray-50 bg-blue-50 text-blue-600">
-                <CreditCard size={18} />
-                <span className="text-sm font-medium">결제 및 구독</span>
-             </div>
-             <div className="p-4 border-b border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-gray-50">
-                <Bell size={18} className="text-gray-500" />
-                <span className="text-sm font-medium">알림 설정</span>
-             </div>
-             <div className="p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-red-500">
-                <LogOut size={18} />
-                <span className="text-sm font-medium">로그아웃</span>
+             
+             {/* 내용을 중앙 정렬하거나 균등 배치하기 위해 flex-1 적용 */}
+             <div className="p-6 flex-1 flex flex-col justify-center space-y-6">
+                <div className="flex justify-between items-center">
+                   <div>
+                      <p className="font-medium text-gray-900">비밀번호 변경</p>
+                      <p className="text-xs text-gray-400 mt-1">마지막 변경일: 3개월 전</p>
+                   </div>
+                   <button className="text-sm px-4 py-2 border rounded hover:bg-gray-50 transition">변경</button>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                   <div>
+                      <p className="font-medium text-gray-900">2단계 인증</p>
+                      <p className="text-xs text-gray-400 mt-1">로그인 시 추가 인증을 요구하여 계정을 보호합니다.</p>
+                   </div>
+                   <div className="w-11 h-6 bg-gray-200 rounded-full relative cursor-pointer hover:bg-gray-300 transition">
+                      <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 shadow-sm"></div>
+                   </div>
+                </div>
              </div>
           </div>
         </div>
 
-        {/* 오른쪽: 상세 설정 */}
-        <div className="md:col-span-2 space-y-6">
-          
-          {/* 구독 상태 카드 */}
-          <div className="card-soft">
-             <h3 className="section-title-lg card-header">
-                <CreditCard className="text-blue-500" size={20}/> 구독 멤버십
-             </h3>
-             <div className="bg-gray-50 rounded-xl p-5 flex justify-between items-center mb-4">
-                <div>
-                   <p className="text-sm text-gray-500">현재 이용중인 플랜</p>
-                   <p className="text-xl font-bold text-gray-900 mt-1">Pro Plan</p>
-                </div>
-                <button className="btn btn-primary">
-                   플랜 업그레이드
-                </button>
-             </div>
-             
-             {/* 사용량 게이지 바 */}
-             <div className="space-y-4">
-                <div>
-                   <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium text-gray-600">AI 분석 크레딧</span>
-                      <span className="font-bold text-blue-600">850 / 1,000</span>
-                   </div>
-                   <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: '85%' }}></div>
-                   </div>
-                </div>
-             </div>
-          </div>
 
-          {/* 보안 설정 카드 */}
-          <div className="card-soft">
-             <h3 className="section-title-lg card-header">
-                <Shield className="text-green-500" size={20}/> 보안 설정
-             </h3>
-             
-             <div className="space-y-4">
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                   <div>
-                      <p className="font-medium text-sm">비밀번호 변경</p>
-                      <p className="text-xs text-gray-400">마지막 변경일: 3개월 전</p>
-                   </div>
-                   <button className="text-sm text-gray-500 underline hover:text-gray-800">변경</button>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                   <div>
-                      <p className="font-medium text-sm">2단계 인증</p>
-                      <p className="text-xs text-gray-400">계정을 더 안전하게 보호하세요.</p>
-                   </div>
-                   {/* 토글 스위치 */}
-                   <div className="w-10 h-5 bg-gray-300 rounded-full relative cursor-pointer">
-                      <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5"></div>
-                   </div>
-                </div>
-             </div>
-          </div>
-
+        {/* =========================================
+            [하단 Row] 일반 설정 (전체 너비 사용)
+            grid-cols-3 레이아웃에서 각각 1칸씩 차지하게 하여
+            상단 영역 전체 너비와 1:1로 매칭
+           ========================================= */}
+        
+        {/* 섹션 타이틀 (전체 너비 차지) */}
+        <div className="md:col-span-3 mt-4">
+           <h3 className="text-lg font-bold text-gray-900">일반 설정</h3>
         </div>
+
+        {/* 3. 계정 정보 */}
+        <div className="md:col-span-1">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition cursor-pointer group h-full flex flex-col justify-between min-h-[160px]">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-4 group-hover:bg-blue-600 group-hover:text-white transition">
+              <User size={24} />
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900 text-lg">계정 정보</h4>
+              <p className="text-sm text-gray-500 mt-1">이름, 이메일 관리</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. 알림 설정 */}
+        <div className="md:col-span-1">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition cursor-pointer group h-full flex flex-col justify-between min-h-[160px]">
+            <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 mb-4 group-hover:bg-orange-500 group-hover:text-white transition">
+              <Bell size={24} />
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900 text-lg">알림 설정</h4>
+              <p className="text-sm text-gray-500 mt-1">수신 및 푸시 설정</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 5. 회원 탈퇴 */}
+        <div className="md:col-span-1">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 hover:border-red-300 hover:shadow-md transition cursor-pointer group h-full flex flex-col justify-between min-h-[160px]">
+            <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 mb-4 group-hover:bg-red-500 group-hover:text-white transition">
+              <Trash size={24} />
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900 text-lg">회원 탈퇴</h4>
+              <p className="text-sm text-gray-500 mt-1">계정 삭제 및 데이터 파기</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
