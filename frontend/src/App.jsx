@@ -11,7 +11,7 @@ import HomePage from './pages/HomePage'; // 👈 1. HomePage import 확인
 import CreationPage from './pages/CreationPage';
 import AnalysisPage from './pages/AnalysisPage';
 import MyPage from './pages/MyPage'; // 👈 1. MyPage import 추가
-import ScrapPage from './pages/ScrapPage'; // 스크랩 페이지
+import ScrapPage from './components/mypage/ScrapPage'; // 스크랩 페이지(컴포넌트 위치)
 
 function App() {
   return (
