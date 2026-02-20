@@ -65,124 +65,64 @@ const extractWordCloudData = (comments, keyword) => {
 
 // 1. [HomePage] 급상승 키워드 API (Top 5)
 app.get('/api/trends/rising', (req, res) => {
-  const data = getLatestData();
-  if (data.length === 0) return res.json([]);
-
-  // ✅ 핵심 수정 1: 전체 데이터 중 '가장 큰 날짜(최신)'를 직접 계산
-  const latestDate = data.reduce((max, curr) => curr.Date > max ? curr.Date : max, data[0].Date);
-  console.log(`🔎 급상승 키워드 요청됨 - 최신 날짜 기준: ${latestDate}`);
-
-  // ✅ 핵심 수정 2: 최신 날짜 데이터만 필터링 + 랭크순 정렬
-  const latestTrends = data
-    .filter(item => item.Date === latestDate)
-    .sort((a, b) => a.Rank - b.Rank)
-    .slice(0, 5); // Top 5
-
-  // 변동률 계산을 위한 어제 날짜 데이터 찾기
-  const allDates = [...new Set(data.map(d => d.Date))].sort().reverse();
-  const prevDate = allDates[1]; 
-  const prevTrends = prevDate ? data.filter(item => item.Date === prevDate) : [];
-
-  const response = latestTrends.map(item => {
-    const prevItem = prevTrends.find(p => p.Keyword === item.Keyword);
-    let changeRate = 0;
-    let isUp = true;
+  try {
+    const allData = getLatestPlatformData('all') || [];
     
-    if (prevItem) {
-        changeRate = ((item.Score - prevItem.Score) / prevItem.Score) * 100;
-        isUp = changeRate >= 0;
+    // 데이터가 없으면 바로 빈 배열 리턴 (서버 안 뻗게 방어)
+    if (allData.length === 0) {
+      return res.json([]);
     }
 
-    // 예시 텍스트 추출 (Examples 배열의 첫 번째 값)
-    const rawExample = item.Examples && item.Examples.length > 0 ? item.Examples[0] : "";
-    const cleanExample = typeof rawExample === 'object' 
-        ? rawExample.text 
-        : (rawExample || "").replace(/^\[.*?\]\s*/, '');
+    const response = allData.slice(0, 5).map((item, index) => {
+      // Growth_Percentage가 아예 없는 구형 데이터 방어
+      const growthStr = String(item.Growth_Percentage || "+0.0%"); 
+      const isUp = growthStr.startsWith('+');
+      const isDown = growthStr.startsWith('-');
 
-    return {
-      rank: item.Rank, // 원본 랭크 사용
-      keyword: item.Keyword,
-      volume: `언급량 ${item.Mentions.toLocaleString()}회`,
-      change: `${isUp ? '▲' : '▼'} ${Math.abs(changeRate).toFixed(1)}%`,
-      isUp: isUp,
-      desc: cleanExample || "관련된 코멘트가 없습니다.",
-      color: isUp ? 'red' : 'blue'
-    };
-  });
-
-  res.json(response);
+      return {
+        rank: item.Rank || index + 1,
+        keyword: item.Keyword || "알 수 없음",
+        score: item.Trend_Score || item.Score || 0,
+        change: growthStr,
+        isUp: isUp ? true : (isDown ? false : null)
+      };
+    });
+    
+    res.json(response);
+  } catch (error) {
+    console.error("❌ /api/trends/rising 에러:", error);
+    res.json([]); // 에러 시 빈 화면이라도 띄우기 위함
+  }
 });
 
-// 플랫폼별 상위 키워드 API
+// 2. [오른쪽 카드] 플랫폼별 키워드 API
 app.get('/api/trends/platform', (req, res) => {
-  const { platform } = req.query;
-  let targetKey = platform;
-  if (platform === 'dcinside') targetKey = 'dc'; 
-  if (platform === 'natepan') targetKey = 'nate';
-  if (platform === 'x') targetKey = 'x_trends';
+  try {
+    const { platform } = req.query;
+    
+    let targetKey = platform || 'youtube';
+    if (platform === 'x') targetKey = 'x_trends';
+    if (platform === 'dcinside') targetKey = 'dcinside';
+    if (platform === 'natepan') targetKey = 'nate';
 
-  const reqPlatform = getLatestPlatformData(targetKey || 'all'); 
-
-  if (!reqPlatform || reqPlatform.length === 0) {
+    const platformData = getLatestPlatformData(targetKey) || [];
+    
+    if (platformData.length === 0) {
       return res.json([]);
+    }
+
+    const response = platformData.slice(0, 5).map((item, index) => ({
+      rank: item.Rank || index + 1,
+      keyword: item.Keyword || "알 수 없음",
+      count: item.Target_Day_Mentions || item.Target_Week_Mentions || item.Total_Mentions || item.Mentions || 0,
+      score: item.Trend_Score || item.Score || 0
+    }));
+
+    res.json(response);
+  } catch (error) {
+    console.error("❌ /api/trends/platform 에러:", error);
+    res.json([]); 
   }
-
-  // 플랫폼 매핑
-  const platformMap = {
-    'youtube': 'youtube',
-    'dcinside': 'dc_lol',
-    'theqoo': 'theqoo',
-    'natepan': 'nate',
-    'fmkorea': 'fmkorea',
-    'ruliweb': 'ruliweb',
-    'x': 'x_trends'
-  };
-
-  // // 1. 데이터 키값 정규화 (대문자 -> 소문자 통일)
-  // // 예: Item.Keyword -> item.keyword, Item.Count -> item.count
-  // const normalizedData = data.map(item => ({
-  //   platform: item.Platform || 'Unknown',
-  //   keyword: item.Keyword || '키워드 없음',
-  //   count: item.Count || item.mentions || item.Mentions || 0,
-  //   comments: item.Examples || item.Comments || []
-  // }));
-
-  // let filteredData = normalizedData;
-
-  // // 2. 필터링
-  // if (reqPlatform !== 'all' && reqPlatform !== 'community') {
-  //   const targetPlatformName = platformMap[reqPlatform] || reqPlatform;
-  //   filteredData = normalizedData.filter(item => item.platform.includes(targetPlatformName));
-  // }
-
-  // // 3. 정렬 (count 기준)
-  // filteredData.sort((a, b) => b.count - a.count);
-
-  // // 4. 반환
-  // res.json(filteredData.slice(0, 5).map((item, idx) => ({
-  //     ...item,
-  //     rank: idx + 1 // 순위 재산정
-  // })));
-
-  const response = reqPlatform
-    .sort((a, b) => a.Rank - b.Rank) // 언급량 내림차순
-    .slice(0, 5)
-    .map((item, idx) => {
-        const rawEx = item.Examples && item.Examples.length > 0 ? item.Examples[0] : "";
-        const cleanEx = typeof rawEx === 'object' 
-            ? rawEx.text 
-            : (rawEx || "").replace(/^\[.*?\]\s*/, '');
-        
-        return {
-          rank: item.Rank,
-          keyword: item.Keyword,
-          count: item.Total_Mentions || 0, // ✅ 해당 플랫폼 내 언급량 사용
-          platform: platform,
-          desc: cleanEx
-        };
-    });
-
-  res.json(response);
 });
 
 // 2. [AnalysisPage] 차트 및 검색용 전체 데이터 API
@@ -292,9 +232,9 @@ app.get('/api/videos', async (req, res) => {
 
     // ✅ CASE 1: '챌린지' 탭일 경우 -> 검색 API 사용 (쇼츠 필터링)
     if (category === '챌린지') {
-      // 일주일 전 날짜 계산
+      // 3일 전 날짜 계산
       const date = new Date();
-      date.setDate(date.getDate() - 7) // 7일 전으로 설정
+      date.setDate(date.getDate() - 3) // 3일 전으로 설정
       const publishedAfter = date.toISOString();
 
       const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
@@ -356,7 +296,6 @@ app.get('/api/videos', async (req, res) => {
         '게임': '20',
         '뉴스': '25',
         '스포츠': '17',
-        '영화/드라마': '1',
         '브이로그': '22',
       };
 
@@ -412,104 +351,7 @@ app.get('/api/videos', async (req, res) => {
     res.json([]);
   }
 });
-// app.get('/api/youtube/list', (req, res) => {
-//   const videoData = getYoutubeData();
-//   const category = req.query.category || '전체'; // 프론트에서 보낸 한글 카테고리
 
-//   // 1. [핵심] 한글 버튼 -> 유튜브 데이터의 영어 카테고리 매핑
-//   const categoryMap = {
-//     '게임': ['Gaming'],
-//     '음악': ['Music'],
-//     '라이프': ['Howto_Style'], 
-//     '일상': ['People_Blogs'], 
-//     '코미디': ['Comedy', 'Entertainment'],
-//     '전체': []
-//   };
-
-//   let filteredData = videoData;
-
-//   // 2. 카테고리 필터링 (scraped_category_name 활용)
-//   if (category !== '전체') {
-//     const targetCategories = categoryMap[category] || [];
-
-//     filteredData = videoData.filter(video => {
-//       // ✅ [핵심 수정] 데이터의 카테고리에서 공백 제거 (.trim())
-//       const rawCategory = video.scraped_category_name || "";
-//       const cleanCategory = rawCategory.trim(); 
-
-//       // 1) 카테고리 이름이 일치하는지 확인
-//       const isCategoryMatch = targetCategories.includes(cleanCategory);
-      
-//       return isCategoryMatch 
-//     });
-//   }
-
-//   // video_id 기준 중복 제거 로직
-//   // Set을 사용하여 이미 담은 ID는 건너뜁니다.
-//   const uniqueData = [];
-//   const seenIds = new Set();
-
-//   filteredData.forEach(video => {
-//     if (!seenIds.has(video.video_id)) {
-//       seenIds.add(video.video_id); // ID 등록
-//       uniqueData.push(video);      // 데이터 담기
-//     }
-//   });
-  
-//   filteredData = uniqueData;
- 
-//     // if (targetCategories) {
-//     //   filteredData = videoData.filter(video => {
-//     //     // 데이터에 있는 카테고리 값 (없을 경우 대비해 안전하게 처리)
-//     //     const videoCategory = video.scraped_category_name || "";
-        
-//     //     // 매핑된 리스트 중에 포함되는지 확인 (예: 'Gaming'이 리스트에 있나?)
-//     //     return targetCategories.includes(videoCategory);
-//     //   });
-//     // }
-//   // }
-
-//   // 3. 조회수 기준 내림차순 정렬 & 데이터 가공
-//   filteredData.sort((a, b) => {
-//     // 정규식: 한글이 한 글자라도 포함되어 있는지 확인
-//     const koreanRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
-    
-//     // 제목이나 채널명에 한글이 있는지 체크 (제목만 검사하려면 a.title만 쓰면 됩니다)
-//     const isAKorean = koreanRegex.test(a.title) || koreanRegex.test(a.channel);
-//     const isBKorean = koreanRegex.test(b.title) || koreanRegex.test(b.channel);
-
-//     // [1단계] 언어 우선순위 비교
-//     // A는 한글이고 B는 영어면 -> A가 앞으로 (-1)
-//     if (isAKorean && !isBKorean) {
-//       return -1; 
-//     }
-//     // A는 영어고 B는 한글이면 -> B가 앞으로 (1)
-//     if (!isAKorean && isBKorean) {
-//       return 1;
-//     }
-
-//     // [2단계] 언어 조건이 같다면(둘 다 한글 or 둘 다 영어), 조회수 비교
-//     return b.stats.views - a.stats.views;
-//   });
-  
-//   // 필요한 데이터만 정제해서 전송 (선택사항)
-//   const formattedData = filteredData.map(video => ({
-//     id: video.video_id,
-//     title: video.title,
-//     channel: video.channel,
-//     views: video.stats.views,
-//     publish_time: video.publish_time,
-//     category: video.scraped_category_name, // 확인용
-//     // 유튜브 썸네일 URL 공식: https://img.youtube.com/vi/[video_id]/[옵션].jpg
-//     thumbnail: `https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`
-//   }));
-
-//   res.json(formattedData);
-// });
-
-// [AnalysisPage] 특정 키워드 상세 분석 API
-// 사용법: /api/analysis?keyword=쿠팡
-// [AnalysisPage] 상세 분석 API (댓글 통합 로직 추가)
 // [AnalysisPage] 상세 분석 API
 app.get('/api/analysis', async (req, res) => {
   const { keyword, startDate, endDate } = req.query;
@@ -517,175 +359,160 @@ app.get('/api/analysis', async (req, res) => {
 
   if (!keyword) return res.status(400).json({ error: 'Keyword required' });
 
-  // -----------------------------------------------------------
-  // ✅ 1. 캐시 확인 (API 비용 절약 핵심 로직)
-  // -----------------------------------------------------------
+  // 1. 캐시 확인
   const now = Date.now();
-  // 날짜 필터가 없고(전체 기간), 캐시에 데이터가 있으며, 1시간(60분)이 지나지 않았다면?
   if (!startDate && !endDate && searchCache[keyword] && (now - searchCache[keyword].timestamp < 60 * 60 * 1000)) {
      console.log(`📦 [Cache] 캐시된 데이터 반환: ${keyword}`);
      return res.json(searchCache[keyword].data);
   }
-  // -----------------------------------------------------------
 
   try {
     // 1. [로컬 분석] 키워드 기본 정보 찾기
     const currentItem = findKeywordOverAll(keyword);
     if (!currentItem) return res.json({ found: false, message: "데이터 없음" });
 
-    // 2. [로컬 분석] 히스토리 데이터 구성
+    // 2. [로컬 분석] 히스토리 데이터 구성 (모든 포맷 호환)
     const historyMap = getHistoryData();
     const dates = Object.keys(historyMap).sort();
 
     const history = dates.map(date => {
         const dayData = historyMap[date];
-        const dayIntegrated = dayData.integrated || [];
-        let found = dayIntegrated.find(item => item.Keyword === keyword);
         
-        if (!found && dayData.platform) {
-            const platforms = dayData.platform;
-            for (const pKey of Object.keys(platforms)) {
-                const pList = Array.isArray(platforms[pKey]) ? platforms[pKey] : [];
+        // 포맷 호환 어댑터
+        let allArray = [];
+        let platformsObj = {};
+        if (dayData.all) {
+            allArray = dayData.all;
+            platformsObj = dayData;
+        } else if (dayData.Integrated_Trends) {
+            allArray = dayData.Integrated_Trends;
+            platformsObj = dayData.Platform_Trends || {};
+        } else if (Array.isArray(dayData)) {
+            allArray = dayData;
+        }
+
+        let found = allArray.find(item => (item.Keyword || item.keyword) === keyword);
+        
+        if (!found) {
+            for (const pKey of Object.keys(platformsObj)) {
+                if (['all', 'meta', 'Integrated_Trends', 'Platform_Trends'].includes(pKey)) continue;
+                const pList = Array.isArray(platformsObj[pKey]) ? platformsObj[pKey] : [];
                 const pItem = pList.find(pi => (pi.Keyword || pi.keyword) === keyword);
                 if (pItem) {
-                    found = { Mentions: pItem.Total_Mentions || pItem.Count || 0 };
+                    found = pItem;
                     break; 
                 }
             }
         }
+
+        // 구/신형 키값 모두 확인하여 언급량 추출
+        const mentions = found ? (found.Target_Day_Mentions || found.Target_Week_Mentions || found.Total_Mentions || found.Mentions || found.Count || 0) : 0;
+
         return {
           date: date,
-          mentions: found ? (found.Mentions || found.Total_Mentions || 0) : 0
+          mentions: mentions
         };
     });
 
-    // 3. [로컬 분석] 댓글 수집 및 워드클라우드
+    // 3. [로컬 분석] 댓글 수집 및 워드클라우드 (모든 포맷 호환)
     let rawCommentsMap = new Map(); // 중복 제거용 Map
 
     dates.forEach(date => {
         const dayData = historyMap[date];
         
-        // 통합 데이터 처리
-        if (dayData.integrated) {
-            const item = dayData.integrated.find(i => i.Keyword === keyword);
-            if (item?.Examples) {
-                item.Examples.forEach(ex => {
-                    const isObj = typeof ex === 'object' && ex !== null;
-                    const text = isObj ? ex.text : ex;
-                    if (!text) return;
-
-                    let source = isObj ? (ex.platform || '알 수 없음') : '알 수 없음';
-                    let link = isObj ? (ex.link || null) : null;
-                    let cleanText = text;
-
-                    if (!isObj && text.startsWith('[')) {
-                        const match = text.match(/^\[(.*?)\]\s*(.*)/);
-                        if (match) { source = match[1]; cleanText = match[2]; }
-                    }
-
-                    if (!rawCommentsMap.has(cleanText)) {
-                        rawCommentsMap.set(cleanText, { source, text: cleanText, link });
-                    }
-                });
-            }
+        let allArray = [];
+        let platformsObj = {};
+        if (dayData.all) {
+            allArray = dayData.all;
+            platformsObj = dayData;
+        } else if (dayData.Integrated_Trends) {
+            allArray = dayData.Integrated_Trends;
+            platformsObj = dayData.Platform_Trends || {};
+        } else if (Array.isArray(dayData)) {
+            allArray = dayData;
         }
-        
-        // 플랫폼 데이터 처리
-        if (dayData.platform) {
-            Object.keys(dayData.platform).forEach(pKey => {
-                const pList = Array.isArray(dayData.platform[pKey]) ? dayData.platform[pKey] : [];
-                const pItem = pList.find(i => (i.Keyword || i.keyword) === keyword);
-                if (pItem?.Examples) {
-                    pItem.Examples.forEach(ex => {
-                        const isObj = typeof ex === 'object' && ex !== null;
-                        const text = isObj ? ex.text : ex;
-                        if (!text) return;
 
-                        let source = isObj ? (ex.platform || pKey) : pKey;
-                        let link = isObj ? (ex.link || null) : null;
-                        let cleanText = text;
+        // 통합 및 플랫폼 데이터를 모두 순회하며 댓글 추출하는 내부 함수
+        const extractComments = (item, defaultSource) => {
+            if (!item || !item.Examples) return;
+            
+            // Examples가 객체형({"theqoo": [...]})이거나 배열형([...])일 수 있음
+            const examplesList = Array.isArray(item.Examples) 
+                ? item.Examples 
+                : (typeof item.Examples === 'object' ? Object.values(item.Examples).flat() : []);
 
-                        if (!isObj && text.startsWith('[')) {
-                            const match = text.match(/^\[(.*?)\]\s*(.*)/);
-                            if (match) { source = match[1]; cleanText = match[2]; }
-                        }
+            examplesList.forEach(ex => {
+                const isObj = typeof ex === 'object' && ex !== null;
+                const text = isObj ? (ex.comment || ex.text) : ex;
+                if (!text || typeof text !== 'string') return;
 
-                        if (!rawCommentsMap.has(cleanText)) {
-                            rawCommentsMap.set(cleanText, { source, text: cleanText, link });
-                        }
-                    });
+                let source = isObj ? (ex.platform || defaultSource) : defaultSource;
+                let link = isObj ? (ex.link || null) : null;
+                let cleanText = text;
+
+                // "[youtube] 내용..." 형태 분리
+                if (!isObj && text.startsWith('[')) {
+                    const match = text.match(/^\[(.*?)\](?:\(.*\))?\s*(.*)/);
+                    if (match) { source = match[1]; cleanText = match[2]; }
+                }
+
+                // _trends 같은 불필요한 꼬리표 떼기
+                source = source.replace('_trends', '');
+
+                if (!rawCommentsMap.has(cleanText)) {
+                    rawCommentsMap.set(cleanText, { source, text: cleanText, link });
                 }
             });
-        }
+        };
+
+        // 1) 통합 데이터에서 추출
+        extractComments(allArray.find(i => (i.Keyword || i.keyword) === keyword), 'all');
+
+        // 2) 플랫폼별 데이터에서 추출
+        Object.keys(platformsObj).forEach(pKey => {
+            if (['all', 'meta', 'Integrated_Trends', 'Platform_Trends'].includes(pKey)) return;
+            const pList = Array.isArray(platformsObj[pKey]) ? platformsObj[pKey] : [];
+            extractComments(pList.find(i => (i.Keyword || i.keyword) === keyword), pKey);
+        });
     });
 
     const parsedComments = Array.from(rawCommentsMap.values());
     const wordCloudData = extractWordCloudData(parsedComments, keyword);
 
-
-    // -----------------------------------------------------------
-    // ✅ 4. 유튜브 영상 검색 (API 연동)
-    // -----------------------------------------------------------
+    // 4. 유튜브 영상 검색 (API 연동 - 유지)
     let relatedVideos = [];
-    
     if (API_KEY) {
       try {
-        console.log(`🚀 유튜브 검색 시작: [${keyword}] (기간: ${startDate || '전체'} ~ ${endDate || '전체'})`);
-        
-        // (1) 검색 파라미터 설정
         const searchParams = {
-            part: 'snippet',
-            q: keyword,
-            type: 'video',
-            maxResults: 3,
-            key: API_KEY,
-            regionCode: 'KR',
-            order: 'date' // 최신순 정렬
+            part: 'snippet', q: keyword, type: 'video', maxResults: 3, key: API_KEY, regionCode: 'KR', order: 'date'
         };
-
-        // 날짜 필터가 있다면 파라미터에 추가 (toISODate 함수 필요)
         if (startDate) searchParams.publishedAfter = toISODate(startDate);
         if (endDate) searchParams.publishedBefore = toISODate(endDate, true);
 
-        // (2) 검색 API 호출
-        const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
-          params: searchParams
-        });
-        
-        console.log(`📦 검색된 영상 개수: ${searchRes.data.items.length}개`);
-        
-        // (3) 상세 정보(조회수) 조회를 위한 ID 추출
+        const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', { params: searchParams });
         const videoIds = searchRes.data.items.map(i => i.id.videoId).join(',');
         
         if (videoIds) {
           const videoRes = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
-            params: {
-              part: 'snippet,statistics',
-              id: videoIds,
-              key: API_KEY
-            }
+            params: { part: 'snippet,statistics', id: videoIds, key: API_KEY }
           });
           
           relatedVideos = videoRes.data.items.map(item => ({
             id: item.id,
             title: item.snippet.title,
             channel: item.snippet.channelTitle,
-            views: item.statistics.viewCount, // 조회수
+            views: item.statistics.viewCount,
             thumbnail: item.snippet.thumbnails.medium.url,
             publish_time: item.snippet.publishedAt
           }));
         }
       } catch (err) {
         console.error("❌ 유튜브 API 에러:", err.message);
-        // 에러가 나도 로컬 데이터는 보여주기 위해 relatedVideos는 빈 배열로 유지
       }
-    } else {
-        console.log("⚠️ API 키 없음: 유튜브 검색 생략");
     }
 
-    // Fallback: API 실패 혹은 키 없음 시 로컬 댓글 데이터로 가짜 영상 데이터 생성 (선택 사항)
     if (relatedVideos.length === 0) {
-        const youtubeComments = parsedComments.filter(c => c.source === 'youtube' || c.source === 'Youtube');
+        const youtubeComments = parsedComments.filter(c => c.source.toLowerCase().includes('youtube'));
         relatedVideos = youtubeComments.slice(0, 3).map((c, i) => ({
             id: `local-${i}`,
             title: c.text.length > 50 ? c.text.substring(0, 50) + "..." : c.text,
@@ -696,34 +523,27 @@ app.get('/api/analysis', async (req, res) => {
         }));
     }
 
-    // -----------------------------------------------------------
-    // ✅ 5. 최종 응답 데이터 구성 및 캐싱
-    // -----------------------------------------------------------
+    // 5. 최종 응답 데이터 구성 및 캐싱
     const finalResponse = {
       found: true,
       keyword: currentItem.Keyword,
       rank: currentItem.Rank,
-      totalMentions: currentItem.Mentions || currentItem.Total_Mentions || 0,
-      score: currentItem.Score,
+      totalMentions: currentItem.Target_Day_Mentions || currentItem.Target_Week_Mentions || currentItem.Total_Mentions || currentItem.Mentions || 0,
+      score: currentItem.Trend_Score || currentItem.Score || 0,
       history: history,
       comments: parsedComments,
       wordCloud: wordCloudData,
       videos: relatedVideos 
     };
 
-    // [캐싱 저장] 날짜 필터가 없는 '기본 검색'일 때만 저장합니다.
     if (!startDate && !endDate) {
-        searchCache[keyword] = {
-            data: finalResponse,
-            timestamp: now
-        };
-        console.log(`💾 [Cache] 결과 저장 완료: ${keyword}`);
+        searchCache[keyword] = { data: finalResponse, timestamp: now };
     }
 
     res.json(finalResponse);
 
   } catch (error) {
-    console.error("서버 내부 에러:", error);
+    console.error("❌ /api/analysis 에러:", error);
     res.status(500).json({ error: 'Server Error' });
   }
 });
@@ -779,10 +599,28 @@ app.get('/api/news', async (req, res) => {
   }
 });
 
+let summaryCache = {};
+let summaryLocks = {};
+
 // ✅ 7. [AI] LM Studio 연동 요약 API (크리에이터 조언 & 붉은 강조 모드)
 app.get('/api/summary', async (req, res) => {
   const { keyword, startDate, endDate } = req.query;
   if (!keyword) return res.status(400).json({ error: 'Keyword required' });
+
+  const now = Date.now();
+  if (!startDate && !endDate && summaryCache[keyword] && (now - summaryCache[keyword].timestamp < 60 * 60 * 1000)) {
+     console.log(`📦 [Summary Cache] 캐시된 요약 데이터 반환: ${keyword}`);
+     return res.json({ summary: summaryCache[keyword].data });
+  }
+
+  if (!startDate && !endDate) {
+      if (summaryLocks[keyword]) {
+          console.log(`🛑 [Lock] 이미 분석 중인 키워드입니다. 중복 요청 차단: ${keyword}`);
+          // 두 번째 밀려온 요청은 쳐내버립니다. (프론트엔드는 첫 번째 요청의 응답을 쓸 것임)
+          return res.status(429).json({ summary: "잠시 후 다시 시도해주세요." });
+      }
+      summaryLocks[keyword] = true; // 문 걸어 잠그기!
+  }
 
   try {
     // -------------------------------------------------------
@@ -1002,10 +840,23 @@ app.get('/api/summary', async (req, res) => {
     finalSummary += `\n\n(🔥 Hot: ${topPlatform})`;
 
     console.log("✅ AI 요약 완료!");
+
+    if (!startDate && !endDate) {
+      summaryCache[keyword] = {
+        data: finalSummary,
+        timestamp: now // 라우트 최상단에 선언된 now 변수 사용
+      };
+      console.log(`💾 [Summary Cache] 요약 결과 캐시 저장 완료: ${keyword}`);
+      delete summaryLocks[keyword];
+    }
+
     res.json({ summary: finalSummary });
 
   } catch (error) {
     // 에러 상세 로그 출력 (OpenAI 에러 메시지 확인용)
+    if (!startDate && !endDate) {
+        delete summaryLocks[keyword]; // ✅ 에러가 났을 때도 자물쇠를 꼭 풀어줘야 합니다.
+    }
     if (error.response) {
         console.error("❌ AI API 에러 응답:", error.response.status, error.response.data);
     } else {

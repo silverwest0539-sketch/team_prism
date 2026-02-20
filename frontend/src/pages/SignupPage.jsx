@@ -106,18 +106,6 @@ const SignupPage = () => {
 
         <form onSubmit={handleSignup} className="space-y-5">
           <div>
-            <label className="form-label">닉네임</label>
-            <input
-              type="text"
-              value={form.nickname}
-              onChange={updateField('nickname')}
-              placeholder="사용할 닉네임"
-              className="form-input"
-              required
-            />
-          </div>
-
-          <div>
             <label className="form-label">이메일</label>
             <div className="flex gap-2 mb-2">
               <input
@@ -152,6 +140,18 @@ const SignupPage = () => {
                 className="form-input border-indigo-300 bg-indigo-50 mt-2"
               />
             )}
+          </div>
+          
+          <div>
+            <label className="form-label">닉네임</label>
+            <input
+              type="text"
+              value={form.nickname}
+              onChange={updateField('nickname')}
+              placeholder="사용할 닉네임"
+              className="form-input"
+              required
+            />
           </div>
 
           <div>

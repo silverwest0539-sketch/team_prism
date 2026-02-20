@@ -20,7 +20,7 @@ const loadTrendData = () => {
         return;
       }
 
-      // 1. 파일 목록 가져오기 (기존 파일명 & 새 파일명 모두 허용)
+      // 1. 파일 목록 가져오기 (두 가지 포맷 모두 허용)
       const files = fs.readdirSync(dataDirectory)
         .filter(file => (file.startsWith('trend_keywords_final_') || file.startsWith('trending_keywords_')) && file.endsWith('.json'));
 
@@ -29,107 +29,31 @@ const loadTrendData = () => {
         return;
       }
 
-      console.log(`📂 총 ${files.length}개의 트렌드 데이터 파일을 로드합니다.`);
-
-      trendHistory = {}; // 초기화
+      trendHistory = {}; 
       
       files.forEach(file => {
-        // 2. 날짜 추출 로직 수정 (YYYYMMDD 형식 또는 YYYYMMDD_YYYYMMDD 형식 모두 대응)
-        // 파일명 끝부분의 8자리 숫자를 날짜로 사용 (종료일 기준)
-        const match = file.match(/(\d{8})\.json$/);
-        
-        if (match) {
-          const date = match[1];
+        // 2. 날짜 추출 (파일명에서 첫 번째 8자리 숫자만 쏙 뽑아냅니다)
+        const dateMatch = file.match(/(\d{8})/);
+        if (dateMatch) {
+          const dateStr = dateMatch[1]; // 예: '20260218'
           const filePath = path.join(dataDirectory, file);
-          const rawData = fs.readFileSync(filePath, 'utf-8');
-          const jsonData = JSON.parse(rawData);
-
-          let integratedData = [];
-          let platformData = {};
-
-          // CASE A: 새 파일 형식 (배열 형태)
-          if (Array.isArray(jsonData)) {
-            // 1. 통합 데이터 변환
-            integratedData = jsonData.map(item => {
-              // Examples 객체를 기존 문자열 배열 포맷으로 변환 ["[플랫폼] 내용", ...]
-              let formattedExamples = [];
-              if (item.Examples && typeof item.Examples === 'object') {
-                Object.entries(item.Examples).forEach(([platform, comments]) => {
-                  if (Array.isArray(comments)) {
-                    comments.forEach(c => {
-                      // comment 객체에서 내용 추출 (없으면 문자열 자체라고 가정)
-                      const text = c.comment || c; 
-                      const link = c.link || null;
-                      formattedExamples.push({
-                        platform: platform,
-                        text: text,
-                        link: link
-                      });
-                    });
-                  }
-                });
-              }
-
-              return {
-                ...item,
-                Date: date,
-                // 필드명 매핑 (새 파일 -> 기존 로직)
-                Mentions: item.Target_Week_Mentions || item.Total_Mentions || 0, 
-                Score: item.Trend_Score || 0,
-                Examples: formattedExamples,
-                Type: 'integrated'
-              };
-            });
-
-            // 2. 플랫폼별 데이터 생성 (새 파일은 통합되어 있으므로 분리 작업 필요)
-            integratedData.forEach(item => {
-              if (item.Platform_List && Array.isArray(item.Platform_List)) {
-                item.Platform_List.forEach(plat => {
-                  if (!platformData[plat]) platformData[plat] = [];
-                  // 해당 플랫폼용 데이터로 복제해서 추가
-                  platformData[plat].push({
-                    ...item,
-                    // 플랫폼별 언급량이 따로 없으면 전체 언급량 사용하거나, Examples 개수로 추정 가능하나 여기선 전체 사용
-                    Total_Mentions: item.Mentions 
-                  });
-                });
-              }
-            });
-
-          } 
-          // CASE B: 기존 파일 형식 (객체 형태)
-          else {
-            integratedData = jsonData.Integrated_Trends 
-              ? jsonData.Integrated_Trends.map(item => ({
-                  ...item,
-                  Date: date,
-                  Mentions: item.Total_Mentions || 0,
-                  Type: 'integrated'
-                })) 
-              : [];
-
-            if (jsonData.Platform_Trends && typeof jsonData.Platform_Trends === 'object') {
-               platformData = jsonData.Platform_Trends;
-            }
+          const fileContent = fs.readFileSync(filePath, 'utf-8');
+          try {
+            trendHistory[dateStr] = JSON.parse(fileContent);
+          } catch (e) {
+            console.error(`⚠️ JSON 파싱 에러 (${file}):`, e);
           }
-
-          // 데이터 저장
-          trendHistory[date] = {
-            integrated: integratedData,
-            platform: platformData
-          };
         }
       });
 
-      // 3. 최신 날짜 확인 (파일명 기준 정렬)
-      const dates = Object.keys(trendHistory).sort();
-      latestDate = dates[dates.length - 1];
+      // 3. 최신 날짜 구하기
+      const sortedDates = Object.keys(trendHistory).sort((a, b) => b.localeCompare(a));
+      latestDate = sortedDates.length > 0 ? sortedDates[0] : null;
 
-      console.log(`✅ 데이터 로드 완료. 최신 날짜: ${latestDate}`);
+      console.log(`✅ 데이터 로드 완료! 최신 날짜: ${latestDate}`);
       resolve(trendHistory);
-
     } catch (error) {
-      console.error("❌ 데이터 로딩 실패:", error);
+      console.error("데이터 로드 중 에러 발생:", error);
       reject(error);
     }
   });
@@ -145,18 +69,26 @@ const getLatestData = () => {
 const getHistoryData = () => trendHistory;
 
 // 최신 플랫폼별 데이터 반환
-const getLatestPlatformData = (platformKey) => {
+const getLatestPlatformData = (platformKey = 'all') => {
   if (!latestDate || !trendHistory[latestDate]) return [];
   
-  const pData = trendHistory[latestDate].platform;
+  const latestData = trendHistory[latestDate];
 
-  // 1. 정확히 일치하는 키가 있으면 반환
-  if (pData[platformKey]) return pData[platformKey];
-
-  // 2. 키가 없으면 'all' 또는 빈 배열 반환
-  if (platformKey === 'all') {
-    // 모든 플랫폼 데이터를 합쳐서 반환 (중복 제거 필요 시 로직 추가)
-    return Object.values(pData).flat();
+  // 포맷 3: 최신 포맷 ({"all": [...], "youtube": [...]})
+  if (latestData && latestData.all) {
+    return latestData[platformKey] || [];
+  }
+  
+  // 포맷 1: 초기 포맷 ({"Integrated_Trends": [...], "Platform_Trends": {...}})
+  if (latestData && latestData.Integrated_Trends) {
+    if (platformKey === 'all') return latestData.Integrated_Trends || [];
+    return (latestData.Platform_Trends && latestData.Platform_Trends[platformKey]) || [];
+  }
+  
+  // 포맷 2: 과도기 포맷 (배열 형태)
+  if (Array.isArray(latestData)) {
+    if (platformKey === 'all') return latestData;
+    return []; 
   }
 
   return [];
@@ -164,31 +96,41 @@ const getLatestPlatformData = (platformKey) => {
 
 // 특정 키워드의 전체 기간 데이터 찾기 (그래프용)
 const findKeywordOverAll = (keyword) => {
-  const result = [];
-  const dates = Object.keys(trendHistory).sort();
+  if (!latestDate || !trendHistory[latestDate]) return null;
+  const latestData = trendHistory[latestDate];
 
-  dates.forEach(date => {
-    const dayData = trendHistory[date].integrated;
-    const found = dayData.find(item => item.Keyword === keyword);
-    if (found) {
-      result.push({
-        date: date,
-        rank: found.Rank,
-        mentions: found.Mentions || found.Total_Mentions || 0,
-        score: found.Score || found.Trend_Score || 0
-      });
-    } else {
-      // 해당 날짜에 키워드가 없으면 0 처리 (그래프 끊김 방지)
-      result.push({
-        date: date,
-        rank: null,
-        mentions: 0,
-        score: 0
-      });
-    }
-  });
+  // 1. 데이터 포맷에 맞춰 통합 배열과 플랫폼 객체 분리
+  let allArray = [];
+  let platformsObj = {};
 
-  return result;
+  if (latestData.all) {
+    allArray = latestData.all;
+    platformsObj = latestData; // 포맷 3: 최상위에 플랫폼 키들이 같이 있음
+  } else if (latestData.Integrated_Trends) {
+    allArray = latestData.Integrated_Trends;
+    platformsObj = latestData.Platform_Trends || {}; // 포맷 1
+  } else if (Array.isArray(latestData)) {
+    allArray = latestData; // 포맷 2: 배열만 존재
+  }
+
+  // 2. 통합(all) 데이터에서 먼저 검색
+  let found = allArray.find(item => (item.Keyword === keyword || item.keyword === keyword));
+  if (found) return found;
+
+  // 3. 통합에 없다면, 플랫폼별 데이터(youtube, theqoo 등)를 순회하며 샅샅이 검색
+  for (const pKey of Object.keys(platformsObj)) {
+    // 시스템 키값들은 건너뛰기
+    if (['all', 'meta', 'Integrated_Trends', 'Platform_Trends'].includes(pKey)) continue;
+
+    const pList = Array.isArray(platformsObj[pKey]) ? platformsObj[pKey] : [];
+    const pItem = pList.find(item => (item.Keyword === keyword || item.keyword === keyword));
+    
+    // 플랫폼에서 키워드를 발견하면 즉시 반환!
+    if (pItem) return pItem; 
+  }
+
+  // 끝까지 찾아봐도 없으면 null 반환
+  return null;
 };
 
 

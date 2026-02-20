@@ -35,7 +35,6 @@ const HomePage = () => {
   };
 
   const MAIN_PLATFORM_OPTIONS = [
-    { label: '전체 플랫폼', value: 'all' },
     { label: '유튜브', value: 'youtube' },
     { label: '더쿠', value: 'theqoo' },
     { label: '디시인사이드', value: 'dcinside' }, // 상세: dc -> 메인: dcinside 유지
@@ -45,7 +44,7 @@ const HomePage = () => {
     { label: 'X (트위터)', value: 'x' }, // 상세: x_trends -> 메인: x 유지
   ];
 
-  const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '영화/드라마', '브이로그', '챌린지'];
+  const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '브이로그', '챌린지'];
 
   const openModal = (data) => {
     setSelectedKeyword(data);

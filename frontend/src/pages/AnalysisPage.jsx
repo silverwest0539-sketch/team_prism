@@ -53,12 +53,13 @@ const PLATFORM_OPTIONS = [
   { label: '전체 플랫폼', value: 'all' },
   { label: '유튜브', value: 'youtube' },
   { label: '더쿠', value: 'theqoo' },
-  { label: '디시인사이드', value: 'dc' },
+  { label: '디시인사이드', value: 'dcinside' },
   { label: '루리웹', value: 'ruliweb' },
   { label: '네이트판', value: 'nate' },
   { label: 'FM코리아', value: 'fmkorea' },
   { label: 'X (트위터)', value: 'x_trends' },
 ];
+
 
 const InfoCard = ({ title, value, subText, color }) => (
   <div className="card relative overflow-hidden group card-hover h-40">
@@ -345,7 +346,23 @@ const AnalysisPage = () => {
       )
     })
   }
-  
+
+  // 실제 데이터가 존재하는 플랫폼(source) 목록만 추출
+  const availablePlatforms = useMemo(() => {
+    if (!data || !data.comments) return ['all']; // 데이터가 없으면 '전체(all)'만
+    
+    // comments 배열에서 플랫폼 이름(source)만 쏙 뽑아서 중복 제거
+    const sources = data.comments.map(comment => comment.source);
+    const uniqueSources = [...new Set(sources)];
+    
+    // 'all'은 기본으로 항상 포함시키고, 존재하는 플랫폼들을 합침
+    return ['all', ...uniqueSources]; 
+  }, [data]);
+
+  const filteredPlatforms = PLATFORM_OPTIONS.filter(opt => 
+  opt.value === 'all' || availablePlatforms.includes(opt.value)
+);
+    
   return (
     <div className="page space-y-6">
       {/* 상단 헤더 */}
@@ -438,16 +455,13 @@ const AnalysisPage = () => {
             </div>
             <div>
               <select
-                className="select"
                 value={selectedPlatform}
-                onChange={(e) => {
-                  setSelectedPlatform(e.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => setSelectedPlatform(e.target.value)}
+                className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-sm font-medium text-gray-700 bg-white cursor-pointer transition-all shadow-sm"
               >
-                {PLATFORM_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                {filteredPlatforms.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>

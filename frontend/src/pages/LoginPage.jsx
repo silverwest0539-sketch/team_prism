@@ -23,10 +23,10 @@ const LoginPage = () => {
         {/* 로그인 폼 */}
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="form-label">닉네임</label>
+            <label className="form-label">이메일</label>
             <input 
               type="text" 
-              placeholder="닉네임을 입력하세요"
+              placeholder="이메일을 입력하세요"
               className="form-input"
             />
           </div>
