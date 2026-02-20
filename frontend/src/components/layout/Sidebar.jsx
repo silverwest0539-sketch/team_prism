@@ -5,8 +5,8 @@ import { Bell, LogOut, Settings, X } from 'lucide-react';
 const MAIN_MENUS = [
   { path: '/home', label: '트렌드 대시보드' },
   { path: '/analysis', label: '키워드 심층 분석' },
-  { path: '/creation', label: '컨텐츠 생성' },
-  { path: '/scrap', label: '내 스크랩' }
+  { path: '/creation', label: '컨텐츠 생성' }
+
 ];
 
 const Sidebar = ({ isOpen = false, onClose }) => {
