@@ -10,8 +10,8 @@ const FindPasswordPage = () => {
   const handleFindPassword = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
     try {
-      // 백엔드에 임시 비밀번호 발송 요청
       const response = await axios.post('http://localhost:5000/api/auth/find-password', { email });
       alert(response.data.message);
       navigate('/login');
@@ -24,22 +24,37 @@ const FindPasswordPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="card-soft w-full max-w-md shadow-lg">
-        <h2 className="text-2xl font-bold text-center mb-6">비밀번호 찾기</h2>
-        <p className="text-sm text-gray-600 mb-6 text-center">가입하신 이메일을 입력하시면 임시 비밀번호를 보내드립니다.</p>
-        <form onSubmit={handleFindPassword} className="space-y-4">
-          <input 
-            type="email" 
-            className="form-input" 
-            placeholder="example@prism.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <button type="submit" disabled={isSubmitting} className="btn-auth-primary">
-            {isSubmitting ? '발송 중...' : '임시 비밀번호 발송'}
-          </button>
-        </form>
+      <div className="w-full max-w-md">
+        <button
+          type="button"
+          onClick={() => navigate('/home')}
+          className="block mx-auto mb-6 text-3xl font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+          aria-label="홈으로 이동"
+        >
+          Prism
+        </button>
+
+        <div className="card-soft w-full shadow-lg">
+          <h2 className="text-2xl font-bold text-center mb-6">비밀번호 찾기</h2>
+          <p className="text-sm text-gray-600 mb-6 text-center">
+            가입하신 이메일을 입력하시면 임시 비밀번호를 보내드립니다.
+          </p>
+
+          <form onSubmit={handleFindPassword} className="space-y-4">
+            <input
+              type="email"
+              className="form-input"
+              placeholder="example@prism.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+
+            <button type="submit" disabled={isSubmitting} className="btn-auth-primary">
+              {isSubmitting ? '발송 중..' : '임시 비밀번호 발송'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
