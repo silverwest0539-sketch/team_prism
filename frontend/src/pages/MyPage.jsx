@@ -1,12 +1,79 @@
 // src/pages/MyPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, X, Shield, Trash } from 'lucide-react';
+import axios from 'axios';
 // 스크랩 페이지 컴포넌트 불러오기
 import ScrapPage from '../components/mypage/ScrapPage';
 
 const MyPage = () => {
   const [activeModal, setActiveModal] = useState(null);
-  const closeModal = () => setActiveModal(null);
+  const [userInfo, setUserInfo] = useState({ nickname: '', email: '' });
+  const [editNickname, setEditNickname] = useState('');
+  
+  // 비밀번호 상태
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      setUserInfo(user);
+      setEditNickname(user.nickname);
+    }
+  }, []);
+
+  const closeModal = () => {
+    setActiveModal(null);
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  };
+
+  // 닉네임 수정 함수
+  const handleSaveProfile = async () => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/update-profile', {
+        email: userInfo.email,
+        newNickname: editNickname
+      });
+
+      if (response.data.success) {
+        // 1. 로컬 상태 업데이트
+        const updatedUser = { ...userInfo, nickname: editNickname };
+        setUserInfo(updatedUser);
+        
+        // 2. localStorage 업데이트 (사이드바 등 반영 위함)
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        alert(response.data.message);
+        closeModal();
+        window.location.reload(); // 전체 UI 동기화를 위해 새로고침 권장
+      }
+    } catch (error) {
+      alert('이름 수정 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 비밀번호 변경 함수
+  const handleChangePassword = async () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      alert('새 비밀번호 확인이 일치하지 않습니다.');
+      return;
+    }
+    try {
+      await axios.post('http://localhost:5000/api/auth/change-password', {
+        email: userInfo.email,
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+      alert('비밀번호가 변경되었습니다.');
+      setActiveModal(null);
+    } catch (error) {
+      alert(error.response?.data?.message || '변경 실패');
+    }
+  };
 
   return (
     <div className="page pb-20">
@@ -113,13 +180,23 @@ const MyPage = () => {
                 <div className="space-y-8">
                   <div className="flex flex-col items-center">
                     <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4 text-3xl font-bold shadow-inner">
-                      M
+                      {userInfo.nickname?.charAt(0)}
                     </div>
                     <div className="w-full">
                        <label className="block text-sm font-medium text-gray-700 mb-1">이름</label>
-                       <input type="text" defaultValue="마케터님" className="w-full border rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+                       <input 
+                          type="text" 
+                          value={editNickname} // defaultValue 대신 value 사용
+                          onChange={(e) => setEditNickname(e.target.value)} 
+                          className="w-full border rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        />
                        <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
-                       <input type="email" defaultValue="marketer@trendguard.ai" disabled className="w-full border bg-gray-50 text-gray-500 rounded-lg px-4 py-2"/>
+                       <input 
+                          type="email" 
+                          value={userInfo.email} 
+                          disabled 
+                          className="w-full border bg-gray-50 text-gray-500 rounded-lg px-4 py-2"
+                        />
                     </div>
                   </div>
                   <div className="border-t pt-6">
@@ -127,8 +204,38 @@ const MyPage = () => {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm font-medium">비밀번호 변경</span>
-                        <button className="text-xs border bg-white px-3 py-1 rounded hover:bg-gray-100">변경</button>
+                        <button onClick={() => setActiveModal('password')} className="text-xs border bg-white px-3 py-1 rounded hover:bg-gray-100">변경</button>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 비밀번호 변경 모달 */}
+              {activeModal === 'password' && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl w-full max-w-md p-6 relative">
+                    <button onClick={() => setActiveModal(null)} className="absolute top-4 right-4 text-gray-400"><X /></button>
+                    <h3 className="text-xl font-bold mb-6">비밀번호 변경</h3>
+                    <div className="space-y-4">
+                      <input 
+                        type="password" placeholder="현재 비밀번호" className="form-input" 
+                        onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                      />
+                      <input 
+                        type="password" placeholder="새 비밀번호" className="form-input" 
+                        onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                      />
+                      <input 
+                        type="password" placeholder="새 비밀번호 확인" className="form-input" 
+                        onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                      />
+                      <button 
+                        onClick={handleChangePassword}
+                        className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700"
+                      >
+                        변경 완료
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -163,9 +270,22 @@ const MyPage = () => {
             </div>
 
             {/* 저장 버튼 (탈퇴 제외) */}
-            {activeModal !== 'withdraw' && (
+            {activeModal !== 'withdraw' && activeModal !== 'password' && (
               <div className="p-4 border-t bg-gray-50">
-                <button onClick={closeModal} className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition">저장하기</button>
+                <button 
+                  onClick={() => {
+                    // [수정됨] profile -> account 로 일치시킴
+                    if (activeModal === 'account') { 
+                      handleSaveProfile(); 
+                    } else {
+                      closeModal(); 
+                    }
+                  }} 
+                  className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+                >
+                  {/* 텍스트도 account 에 맞게 수정 */}
+                  {activeModal === 'account' ? '프로필 저장하기' : '저장하기'}
+                </button>
               </div>
             )}
           </div>

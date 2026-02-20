@@ -175,6 +175,93 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+const crypto = require('crypto');
+
+app.post('/api/auth/find-password', async (req, res) => {
+  const { email } = req.body;
+  
+  try {
+    // 1. 유저 존재 확인 (테이블명 USERS 대문자 주의!)
+    const [rows] = await db.execute('SELECT * FROM USERS WHERE user_email = ?', [email]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "가입되지 않은 이메일입니다." });
+    }
+
+    // 2. 임시 비밀번호 생성 (8자리 랜덤)
+    const tempPassword = crypto.randomBytes(4).toString('hex');
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    // 3. DB 업데이트 (USERS 테이블 사용)
+    await db.execute('UPDATE USERS SET password = ? WHERE user_email = ?', [hashedPassword, email]);
+
+    // 4. 이메일 발송 (이전에 설정한 transporter 사용)
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: '[Prism] 임시 비밀번호 안내입니다.',
+      html: `
+        <h3>요청하신 임시 비밀번호가 발급되었습니다.</h3>
+        <p>임시 비밀번호: <strong>${tempPassword}</strong></p>
+        <p>로그인 후 반드시 마이페이지에서 비밀번호를 변경해 주세요.</p>
+      `
+    });
+
+    res.json({ success: true, message: "임시 비밀번호가 메일로 발송되었습니다." });
+  } catch (error) {
+    console.error("비밀번호 찾기 에러:", error);
+    res.status(500).json({ success: false, message: "서버 에러가 발생했습니다." });
+  }
+});
+
+// mypage 정보 수정
+app.post('/api/auth/update-profile', async (req, res) => {
+  const { email, newNickname } = req.body;
+
+  try {
+    // 1. USERS 테이블의 닉네임 업데이트
+    await db.execute(
+      'UPDATE USERS SET nickname = ? WHERE user_email = ?',
+      [newNickname, email]
+    );
+
+    // 2. 업데이트된 정보 응답
+    res.json({ 
+      success: true, 
+      message: "이름이 성공적으로 변경되었습니다.",
+      nickname: newNickname
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+  }
+});
+
+// [비밀번호 변경]
+app.post('/api/auth/change-password', async (req, res) => {
+  const { email, currentPassword, newPassword } = req.body;
+
+  try {
+    // 1. 유저 확인
+    const [rows] = await db.execute('SELECT * FROM USERS WHERE user_email = ?', [email]);
+    if (rows.length === 0) return res.status(404).json({ success: false, message: "유저를 찾을 수 없습니다." });
+
+    const user = rows[0];
+
+    // 2. 현재 비밀번호 검증
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) return res.status(401).json({ success: false, message: "현재 비밀번호가 일치하지 않습니다." });
+
+    // 3. 새 비밀번호 암호화 및 업데이트
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.execute('UPDATE USERS SET password = ? WHERE user_email = ?', [hashedPassword, email]);
+
+    res.json({ success: true, message: "비밀번호가 성공적으로 변경되었습니다." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "서버 오류 발생" });
+  }
+});
+
 // 1. [HomePage] 급상승 키워드 API (Top 5)
 app.get('/api/trends/rising', (req, res) => {
   try {

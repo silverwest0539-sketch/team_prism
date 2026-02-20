@@ -82,9 +82,15 @@ const LoginPage = () => {
 
         {/* 하단 링크 */}
         <div className="text-center mt-8">
-          <span className="text-gray-500 text-sm">계정이 없으신가요? </span>
-          <Link to="/signup" className="text-indigo-600 font-bold text-sm hover:underline ml-1">
-            회원가입
+          <div>
+            <span className="text-gray-500 text-sm">계정이 없으신가요? </span>
+            <Link to="/signup" className="text-indigo-600 font-bold text-sm hover:underline ml-1">
+              회원가입
+            </Link>
+          </div>
+          <div className="border-l border-gray-300 h-4 self-center"></div>
+          <Link to="/find-password" title="비밀번호 찾기" className="text-gray-500 text-sm hover:underline">
+            비밀번호 찾기
           </Link>
         </div>
       </div>

@@ -68,6 +68,19 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
   // 즐겨찾기 토글
   const toggleBookmark = () => {
+    // 1. 로그인 여부 확인
+    const savedUser = localStorage.getItem('user'); //
+
+    if (!savedUser) {
+      // 2. 로그인이 안 되어 있다면 알림 후 중단
+      if (window.confirm('관심 키워드 저장(스크랩) 기능은 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?')) {
+        onClose(); // 모달 닫기
+        navigate('/login'); // 로그인 페이지로 이동
+      }
+      return;
+    }
+
+    // 3. 로그인이 되어 있다면 기존 스크랩 로직 실행
     if (isBookmarked) {
       removeScrap(data.keyword);
       setIsBookmarked(false);
@@ -85,6 +98,11 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
   // 메모 저장
   const handleSaveMemo = () => {
+    if (!localStorage.getItem('user')) {
+      alert('메모 저장 기능은 로그인이 필요합니다.');
+      return;
+    }
+    
     if (isScrapped(data.keyword)) {
       updateScrap(data.keyword, { memo });
       setMemoSaved(true);

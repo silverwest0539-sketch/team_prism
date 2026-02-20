@@ -12,6 +12,7 @@ import CreationPage from './pages/CreationPage';
 import AnalysisPage from './pages/AnalysisPage';
 import MyPage from './pages/MyPage'; // 👈 1. MyPage import 추가
 import ScrapPage from './components/mypage/ScrapPage'; // 스크랩 페이지(컴포넌트 위치)
+import FindPasswordPage from './pages/FindPasswordPage';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/find-password" element={<FindPasswordPage />} />
 
         {/* ===== 사이드바 있는 페이지들 (메인 서비스) ===== */}
 
