@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios')
 const path = require('path')
-const { loadTrendData, getLatestData, getYoutubeData, getHistoryData, getLatestPlatformData, findKeywordOverAll } = require('./dataLoader');
+const { loadTrendData, getLatestData, getYoutubeData, getHistoryData, getLatestPlatformData, findKeywordOverAll, getCommunityHotPosts } = require('./dataLoader');
 const dotenvResult = require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const Parser = require('rss-parser');
 const parser = new Parser({
@@ -348,6 +348,29 @@ app.get('/api/videos', async (req, res) => {
         console.log(`⚠️ 에러 발생으로 만료된 캐시 데이터 반환`);
         return res.json(videoCache[category].data);
     }
+    res.json([]);
+  }
+});
+
+// [HomePage] 커뮤니티 인기글 전용 API
+app.get('/api/community/posts', (req, res) => {
+  try {
+    const { platform } = req.query; // theqoo, dcinside, fmkorea 등
+    
+    // 1. dataLoader를 통해 최신 배열 데이터 가져오기
+    const platformPosts = getCommunityHotPosts(platform);
+
+    // 2. 프론트엔드에서 쓰기 좋게 10개만 가공
+    const response = platformPosts.slice(0, 10).map((post, index) => ({
+      rank: index + 1,
+      // 크롤러마다 대소문자나 키 이름이 다를 수 있으므로 방어적으로 모두 체크
+      title: post.title || post.Title || post.subject || post.Subject || post.text || "제목 없음", 
+      link: post.link || post.url || post.href || post.Link || post.Url || "#"
+    }));
+
+    res.json(response);
+  } catch (error) {
+    console.error("❌ /api/community/posts 에러:", error);
     res.json([]);
   }
 });

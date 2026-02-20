@@ -22,6 +22,8 @@ const HomePage = () => {
   // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState(null);
+  const [communityPosts, setCommunityPosts] = useState([]);
+  const [selectedComm, setSelectedComm] = useState('theqoo');
 
   const scrollRef = useRef(null);
 
@@ -33,6 +35,14 @@ const HomePage = () => {
       navigate(`/analysis?keyword=${searchTerm.trim()}`)
     }
   };
+
+  const COMMUNITY_OPTIONS = [
+    { label: '더쿠', value: 'theqoo' },
+    { label: '디시인사이드', value: 'dcinside' },
+    { label: '루리웹', value: 'ruliweb' },
+    { label: '네이트판', value: 'natepan' },
+    { label: 'FM코리아', value: 'fmkorea' },
+  ];
 
   const MAIN_PLATFORM_OPTIONS = [
     { label: '유튜브', value: 'youtube' },
@@ -91,6 +101,20 @@ const HomePage = () => {
 
       fetchData();
     }, [selectedPlatform, youtubeCategory]);
+
+  useEffect(() => {
+    const fetchCommunityPosts = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/community/posts?platform=${selectedComm}`);
+        const data = await res.json();
+        setCommunityPosts(data);
+      } catch (error) {
+        console.error('커뮤니티 인기글 로드 에러:', error);
+      }
+    };
+
+    fetchCommunityPosts();
+  }, [selectedComm]);
 
   return (
     <div 
@@ -319,6 +343,57 @@ const HomePage = () => {
             <ChevronRight className="w-6 h-6 text-gray-600" />
           </button>
 
+        </div>
+      </div>
+
+      {/* 3. UI 렌더링 (유튜브 섹션 </div> 바로 아래에 추가) */}
+      <div className="mb-12">
+        <div className="flex justify-between items-end mb-4">
+          <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">
+            커뮤니티 인기글
+          </h2>
+        </div>
+
+        {/* 커뮤니티 카테고리 탭 */}
+        <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
+          {COMMUNITY_OPTIONS.map((comm) => (
+            <button
+              key={comm.value}
+              onClick={() => setSelectedComm(comm.value)}
+              className={`chip ${selectedComm === comm.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              {comm.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 게시글 리스트 (그리드 2열 레이아웃) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {communityPosts.length > 0 ? (
+            communityPosts.map((post) => (
+              <a
+                key={post.rank}
+                href={post.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group"
+              >
+                <span className="text-lg font-bold text-blue-600 w-6 text-center">
+                  {post.rank}
+                </span>
+                <div className="flex-1 overflow-hidden">
+                  <h3 className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors">
+                    {post.title}
+                  </h3>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
+              </a>
+            ))
+          ) : (
+            <div className="col-span-1 md:col-span-2 text-center py-10 text-gray-400 text-sm">
+              현재 불러올 수 있는 인기글 데이터가 없습니다.
+            </div>
+          )}
         </div>
       </div>
 

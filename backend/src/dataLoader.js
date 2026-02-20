@@ -169,5 +169,56 @@ const getYoutubeData = () => {
   }
 };
 
+// 커뮤니티 인기글 목록
+const getCommunityHotPosts = (platform) => {
+  try {
+    if (!fs.existsSync(dataDirectory)) {
+      console.warn("⚠️ 데이터 폴더가 없습니다.");
+      return [];
+    }
 
-module.exports = { loadTrendData, getLatestData, getYoutubeData, getHistoryData, getLatestPlatformData, findKeywordOverAll};
+    // ✅ 핵심: 프론트엔드의 platform 값과 실제 파일 접두사(prefix) 매핑
+    const prefixMap = {
+      'theqoo': 'theqoo_hot_selector_',
+      'ruliweb': 'ruliweb_full_',
+      'natepan': 'nate_rank100_completed_',
+      'fmkorea': 'fmkorea_',
+      'dcinside': 'final_dc_best_DC_Best_'
+    };
+
+    const prefix = prefixMap[platform];
+
+    if (!prefix) {
+      console.warn(`⚠️ 알 수 없는 플랫폼 요청입니다: ${platform}`);
+      return [];
+    }
+
+    // 1. 해당 접두사로 시작하고 .json으로 끝나는 파일들만 필터링
+    const files = fs.readdirSync(dataDirectory).filter(file => 
+      file.startsWith(prefix) && file.endsWith('.json')
+    );
+
+    if (files.length === 0) {
+      console.warn(`⚠️ ${platform} 인기글 데이터 파일이 없습니다. (접두사: ${prefix})`);
+      return []; 
+    }
+
+    // 2. 시간순 정렬 후 가장 최신 파일(첫 번째)을 선택
+    const latestFile = files.sort().reverse()[0];
+    const filePath = path.join(dataDirectory, latestFile);
+
+    // 3. 파일 읽기 및 JSON 파싱
+    const rawData = fs.readFileSync(filePath, 'utf-8');
+    const parsedData = JSON.parse(rawData);
+
+    // 만약 JSON 파일 최상단이 객체이고 그 안에 배열이 있다면 배열만 추출
+    // (보통 크롤링 데이터는 [ {...}, {...} ] 형태의 배열이므로 그대로 반환)
+    return Array.isArray(parsedData) ? parsedData : (parsedData.data || parsedData.items || []);
+
+  } catch (error) {
+    console.error(`❌ ${platform} 인기글 데이터 로딩 실패:`, error);
+    return [];
+  }
+};
+
+module.exports = { loadTrendData, getLatestData, getYoutubeData, getHistoryData, getLatestPlatformData, findKeywordOverAll, getCommunityHotPosts};
