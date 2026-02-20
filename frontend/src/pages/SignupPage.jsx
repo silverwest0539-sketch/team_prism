@@ -107,7 +107,7 @@ const SignupPage = () => {
         <form onSubmit={handleSignup} className="space-y-5">
           <div>
             <label className="form-label">이메일</label>
-            <div className="flex gap-2 mb-2">
+            <div className="flex flex-col sm:flex-row gap-2 mb-2">
               <input
                 type="email"
                 value={form.email}
@@ -119,7 +119,7 @@ const SignupPage = () => {
               <button
                 type="button"
                 onClick={handleEmailCheck}
-                className="btn-auth-primary !w-auto px-5 whitespace-nowrap"
+                className="btn-auth-primary !w-full sm:!w-auto px-5 whitespace-nowrap"
               >
                 {emailCheckStatus === 'available'
                   ? '인증번호 재전송'

@@ -8,7 +8,7 @@
    * 사용: HomePage, AnalysisPage, MyPage
    */
   .page {
-    @apply bg-gray-50 min-h-screen p-8;
+    @apply bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8;
   }
 
   /* 최대 너비 7xl 컨테이너 
@@ -24,7 +24,7 @@
    * 사용: AnalysisPage (차트 카드, 정보 카드)
    */
   .card {
-    @apply bg-white p-6 rounded-2xl border border-gray-200 shadow-sm;
+    @apply bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm;
   }
 
   /* 부드러운 카드 스타일 (border-gray-100) 
@@ -33,7 +33,7 @@
    * 사용: LoginPage, SignupPage (로그인/회원가입 폼 카드)
    */
   .card-soft {
-    @apply bg-white rounded-2xl p-6 shadow-sm border border-gray-100;
+    @apply bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100;
   }
 
   /* 카드 호버 효과 
@@ -65,7 +65,7 @@
    * 사용: MyPage (구독 멤버십, 보안 설정)
    */
   .section-title-lg {
-    @apply font-bold text-lg flex items-center gap-2;
+    @apply font-bold text-base sm:text-lg flex items-center gap-2;
   }
 
   /* ===== Form 입력 필드 (로그인/회원가입) ===== */
@@ -251,7 +251,7 @@
    * 사용: HomePage (유튜브 카테고리 버튼)
    */
   .chip {
-    @apply px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors;
+    @apply px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors;
   }
 
   /* 활성화된 칩 

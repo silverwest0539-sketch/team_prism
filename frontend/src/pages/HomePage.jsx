@@ -123,19 +123,20 @@ const HomePage = () => {
     >
       
       {/* 상단 헤더 */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start mb-6">
         <SearchBar 
           placeholder="관심있는 키워드나 주제를 검색해보세요..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={handleSearch}
+          containerClassName="relative w-full max-w-3xl"
         />  
 
       </div>
 
-      <h1 className="text-2xl font-bold mb-8">안녕하세요, 마케터님 👋</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">안녕하세요, 마케터님 👋</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-10">
         
         {/* 카드 1: 트렌드 키워드 */}
         <div className="card-soft">
@@ -285,7 +286,7 @@ const HomePage = () => {
           {/* 왼쪽 화살표 버튼 */}
           <button 
             onClick={() => scroll('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+            className="hidden sm:flex absolute left-1 lg:left-0 top-1/2 -translate-y-1/2 lg:-ml-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
             aria-label="Previous videos"
           >
             <ChevronLeft className="w-6 h-6 text-gray-600" />
@@ -303,7 +304,7 @@ const HomePage = () => {
                 href={`https://www.youtube.com/watch?v=${video.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="video-card flex-none w-[100px] sm:w-[100px] lg:w-[19%] min-w-[100px]"
+                className="video-card flex-none w-[240px] sm:w-[260px] md:w-[280px] lg:w-[19%] min-w-[220px] sm:min-w-[240px]"
               >
                 <div className="relative w-full aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                   <img
@@ -316,7 +317,7 @@ const HomePage = () => {
                   </div>
                 </div>
 
-                <div className="p-4 flex flex-col justify-between flex-1 bg-white border-x border-b border-gray-100 rounded-b-lg">
+                <div className="p-3 sm:p-4 flex flex-col justify-between flex-1 bg-white border-x border-b border-gray-100 rounded-b-lg">
                   <div>
                     <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 mb-2">
                       {video.title}
@@ -337,7 +338,7 @@ const HomePage = () => {
           {/* 오른쪽 화살표 버튼 */}
           <button 
             onClick={() => scroll('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+            className="hidden sm:flex absolute right-1 lg:right-0 top-1/2 -translate-y-1/2 lg:-mr-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
             aria-label="Next videos"
           >
             <ChevronRight className="w-6 h-6 text-gray-600" />

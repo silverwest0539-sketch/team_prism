@@ -515,10 +515,10 @@ const ScrapPage = () => {
     return (
         <div className="page" onClick={() => isSortOpen && setIsSortOpen(false)}>
             {/* ─── 헤더 ─── */}
-            <div className="mb-6">
-                <div className="flex justify-between items-start">
+            <div className="mb-5 sm:mb-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                     <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
                             <BookmarkSimple className="text-blue-600" size={32} weight="fill" />
                             내 스크랩
                         </h1>
@@ -531,7 +531,7 @@ const ScrapPage = () => {
                     {scraps.length > 0 && (
                         <button
                             onClick={handleExport}
-                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-gray-500 bg-white border border-gray-200 rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition-all"
+                            className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-gray-500 bg-white border border-gray-200 rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition-all"
                             title="CSV로 내보내기"
                         >
                             <Export size={14} />
@@ -582,8 +582,8 @@ const ScrapPage = () => {
                     </div>
 
                     {/* ─── 툴바: 카운트 + 정렬 + 뷰전환 + 모드 토글 ─── */}
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-3">
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-6">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                             <span className="text-xs text-gray-400">
                                 {processedScraps.length}개 키워드
                                 {searchQuery && ` (검색: "${searchQuery}")`}
@@ -640,7 +640,7 @@ const ScrapPage = () => {
                         </div>
 
                         {/* 모드 버튼들 */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                             {/* 다중 삭제 모드 액션 */}
                             {isDeleteMode && (
                                 <>
@@ -759,7 +759,7 @@ const ScrapPage = () => {
                 // 카드 그리드 or 리스트
                 <div className={
                     viewMode === 'grid'
-                        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
                         : 'flex flex-col gap-3'
                 }>
                     {processedScraps.map((item, index) => renderCardContent(item, index))}

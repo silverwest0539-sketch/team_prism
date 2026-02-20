@@ -48,12 +48,12 @@ export default function CompareModal({ isOpen, onClose, keywords }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-[fadeIn_0.2s_ease-out]">
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 animate-[fadeIn_0.2s_ease-out]">
+      <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
 
         {/* 헤더 */}
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
-          <div>
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex justify-between items-start sm:items-center gap-3">
+          <div className="min-w-0">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <ChartLineUp size={22} className="text-indigo-500" />
               키워드 비교 분석
@@ -71,14 +71,14 @@ export default function CompareModal({ isOpen, onClose, keywords }) {
         </div>
 
         {/* 본문 */}
-        <div className="overflow-y-auto p-6 space-y-6">
+        <div className="overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
 
           {/* 키워드 칩 */}
           <div className="flex flex-wrap gap-2">
             {keywords.map((kw, idx) => (
               <span
                 key={kw.keyword}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold border"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold border"
                 style={{
                   borderColor: COLORS[idx % COLORS.length],
                   color: COLORS[idx % COLORS.length],
@@ -97,7 +97,7 @@ export default function CompareModal({ isOpen, onClose, keywords }) {
           {/* 비교 차트 */}
           <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
             <h3 className="font-bold text-gray-700 text-sm mb-4">언급량 추이 비교</h3>
-            <div className="h-64 w-full">
+            <div className="h-56 sm:h-64 w-full">
               {loading ? (
                 <div className="h-full flex items-center justify-center text-sm text-gray-400">
                   데이터를 비교하는 중...
@@ -142,7 +142,8 @@ export default function CompareModal({ isOpen, onClose, keywords }) {
 
           {/* 간단 비교 테이블 */}
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="text-left px-4 py-3 text-gray-500 font-bold text-xs">키워드</th>
@@ -179,7 +180,8 @@ export default function CompareModal({ isOpen, onClose, keywords }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
 
         </div>

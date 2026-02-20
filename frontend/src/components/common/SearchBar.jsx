@@ -7,10 +7,11 @@ const SearchBar = ({
   value = "",
   onChange,
   onKeyDown,
-  className = "w-full py-3 pl-12 pr-4 rounded-full border border-gray-200 focus:outline-none focus:border-blue-500 shadow-sm text-sm"
+  className = "w-full py-3 pl-12 pr-4 rounded-full border border-gray-200 focus:outline-none focus:border-blue-500 shadow-sm text-sm",
+  containerClassName = "relative w-full"
 }) => {
   return (
-    <div className="relative w-full max-w-xl mx-auto">
+    <div className={containerClassName}>
       <input
         type="text"
         placeholder={placeholder}

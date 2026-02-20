@@ -24,10 +24,10 @@ const InputPanel = ({ onGenerate, isLoading }) => {
   const contentTypes = ['인스타 피드', '릴스 대본', '블로그', '포스터', '카드뉴스', '문자'];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 h-full flex flex-col overflow-y-auto">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 h-full min-h-0 flex flex-col overflow-y-auto">
       
       {/* [수정 3] 주제 키워드 입력창 추가 (최상단) */}
-      <div className="mb-6 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+      <div className="mb-5 sm:mb-6 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
         <label className="block text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2">
           <MagicWand weight="fill"/> 주제 키워드 (자동 분석됨)
         </label>
@@ -44,9 +44,9 @@ const InputPanel = ({ onGenerate, isLoading }) => {
       </div>
 
       {/* 1. 콘텐츠 유형 */}
-      <div className="mb-6">
+      <div className="mb-5 sm:mb-6">
         <label className="block text-sm font-bold text-gray-800 mb-2">1. 콘텐츠 유형</label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {contentTypes.map((item) => (
             <div 
               key={item} 
@@ -64,7 +64,7 @@ const InputPanel = ({ onGenerate, isLoading }) => {
       </div>
 
       {/* 2. 업종 및 목적 */}
-      <div className="mb-6">
+      <div className="mb-5 sm:mb-6">
         <label className="block text-sm font-bold text-gray-800 mb-2">2. 업종 및 목적</label>
         <select className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
           <option>카페/디저트 (시즌 한정 신메뉴 홍보)</option>
@@ -83,7 +83,7 @@ const InputPanel = ({ onGenerate, isLoading }) => {
       </div>
 
       {/* 3. 핵심 내용 */}
-      <div className="mb-6">
+      <div className="mb-5 sm:mb-6">
         <label className="block text-sm font-bold text-gray-800 mb-2">3. 핵심 내용</label>
         <textarea 
           className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" 
@@ -94,7 +94,7 @@ const InputPanel = ({ onGenerate, isLoading }) => {
       </div>
 
       {/* 고급 설정 */}
-      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
+      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-5 sm:mb-6">
         <label className="block text-sm font-bold text-gray-700 mb-2">
           상세 타겟 설정 <span className="text-xs font-normal text-gray-500">(선택)</span>
         </label>
@@ -123,7 +123,7 @@ const InputPanel = ({ onGenerate, isLoading }) => {
       <button 
         onClick={handleSubmit} 
         disabled={isLoading}
-        className={`w-full text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2 mt-auto text-lg shadow-md
+        className={`w-full text-white font-bold py-3.5 sm:py-4 rounded-xl transition flex items-center justify-center gap-2 mt-auto text-base sm:text-lg shadow-md
           ${isLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
       >
         {isLoading ? (

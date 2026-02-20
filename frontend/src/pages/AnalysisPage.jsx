@@ -340,7 +340,7 @@ const AnalysisPage = () => {
       const trimmed = sentence.trim();
       if (!trimmed) return null;
       return (
-        <p key={idx} className='mb-2 last:mb-o'>
+        <p key={idx} className='mb-2 last:mb-0'>
           {trimmed}
         </p>
       )
@@ -367,7 +367,7 @@ const AnalysisPage = () => {
     <div className="page space-y-6">
       {/* 상단 헤더 */}
       {/* 1. justify-between을 제거하고 gap-4로 요소 간 간격을 줍니다. */}
-      <header className="flex items-center gap-4 mb-4">
+      <header className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4">
         <Link to="/home" className="p-2 bg-white rounded-full text-gray-500 hover:text-indigo-600 shadow-sm transition">
           <CaretLeft size={20} />
         </Link>
@@ -392,14 +392,14 @@ const AnalysisPage = () => {
 
       {/* 메인 콘텐츠 */}
       <div
-        className={`container-7xl transition-all duration-500 ease-in-out flex flex-col gap-8 ${
+        className={`container-7xl transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
           !keyword ? 'blur-disabled' : 'blur-enabled'
         }`}
       >
         {/* 타이틀 */}
-        <div className="flex justify-between items-end mb-2">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-2">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1 flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 flex items-center flex-wrap gap-2 sm:gap-3">
               {keyword || '검색 키워드 예시'}
               <span className="pill bg-indigo-50 text-indigo-600">#{filteredData.rank || '-'}위</span>
             </h1>
@@ -412,7 +412,7 @@ const AnalysisPage = () => {
         </div>
 
         {/* 정보 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           <InfoCard
             title="트렌드 스코어"
             value={`${filteredData.score?.toFixed(1) || 0}점`}
@@ -434,10 +434,10 @@ const AnalysisPage = () => {
               </div>
             </div>
             <div>
-              <div className="flex items-center gap-2 text-sm font-bold text-gray-800 mb-1">
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="date-input" />
+              <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-gray-800 mb-1">
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="date-input w-[140px] sm:w-auto" />
                 ~
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="date-input" />
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="date-input w-[140px] sm:w-auto" />
                 <button
                   onClick={handleDateApply}
                   className="bg-white hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 text-xs px-2 py-1 rounded shadow-sm transition-all"
@@ -470,8 +470,8 @@ const AnalysisPage = () => {
         </div>
 
         {/* 차트 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-80">
-          <div className="card lg:col-span-1 flex flex-col">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:h-80">
+          <div className="card lg:col-span-1 flex flex-col min-h-[280px] lg:min-h-0">
             <div className="card-header flex justify-between items-center">
               <h3 className="section-title">
                 <ChartLineUp className="text-indigo-500" /> 언급량 추이
@@ -510,7 +510,7 @@ const AnalysisPage = () => {
             </div>
           </div>
 
-          <div className="card flex flex-col">
+          <div className="card flex flex-col min-h-[260px] lg:min-h-0">
             <h3 className="section-title card-header">
               <BookmarkSimple className="text-yellow-500" /> 워드 클라우드
             </h3>
@@ -519,7 +519,7 @@ const AnalysisPage = () => {
             </div>
           </div>
 
-          <div className="card flex flex-col">
+          <div className="card flex flex-col min-h-[260px] lg:min-h-0">
             <h3 className="section-title card-header">
               <BookmarkSimple className="text-yellow-500" /> 여론 분석
             </h3>
@@ -540,7 +540,7 @@ const AnalysisPage = () => {
         </div>
 
         {/* 하단 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
           {/* 왼쪽 */}
           <div className="card">
             <h3 className="section-title mb-4 pb-2 border-b flex justify-between">
@@ -627,9 +627,9 @@ const AnalysisPage = () => {
                       href={video.views === 0 ? '#' : `https://www.youtube.com/watch?v=${video.id}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex gap-4 group cursor-pointer"
+                      className="flex flex-col sm:flex-row gap-3 sm:gap-4 group cursor-pointer"
                     >
-                      <div className="w-32 h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative">
+                      <div className="w-full sm:w-32 h-44 sm:h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative">
                         <img src={video.thumbnail} alt="" className="w-full h-full object-cover" />
                         {video.views > 0 && (
                           <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 rounded">Video</div>
@@ -640,7 +640,7 @@ const AnalysisPage = () => {
                           {video.title}
                         </h4>
                         <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
-                          <span className="truncate max-w-[100px]">{video.channel}</span>
+                          <span className="truncate">{video.channel}</span>
                           {video.views > 0 && <span>• 조회수 {formatViews(video.views)}</span>}
                         </div>
                       </div>
@@ -764,14 +764,14 @@ const AnalysisPage = () => {
 
       {/* 키워드 없을 때 오버레이 */}
       {!keyword && (
-        <div className="overlay-center top-24">
-          <div className="bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-xl border border-white/50 text-center transform translate-y-[-10%]">
+        <div className="overlay-center top-20 sm:top-24 px-4">
+          <div className="bg-white/80 backdrop-blur-md p-5 sm:p-8 rounded-3xl shadow-xl border border-white/50 text-center transform sm:translate-y-[-10%] w-full max-w-md">
             <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">분석할 키워드를 입력해주세요</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">분석할 키워드를 입력해주세요</h2>
             <p className="text-gray-500">
               상단 검색창에 검색어를 입력하면
               <br />

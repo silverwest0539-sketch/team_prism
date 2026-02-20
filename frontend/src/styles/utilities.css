@@ -5,17 +5,22 @@
   /* ===== CreationPage 레이아웃 ===== */
   .creation-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    height: calc(100vh - 180px);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
     align-items: start;
   }
 
-  /* 1024px 이하에서 1열로 */
-  @media (max-width: 1024px) {
+  /* 태블릿 이상에서 간격 확장 */
+  @media (min-width: 1024px) {
     .creation-grid {
-      grid-template-columns: 1fr;
-      height: auto;
+      gap: 1.5rem;
+    }
+  }
+
+  /* 데스크톱 이상에서 2열 */
+  @media (min-width: 1280px) {
+    .creation-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
   }
 

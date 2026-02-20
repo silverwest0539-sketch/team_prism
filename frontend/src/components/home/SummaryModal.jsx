@@ -94,21 +94,21 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-[fadeIn_0.2s_ease-out]">
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 animate-[fadeIn_0.2s_ease-out]">
+      <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
 
         {/* 헤더 영역 */}
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
-          <div>
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex justify-between items-start sm:items-center gap-3 bg-white sticky top-0 z-10">
+          <div className="min-w-0">
             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full mb-1 inline-block">
               No.{data?.rank || '-'} 급상승 키워드
             </span>
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 break-all">
               {data?.keyword}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {/* 즐겨찾기 버튼 */}
             <button
               onClick={toggleBookmark}
@@ -136,7 +136,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
         </div>
 
         {/* 스크롤 가능한 본문 영역 */}
-        <div className="overflow-y-auto p-6 space-y-6">
+        <div className="overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
 
           {/* (1) 긍부정 신호등 */}
           <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">

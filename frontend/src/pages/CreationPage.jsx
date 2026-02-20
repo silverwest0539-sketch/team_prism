@@ -35,19 +35,19 @@ const CreationPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col gap-6">
+    <div className="page space-y-4 sm:space-y-6">
       
       {/* 상단 헤더 */}
-      <div className="flex justify-between items-end border-b border-gray-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-gray-200 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">콘텐츠 생성 스튜디오</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">콘텐츠 생성 스튜디오</h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">
             저장된 브랜드 톤앤매너로 수정부터 내보내기까지 한 번에 완료하세요.
           </p>
         </div>
         
         {/* 우측 상단 키워드 뱃지 */}
-        <div className="pill bg-green-100 text-green-700 flex items-center gap-1">
+        <div className="pill self-start sm:self-auto bg-green-100 text-green-700 flex items-center gap-1">
           <CheckCircle weight="fill" />
           키워드: 저당 간식
         </div>

@@ -9,10 +9,10 @@ const MyPage = () => {
   const closeModal = () => setActiveModal(null);
 
   return (
-    <div className="page pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="page pb-20">
       {/* 페이지 헤더 */}
-      <div className="mb-8 mt-8">
-        <h1 className="text-3xl font-bold text-gray-900">마이페이지</h1>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">마이페이지</h1>
         <p className="text-gray-500 text-sm mt-2">
           계정 설정을 관리하고 스크랩한 콘텐츠를 확인하세요.
         </p>
@@ -23,10 +23,10 @@ const MyPage = () => {
           - bg-white, rounded-2xl, shadow-sm, border: 카드 형태
           - flex-row: 좌우 분할
          ========================================= */}
-      <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row mb-12 min-h-[240px]">
+      <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row mb-8 sm:mb-10 min-h-[240px]">
         
         {/* 좌측: 타이틀 및 설명 (회색 배경 적용) */}
-        <div className="p-8 md:w-2/5 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50/50">
+        <div className="p-5 sm:p-8 md:w-2/5 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50/50">
           <h2 className="text-2xl font-bold text-gray-900 mb-3">프로필</h2>
           <p className="text-sm text-gray-500 leading-relaxed break-keep">
             개인정보 및 보안 설정, 알림 및<br className="hidden md:block"/> 
@@ -35,7 +35,7 @@ const MyPage = () => {
         </div>
 
         {/* 우측: 메뉴 리스트 영역 */}
-        <div className="p-6 md:w-3/5 flex flex-col justify-center">
+        <div className="p-4 sm:p-6 md:w-3/5 flex flex-col justify-center">
             
             {/* 1. 계정 정보 */}
             <div 
@@ -90,11 +90,11 @@ const MyPage = () => {
           [MODAL AREA] - 모달 내용은 기존 코드 유지
          ========================================= */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]">
             
             {/* 모달 헤더 */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900">
                 {activeModal === 'account' && '계정 정보 설정'}
                 {activeModal === 'notification' && '알림 설정'}
@@ -106,7 +106,7 @@ const MyPage = () => {
             </div>
 
             {/* 모달 본문 */}
-            <div className="p-6 overflow-y-auto">
+            <div className="p-4 sm:p-6 overflow-y-auto">
               
               {/* 1. 계정 정보 */}
               {activeModal === 'account' && (
@@ -154,7 +154,7 @@ const MyPage = () => {
                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><Trash size={32} /></div>
                    <h4 className="text-lg font-bold mb-2">정말 탈퇴하시겠습니까?</h4>
                    <p className="text-gray-500 text-sm mb-6">모든 데이터가 삭제되며 복구할 수 없습니다.</p>
-                   <div className="flex gap-3">
+                   <div className="flex flex-col sm:flex-row gap-3">
                       <button onClick={closeModal} className="flex-1 py-3 border rounded-lg hover:bg-gray-50">취소</button>
                       <button className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700">탈퇴하기</button>
                    </div>
