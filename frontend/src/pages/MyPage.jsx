@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { ChevronRight, X, Shield, Trash } from 'lucide-react';
 // 스크랩 페이지 컴포넌트 불러오기
-import ScrapPage from './ScrapPage'; 
+import ScrapPage from '../components/mypage/ScrapPage';
 
 const MyPage = () => {
   const [activeModal, setActiveModal] = useState(null);
@@ -19,67 +19,65 @@ const MyPage = () => {
       </div>
 
       {/* =========================================
-          [상단 섹션] 프로필 설정
-          - items-center: 좌측 제목을 우측 리스트 높이의 중앙에 배치
-          - mb-8, pb-8: 전체적인 높이 및 여백 축소
+          [수정됨] 프로필 설정 섹션 -> 카드 디자인 적용
+          - bg-white, rounded-2xl, shadow-sm, border: 카드 형태
+          - flex-row: 좌우 분할
          ========================================= */}
-      <section className="flex flex-col md:flex-row gap-8 border-b border-gray-200 pb-8 mb-8 items-center">
+      <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row mb-12 min-h-[240px]">
         
-        {/* 좌측: 섹션 제목 및 설명 (수직 중앙 정렬됨) */}
-        <div className="w-full md:w-1/3 min-w-[200px]">
-          <h2 className="text-xl font-bold text-gray-900">프로필</h2>
-          <p className="text-sm text-gray-500 mt-1 break-keep leading-relaxed">
+        {/* 좌측: 타이틀 및 설명 (회색 배경 적용) */}
+        <div className="p-8 md:w-2/5 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50/50">
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">프로필</h2>
+          <p className="text-sm text-gray-500 leading-relaxed break-keep">
             개인정보 및 보안 설정, 알림 및<br className="hidden md:block"/> 
             회원 탈퇴를 관리할 수 있습니다.
           </p>
         </div>
 
-        {/* 우측: 텍스트 리스트 (아이콘 제거, 높이 축소) */}
-        <div className="flex-1 w-full">
-          <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
+        {/* 우측: 메뉴 리스트 영역 */}
+        <div className="p-6 md:w-3/5 flex flex-col justify-center">
             
             {/* 1. 계정 정보 */}
             <div 
               onClick={() => setActiveModal('account')}
-              className="group flex items-center justify-between py-3.5 cursor-pointer hover:bg-gray-50 transition px-3 -mx-3 rounded-md"
+              className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors"
             >
               <div>
-                <h3 className="text-base font-medium text-gray-900 group-hover:text-blue-600 transition">계정 정보</h3>
-                <p className="text-xs text-gray-400 mt-0.5">프로필 편집, 비밀번호 변경, 2단계 인증</p>
+                <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">계정 정보</h3>
+                <p className="text-xs text-gray-400 mt-1">프로필 편집, 비밀번호 변경</p>
               </div>
-              <ChevronRight size={18} className="text-gray-300 group-hover:text-gray-500" />
+              <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
 
             {/* 2. 알림 설정 */}
             <div 
               onClick={() => setActiveModal('notification')}
-              className="group flex items-center justify-between py-3.5 cursor-pointer hover:bg-gray-50 transition px-3 -mx-3 rounded-md"
+              className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors"
             >
               <div>
-                <h3 className="text-base font-medium text-gray-900 group-hover:text-blue-600 transition">알림 설정</h3>
-                <p className="text-xs text-gray-400 mt-0.5">이메일 수신 및 푸시 알림 관리</p>
+                <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">알림 설정</h3>
+                <p className="text-xs text-gray-400 mt-1">이메일 수신 및 푸시 알림 관리</p>
               </div>
-              <ChevronRight size={18} className="text-gray-300 group-hover:text-gray-500" />
+              <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
 
             {/* 3. 회원 탈퇴 */}
             <div 
               onClick={() => setActiveModal('withdraw')}
-              className="group flex items-center justify-between py-3.5 cursor-pointer hover:bg-gray-50 transition px-3 -mx-3 rounded-md"
+              className="group flex items-center justify-between p-4 cursor-pointer hover:bg-red-50 rounded-xl transition-colors"
             >
               <div>
-                <h3 className="text-base font-medium text-gray-900 group-hover:text-red-600 transition">회원 탈퇴</h3>
-                <p className="text-xs text-gray-400 mt-0.5">계정 삭제 및 데이터 영구 파기</p>
+                <h3 className="text-base font-bold text-gray-900 group-hover:text-red-600 transition">회원 탈퇴</h3>
+                <p className="text-xs text-gray-400 mt-1">계정 삭제 및 데이터 영구 파기</p>
               </div>
-              <ChevronRight size={18} className="text-gray-300 group-hover:text-gray-500" />
+              <ChevronRight size={20} className="text-gray-300 group-hover:text-red-600 transition" />
             </div>
 
-          </div>
         </div>
       </section>
 
       {/* =========================================
-          [하단 섹션] 내 스크랩 (전체 영역 사용)
+          [하단 섹션] 내 스크랩 (기존 유지)
          ========================================= */}
       <section className="w-full">
         <div className="bg-white">
@@ -89,7 +87,7 @@ const MyPage = () => {
 
 
       {/* =========================================
-          [MODAL AREA] - 모달 내용은 동일
+          [MODAL AREA] - 모달 내용은 기존 코드 유지
          ========================================= */}
       {activeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
@@ -131,7 +129,6 @@ const MyPage = () => {
                         <span className="text-sm font-medium">비밀번호 변경</span>
                         <button className="text-xs border bg-white px-3 py-1 rounded hover:bg-gray-100">변경</button>
                       </div>
-
                     </div>
                   </div>
                 </div>
