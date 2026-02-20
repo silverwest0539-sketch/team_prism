@@ -1,13 +1,34 @@
 // src/pages/LoginPage.jsx
 import React from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    navigate('/home'); 
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/login', { 
+        email, 
+        password 
+      });
+
+      if (response.data.success) {
+        // 1. 발급받은 JWT 토큰을 localStorage에 저장
+        localStorage.setItem('token', response.data.token);
+        // 2. 유저 정보 저장
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        alert(`환영합니다, ${response.data.user.nickname}님!`);
+        navigate('/home'); 
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || '로그인 실패');
+    }
   };
 
   return (
@@ -26,6 +47,8 @@ const LoginPage = () => {
             <label className="form-label">이메일</label>
             <input 
               type="text" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="이메일을 입력하세요"
               className="form-input"
             />
@@ -35,6 +58,8 @@ const LoginPage = () => {
             <label className="form-label">비밀번호</label>
             <input 
               type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="비밀번호를 입력하세요"
               className="form-input"
             />

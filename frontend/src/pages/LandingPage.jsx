@@ -22,7 +22,7 @@ const LandingPage = () => {
 
       {/* 메인 액션 버튼 */}
       <button 
-        onClick={() => navigate('/login')}
+        onClick={() => navigate('/home')}
         className="bg-indigo-600 text-white font-bold text-lg sm:text-xl px-10 sm:px-12 py-4 rounded-full shadow-lg hover:bg-indigo-700 transform hover:scale-105 transition duration-200"
       >
         지금 시작하기

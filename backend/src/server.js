@@ -12,6 +12,9 @@ const parser = new Parser({
   }
 });
 
+const bcrypt = require('bcrypt');
+const db = require('./database')
+
 const app = express();
 const PORT = 5000;
 
@@ -62,6 +65,115 @@ const extractWordCloudData = (comments, keyword) => {
     .sort((a, b) => b.value - a.value)
     .slice(0, 50);
 };
+
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+
+// 이메일 발송 설정
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+// 이메일 인증번호 임시 저장소 (메모리 방식)
+// 실제 서비스에서는 Redis나 DB를 사용하는 것이 좋지만, 현재는 메모리에 저장합니다.
+const emailAuthCache = {}; 
+
+// [이메일 인증번호 발송 API]
+app.post('/api/auth/send-code', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: "이메일이 필요합니다." });
+
+  try {
+    // 1. DB에서 이메일 중복 확인 (users 테이블)
+    const [rows] = await db.execute('SELECT user_email FROM USERS WHERE user_email = ?', [email]);
+    
+    // 가입 이력이 존재하는 경우
+    if (rows.length > 0) {
+      return res.status(409).json({ success: false, message: "이미 사용 중인 이메일입니다." });
+    }
+
+    // 2. 가입 이력이 없으면 6자리 난수 생성 및 메일 발송
+    const authCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: '[Prism] 회원가입 인증번호입니다.',
+      html: `<h2>요청하신 인증번호는 <strong>${authCode}</strong> 입니다.</h2><p>3분 안에 입력해 주세요.</p>`
+    });
+
+    // 3. 메모리에 코드 저장 (3분 유효)
+    emailAuthCache[email] = {
+      code: authCode,
+      expiresAt: Date.now() + 3 * 60 * 1000
+    };
+
+    res.json({ success: true, message: "인증번호가 발송되었습니다." });
+  } catch (error) {
+    console.error("인증번호 발송 에러:", error);
+    res.status(500).json({ success: false, message: "서버 에러가 발생했습니다." });
+  }
+});
+
+// [회원가입 API (수정)] - 인증번호 검증 로직 추가
+app.post('/api/auth/signup', async (req, res) => {
+  const { email, nickname, password, code } = req.body;
+  
+  // 1. 인증번호 검증 로직 추가
+  const cached = emailAuthCache[email];
+  if (!cached || cached.code !== code) {
+    return res.status(400).json({ success: false, message: "인증번호가 일치하지 않습니다." });
+  }
+  if (Date.now() > cached.expiresAt) {
+    delete emailAuthCache[email];
+    return res.status(400).json({ success: false, message: "인증번호가 만료되었습니다. 다시 요청해주세요." });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const query = `INSERT INTO USERS (user_email, nickname, password) VALUES (?, ?, ?)`;
+    await db.execute(query, [email, nickname, hashedPassword]);
+    
+    // 가입 완료 후 인증 캐시 삭제
+    delete emailAuthCache[email];
+    res.status(201).json({ success: true, message: "회원가입 성공" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "서버 에러" });
+  }
+});
+
+// [로그인 API (수정)] - JWT 발급 로직 추가
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const [rows] = await db.execute('SELECT * FROM USERS WHERE user_email = ?', [email]);
+    if (rows.length === 0) return res.status(401).json({ success: false, message: "정보가 틀렸습니다." });
+
+    const user = rows[0];
+    const isMatch = await bcrypt.compare(password, user.password);
+    
+    if (isMatch) {
+      // JWT 토큰 생성 (페이로드에 유저 정보 담기, 유효기간 2시간)
+      const token = jwt.sign(
+        { email: user.user_email, nickname: user.nickname },
+        process.env.JWT_SECRET,
+        { expiresIn: '2h' }
+      );
+      
+      // 토큰과 유저 정보를 함께 응답
+      res.json({ success: true, token, user: { email: user.user_email, nickname: user.nickname } });
+    } else {
+      res.status(401).json({ success: false, message: "정보가 틀렸습니다." });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: "서버 에러" });
+  }
+});
 
 // 1. [HomePage] 급상승 키워드 API (Top 5)
 app.get('/api/trends/rising', (req, res) => {

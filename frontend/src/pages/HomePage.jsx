@@ -18,6 +18,7 @@ const HomePage = () => {
   const [youtubeVideos, setYoutubeVideos] = useState([]);
   const [youtubeCategory, setYoutubeCategory] = useState('전체');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [userName, setUserName] = useState('마케터');
   
   // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,6 +104,15 @@ const HomePage = () => {
     }, [selectedPlatform, youtubeCategory]);
 
   useEffect(() => {
+    // 로컬 스토리지에서 유저 정보 가져오기
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      const { nickname } = JSON.parse(savedUser);
+      setUserName(nickname);
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchCommunityPosts = async () => {
       try {
         const res = await fetch(`http://localhost:5000/api/community/posts?platform=${selectedComm}`);
@@ -134,7 +144,7 @@ const HomePage = () => {
 
       </div>
 
-      <h1 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">안녕하세요, 마케터님 👋</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">안녕하세요, {userName}님 👋</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-10">
         

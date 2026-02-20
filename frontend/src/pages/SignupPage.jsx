@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import usersData from '../../../backend/data/users.json';
+import axios from 'axios';
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
@@ -47,7 +48,7 @@ const SignupPage = () => {
     }
   };
 
-  const handleEmailCheck = () => {
+  const handleEmailCheck = async () => {
     const targetEmail = normalizeEmail(form.email);
 
     if (!targetEmail) {
@@ -56,45 +57,57 @@ const SignupPage = () => {
       return;
     }
 
-    const users = Array.isArray(usersData?.users) ? usersData.users : [];
-    const isDuplicate = users.some(
-      (user) => normalizeEmail(user?.email) === targetEmail
-    );
-
-    if (isDuplicate) {
-      setEmailCheckStatus('duplicate');
-      setEmailMessage('이미 사용 중인 이메일입니다.');
-      return;
-    }
-
-    setForm((prev) => ({ ...prev, emailCode: '' }));
-    setEmailCheckStatus('available');
-    setEmailMessage('');
-  };
-
-  const handleSignup = (event) => {
-    event.preventDefault();
-
-    if (isPasswordMismatch) {
-      passwordConfirmInputRef.current?.focus();
-      return;
-    }
-
-    if (emailCheckStatus !== 'available') {
-      setEmailCheckStatus('idle');
-      setEmailMessage('인증번호 받기를 눌러 이메일 중복 여부를 확인해 주세요.');
-      return;
-    }
-
-    setIsSubmitting(true);
-
     try {
-      alert('현재는 회원가입 화면 표시 단계입니다.');
+        // 기존 JSON 파일 비교 대신, 실제 백엔드로 메일 발송 및 중복 체크 요청
+        const response = await axios.post('http://localhost:5000/api/auth/send-code', { email: targetEmail });
+        
+        // 요청이 성공했다면 (DB에 중복 이메일이 없음)
+        if (response.data.success) {
+          setForm((prev) => ({ ...prev, emailCode: '' }));
+          setEmailCheckStatus('available'); // 인증번호 입력창 활성화
+          setEmailMessage('메일로 인증번호가 발송되었습니다. (3분 유효)');
+        }
+      } catch (error) {
+        // 에러 발생 시 처리
+        if (error.response && error.response.status === 409) {
+          // 서버에서 409 상태 코드를 보낸 경우 (중복 이메일)
+          setEmailCheckStatus('duplicate');
+          setEmailMessage('이미 사용 중인 이메일입니다.'); // 기존 UI/UX 그대로 유지
+        } else {
+          // 기타 에러 (메일 발송 실패, 서버 에러 등)
+          setEmailCheckStatus('idle');
+          setEmailMessage(error.response?.data?.message || '인증번호 발송에 실패했습니다.');
+        }
+      }
+    };
+
+  const handleSignup = async (event) => {
+  event.preventDefault();
+  if (isPasswordMismatch) return passwordConfirmInputRef.current?.focus();
+  if (emailCheckStatus !== 'available' || !form.emailCode) {
+    return alert('이메일 인증을 완료해 주세요.');
+  }
+
+  setIsSubmitting(true);
+  try {
+    // 회원가입 요청 시 입력한 인증번호(code)도 함께 전송
+    const response = await axios.post('http://localhost:5000/api/auth/signup', {
+      email: form.email,
+      nickname: form.nickname,
+      password: form.password,
+      code: form.emailCode // 추가됨
+    });
+
+    if (response.data.success) {
+      alert('회원가입이 완료되었습니다!');
       navigate('/login');
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  } catch (error) {
+    alert(error.response?.data?.message || '회원가입 실패');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
