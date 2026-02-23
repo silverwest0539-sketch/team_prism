@@ -45,12 +45,7 @@ const CreationPage = () => {
             저장된 브랜드 톤앤매너로 수정부터 내보내기까지 한 번에 완료하세요.
           </p>
         </div>
-        
-        {/* 우측 상단 키워드 뱃지 */}
-        <div className="pill self-start sm:self-auto bg-green-100 text-green-700 flex items-center gap-1">
-          <CheckCircle weight="fill" />
-          키워드: 저당 간식
-        </div>
+
       </div>
 
       {/* 메인 그리드 */}
