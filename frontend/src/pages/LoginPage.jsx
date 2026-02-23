@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const LOGO_TRIGGER_COUNT = 5;
 const CLICK_RESET_MS = 1500;
-const EASTER_EGG_MS = 2600;
+const EASTER_EGG_MS = 1600;
 const EASTER_EGG_IMAGE = '/flying_toasts.png';
 
 const LoginPage = () => {
@@ -16,6 +16,7 @@ const LoginPage = () => {
   const [isEasterEggActive, setIsEasterEggActive] = useState(false);
   const [showEasterEggToast, setShowEasterEggToast] = useState(false);
   const [showEasterEggImage, setShowEasterEggImage] = useState(false);
+  const [isImageFlying, setIsImageFlying] = useState(false);
 
   const clickResetTimerRef = useRef(null);
   const easterEggTimerRef = useRef(null);
@@ -36,12 +37,18 @@ const LoginPage = () => {
       setIsEasterEggActive(true);
       setShowEasterEggToast(true);
       setShowEasterEggImage(true);
+      setIsImageFlying(false);
+
+      requestAnimationFrame(() => {
+        setIsImageFlying(true);
+      });
 
       if (easterEggTimerRef.current) clearTimeout(easterEggTimerRef.current);
       easterEggTimerRef.current = setTimeout(() => {
         setIsEasterEggActive(false);
         setShowEasterEggToast(false);
         setShowEasterEggImage(false);
+        setIsImageFlying(false);
       }, EASTER_EGG_MS);
       return;
     }
@@ -80,11 +87,18 @@ const LoginPage = () => {
       )}
 
       {showEasterEggImage && (
-        <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center">
+        <div className="pointer-events-none fixed inset-0 z-40">
           <img
             src={EASTER_EGG_IMAGE}
             alt="Flying toasts"
-            className="w-[82vw] max-w-[520px] select-none drop-shadow-2xl animate-pulse"
+            className="fixed left-1/2 top-1/2 w-[78vw] max-w-[500px] select-none drop-shadow-2xl"
+            style={{
+              transform: isImageFlying
+                ? 'translate(calc(-50% + 55vw), calc(-50% - 48vh)) scale(0.72) rotate(18deg)'
+                : 'translate(-50%, -50%) scale(1) rotate(0deg)',
+              opacity: isImageFlying ? 0 : 1,
+              transition: `transform ${EASTER_EGG_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity ${EASTER_EGG_MS}ms ease-out`,
+            }}
           />
         </div>
       )}

@@ -1,15 +1,35 @@
 // src/pages/CreationPage.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import InputPanel from '../components/creation/InputPanel';
 import ResultPanel from '../components/creation/ResultPanel';
-import { CheckCircle } from '@phosphor-icons/react';
 
 const CreationPage = () => {
-  const [generatedResult, setGeneratedResult] = useState("");
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [generatedResult, setGeneratedResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+
+    if (!savedUser) {
+      alert('콘텐츠 생성 서비스는 로그인 후 이용할 수 있습니다. 로그인 페이지로 이동합니다.');
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    setAuthChecked(true);
+  }, [navigate]);
+
+  const initialKeyword = useMemo(() => {
+    return (searchParams.get('keyword') || '').trim();
+  }, [searchParams]);
 
   const handleGenerate = async (inputData) => {
     setIsLoading(true);
+
     try {
       const response = await fetch('http://localhost:5000/api/generate', {
         method: 'POST',
@@ -20,24 +40,26 @@ const CreationPage = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setGeneratedResult(data.result);
       } else {
-        alert("생성 실패: " + (data.error || "알 수 없는 오류"));
+        alert(`생성 실패: ${data.error || '알 수 없는 오류'}`);
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert("서버 연결에 실패했습니다. 백엔드 터미널이 켜져 있는지 확인하세요.");
+      console.error('Error:', error);
+      alert('서버 연결에 실패했습니다. 백엔드 터미널이 켜져 있는지 확인하세요.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (!authChecked) {
+    return null;
+  }
+
   return (
     <div className="page space-y-4 sm:space-y-6">
-      
-      {/* 상단 헤더 */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-gray-200 pb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">콘텐츠 생성 스튜디오</h1>
@@ -45,15 +67,12 @@ const CreationPage = () => {
             저장된 브랜드 톤앤매너로 수정부터 내보내기까지 한 번에 완료하세요.
           </p>
         </div>
-
       </div>
 
-      {/* 메인 그리드 */}
       <div className="creation-grid">
-        <InputPanel onGenerate={handleGenerate} isLoading={isLoading} />
+        <InputPanel onGenerate={handleGenerate} isLoading={isLoading} initialKeyword={initialKeyword} />
         <ResultPanel content={generatedResult} />
       </div>
-
     </div>
   );
 };

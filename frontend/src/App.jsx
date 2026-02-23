@@ -1,67 +1,44 @@
 // src/App.jsx
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Layout from './components/layout/Layout'; // 레이아웃
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import Layout from './components/layout/Layout';
 
-// 페이지 컴포넌트 import
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import HomePage from './pages/HomePage'; // 👈 1. HomePage import 확인
-import CreationPage from './pages/CreationPage';
-import AnalysisPage from './pages/AnalysisPage';
-import MyPage from './pages/MyPage'; // 👈 1. MyPage import 추가
-import ScrapPage from './components/mypage/ScrapPage'; // 스크랩 페이지(컴포넌트 위치)
-import FindPasswordPage from './pages/FindPasswordPage';
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignupPage = lazy(() => import('./pages/SignupPage'));
+const FindPasswordPage = lazy(() => import('./pages/FindPasswordPage'));
+
+const HomePage = lazy(() => import('./pages/HomePage'));
+const AnalysisPage = lazy(() => import('./pages/AnalysisPage'));
+const CreationPage = lazy(() => import('./pages/CreationPage'));
+const ScrapPage = lazy(() => import('./components/mypage/ScrapPage'));
+const MyPage = lazy(() => import('./pages/MyPage'));
+
+const PageFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50 text-sm text-gray-500">
+    ������ �ε� ��...
+  </div>
+);
+
+const withLayout = (element) => <Layout>{element}</Layout>;
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* ===== 사이드바 없는 페이지들 (인증 관련) ===== */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/find-password" element={<FindPasswordPage />} />
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/find-password" element={<FindPasswordPage />} />
 
-        {/* ===== 사이드바 있는 페이지들 (메인 서비스) ===== */}
-
-        {/* 1. 홈 화면 (로그인 후 이동할 경로) */}
-        <Route path="/home" element={
-          <Layout>
-            <HomePage />
-          </Layout>
-        } />
-
-        {/* 2. 상세 분석 페이지 */}
-        <Route path="/analysis" element={
-          <Layout>
-            <AnalysisPage />
-          </Layout>
-        } />
-
-        {/* 3. 컨텐츠 생성 페이지 */}
-        <Route path="/creation" element={
-          <Layout>
-            <CreationPage />
-          </Layout>
-        } />
-
-        {/* 👇 4. 스크랩 페이지 라우트 추가 */}
-        <Route path="/scrap" element={
-          <Layout>
-            <ScrapPage />
-          </Layout>
-        } />
-
-        {/* 👇 2. 마이페이지 라우트 추가 */}
-        <Route path="/mypage" element={
-          <Layout>
-            <MyPage />
-          </Layout>
-        } />
-
-      </Routes>
+          <Route path="/home" element={withLayout(<HomePage />)} />
+          <Route path="/analysis" element={withLayout(<AnalysisPage />)} />
+          <Route path="/creation" element={withLayout(<CreationPage />)} />
+          <Route path="/scrap" element={withLayout(<ScrapPage />)} />
+          <Route path="/mypage" element={withLayout(<MyPage />)} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
