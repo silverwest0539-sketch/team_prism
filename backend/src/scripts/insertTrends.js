@@ -14,8 +14,8 @@ const db   = require('../database');
 // ===========================
 // 설정
 // ===========================
-const TARGET_DATE = '20260223';
-const PREV_DATE   = '20260222';
+const TARGET_DATE = '20260221';
+const PREV_DATE   = '20260220';
 
 const KEYWORDS_DIR      = path.join(__dirname, '../../data/keywords');
 const TIMELINE_DIR      = path.join(__dirname, '../../data/mention_timeline');
@@ -45,97 +45,103 @@ async function main() {
   console.log(`✅ 키워드 ${keywordsData.length}개 로드`);
   console.log(`✅ 타임라인 ${Object.keys(timelineData).length}개 키워드 로드`);
 
-  let keywordCount = 0;
-  let exampleCount = 0;
-  let statCount    = 0;
+  // ── 1. TREND_KEYWORD 전체 upsert ──────────────────
+  console.log('\n📌 TREND_KEYWORD INSERT 중...');
+  const allKeywords = [
+    ...new Set([
+      ...keywordsData.map(item => item.Keyword),
+      ...Object.keys(timelineData),
+    ])
+  ];
 
-  // ── 1. TREND_KEYWORD + USAGE_EXAMPLE + KEYWORD_EXAMPLE ──
-  console.log('\n📌 TREND_KEYWORD & USAGE_EXAMPLE INSERT 중...');
+  // bulk insert (중복 무시)
+  const keywordValues = allKeywords.map(kw => [kw]);
+  await db.query(
+    `INSERT IGNORE INTO TREND_KEYWORD (keyword_name) VALUES ?`,
+    [keywordValues]
+  );
+
+  // keyword_id 한 번에 조회
+  const [kwRows] = await db.query(
+    `SELECT keyword_id, keyword_name FROM TREND_KEYWORD WHERE keyword_name IN (?)`,
+    [allKeywords]
+  );
+  const keywordIdMap = {};
+  kwRows.forEach(row => { keywordIdMap[row.keyword_name] = row.keyword_id; });
+
+  console.log(`  ✅ TREND_KEYWORD: ${allKeywords.length}개 처리`);
+
+  // ── 2. USAGE_EXAMPLE + KEYWORD_EXAMPLE bulk insert ─
+  console.log('\n📌 USAGE_EXAMPLE INSERT 중...');
+
+  let exampleCount = 0;
 
   for (const item of keywordsData) {
-    const keyword = item.Keyword;
+    const keywordId = keywordIdMap[item.Keyword];
+    if (!keywordId) continue;
 
-    // TREND_KEYWORD - 없으면 INSERT, 있으면 무시
-    await db.execute(
-      `INSERT IGNORE INTO TREND_KEYWORD (keyword_name) VALUES (?)`,
-      [keyword]
-    );
-
-    // keyword_id 조회
-    const [kwRows] = await db.execute(
-      `SELECT keyword_id FROM TREND_KEYWORD WHERE keyword_name = ?`,
-      [keyword]
-    );
-    if (kwRows.length === 0) {
-      console.warn(`  ⚠️  keyword_id 조회 실패: ${keyword} (건너뜀)`);
-      continue;
-    }
-    const keywordId = kwRows[0].keyword_id;
-    keywordCount++;
-
-    // USAGE_EXAMPLE INSERT + KEYWORD_EXAMPLE 매핑
     const examples = item.Examples || {};
+    const exampleValues = [];
+
     for (const [platform, commentList] of Object.entries(examples)) {
       for (const ex of commentList) {
         const content = ex.comment || '';
         const url     = ex.link    || '';
         if (!content) continue;
-
-        // USAGE_EXAMPLE INSERT
-        const [result] = await db.execute(
-          `INSERT INTO USAGE_EXAMPLE (platform, url, content, collected_date)
-           VALUES (?, ?, ?, ?)`,
-          [platform, url, content, collectedDate]
-        );
-        const exampleId = result.insertId;
-
-        // KEYWORD_EXAMPLE 매핑 INSERT
-        await db.execute(
-          `INSERT IGNORE INTO KEYWORD_EXAMPLE (keyword_id, example_id)
-           VALUES (?, ?)`,
-          [keywordId, exampleId]
-        );
-        exampleCount++;
+        exampleValues.push([platform, url, content, collectedDate]);
       }
     }
+
+    if (exampleValues.length === 0) continue;
+
+    // USAGE_EXAMPLE bulk insert
+    const [result] = await db.query(
+      `INSERT INTO USAGE_EXAMPLE (platform, url, content, collected_date) VALUES ?`,
+      [exampleValues]
+    );
+
+    // insertId ~ insertId + affectedRows - 1 범위가 방금 들어간 example_id들
+    const firstId      = result.insertId;
+    const affectedRows = result.affectedRows;
+
+    // KEYWORD_EXAMPLE 매핑 bulk insert
+    const mappingValues = [];
+    for (let i = 0; i < affectedRows; i++) {
+      mappingValues.push([keywordId, firstId + i]);
+    }
+    await db.query(
+      `INSERT IGNORE INTO KEYWORD_EXAMPLE (keyword_id, example_id) VALUES ?`,
+      [mappingValues]
+    );
+
+    exampleCount += affectedRows;
   }
 
-  console.log(`  ✅ TREND_KEYWORD: ${keywordCount}개 처리`);
   console.log(`  ✅ USAGE_EXAMPLE: ${exampleCount}개 INSERT`);
 
-  // ── 2. KEYWORD_STATS ───────────────────────────────
+  // ── 3. KEYWORD_STATS bulk upsert ──────────────────
   console.log('\n📌 KEYWORD_STATS INSERT 중...');
 
+  const statsValues = [];
+
   for (const [keyword, dateCounts] of Object.entries(timelineData)) {
-    // keyword_id 조회 (없으면 INSERT)
-    await db.execute(
-      `INSERT IGNORE INTO TREND_KEYWORD (keyword_name) VALUES (?)`,
-      [keyword]
-    );
-    const [kwRows] = await db.execute(
-      `SELECT keyword_id FROM TREND_KEYWORD WHERE keyword_name = ?`,
-      [keyword]
-    );
-    if (kwRows.length === 0) {
-      console.warn(`  ⚠️  keyword_id 조회 실패: ${keyword} (건너뜀)`);
-      continue;
-    }
-    const keywordId = kwRows[0].keyword_id;
+    const keywordId = keywordIdMap[keyword];
+    if (!keywordId) continue;
 
     for (const [dateStr, mentions] of Object.entries(dateCounts)) {
-      const statDate = toSqlDate(dateStr);
-
-      await db.execute(
-        `INSERT INTO KEYWORD_STATS (keyword_id, stat_date, mention_count)
-         VALUES (?, ?, ?)
-         ON DUPLICATE KEY UPDATE mention_count = VALUES(mention_count)`,
-        [keywordId, statDate, mentions]
-      );
-      statCount++;
+      statsValues.push([keywordId, toSqlDate(dateStr), mentions]);
     }
   }
 
-  console.log(`  ✅ KEYWORD_STATS: ${statCount}개 INSERT/UPDATE`);
+  if (statsValues.length > 0) {
+    await db.query(
+      `INSERT INTO KEYWORD_STATS (keyword_id, stat_date, mention_count) VALUES ?
+       ON DUPLICATE KEY UPDATE mention_count = VALUES(mention_count)`,
+      [statsValues]
+    );
+  }
+
+  console.log(`  ✅ KEYWORD_STATS: ${statsValues.length}개 INSERT/UPDATE`);
   console.log('\n✅ 전체 완료');
   process.exit(0);
 }

@@ -1,8 +1,8 @@
 const trendService = require('../services/trend.service');
 
-exports.getRisingTrends = (req, res) => {
+exports.getRisingTrends = async (req, res) => {
   try {
-    const trends = trendService.getRisingTrends();
+    const trends = await trendService.getRisingTrends();
     res.json(trends);
   } catch (error) {
     console.error("❌ /api/trends/rising 에러:", error);
@@ -10,10 +10,10 @@ exports.getRisingTrends = (req, res) => {
   }
 };
 
-exports.getPlatformTrends = (req, res) => {
+exports.getPlatformTrends = async (req, res) => {
   try {
     const { platform } = req.query;
-    const trends = trendService.getPlatformTrends(platform);
+    const trends = await trendService.getPlatformTrends(platform);
     res.json(trends);
   } catch (error) {
     console.error("❌ /api/trends/platform 에러:", error);
@@ -21,10 +21,10 @@ exports.getPlatformTrends = (req, res) => {
   }
 };
 
-exports.getAllTrends = (req, res) => {
+exports.getAllTrends = async (req, res) => {
   try {
     const { keyword, date } = req.query;
-    const trends = trendService.getAllTrends(keyword, date);
+    const trends = await trendService.getAllTrends(keyword, date);
     res.json(trends);
   } catch (error) {
     console.error("❌ /api/trends 에러:", error);
