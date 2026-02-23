@@ -169,13 +169,15 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
     [🚨 필수 출력 템플릿 🚨] - 반드시 아래의 1, 2, 3번 양식을 그대로 복사해서 내용만 채울 것!
     1. **정의 및 배경**: (여기에 내용 작성 - 줄임말 해독 포함, 추측성 가격 정보 금지)
     2. **여론 및 반응**: (여기에 내용 작성 - 감정과 주요 의견 요약. 가격 비판 반응 주의)
-    3. **크리에이터 팁 & 주의점**: (여기에 내용 작성 - 꿀팁 작성. 리스크 발생 시에만 문장을 <<< 와 >>> 로 감쌀 것)
+    3. **크리에이터 팁 & 주의점**: (꿀팁을 먼저 작성한 후, 리스크 발생 시에만 내용 맨 마지막에 <<< 와 >>> 로 감싸서 경고할 것. 절대 >>> 기호 뒤에 부연 설명이나 문장을 덧붙이지 말 것! 만약 특별한 주의사항이 없다면 "리스크 발생 시 주의할 것" 같은 무의미한 문장을 절대 생성하지 말고 <<< >>> 기호도 쓰지 말 것!)
 
     [스타일 제약]
     1. '다.'로 끝내지 말 것. (~함, ~임 체 사용)
     2. 사실 지어내지 말 것.
     3. 예시 베끼지 말 것.
-    4. 반복 출력 금지.`;
+    4. 반복 출력 금지.
+    5. [우선순위 강제 규칙]: [최신 뉴스 팩트]의 내용과 [대중 반응]의 문맥이 서로 다른 대상(예: 뉴스=스팸문자, 반응=먹는 스팸)을 지칭할 경우, 무조건 **[대중 반응]의 문맥을 진짜 트렌드로 간주**하고, 맥락에 맞지 않는 뉴스 팩트는 요약에서 완전히 버릴 것.
+    6. 꼬리말 금지: 3번 항목의 출력이 끝난 이후에는 "또한,", "참고로" 등의 어떠한 추가 문장도 덧붙이지 말고 즉시 출력을 종료할 것.`;
 
     // 7. AI API 요청
     const provider = process.env.AI_PROVIDER || 'local';
@@ -203,12 +205,18 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
       .replace(/\[작성 양식\]/g, '')
       .replace(/\[출력 예시\]/g, '');
-    finalSummary = finalSummary.replace(/<<<(.*?)>>>/g, '<br><br><span style="color: #e11d48; font-weight: 800; background-color: #ffe4e6; padding: 2px 5px; border-radius: 4px;">⚠️ $1</span>');
+    finalSummary = finalSummary.replace(/<<<([\s\S]*?)>>>\.?/g, function(match, text) {
+      // 박스 내부의 텍스트 끝에 있는 마침표(.)나 공백도 깔끔하게 제거
+      let cleanText = text.trim().replace(/\.$/, ''); 
+      const formattedText = cleanText.replace(/\n/g, '<br>');
+      return `<div style="margin-top: 15px; color: #e11d48; font-weight: 800; background-color: #ffe4e6; padding: 12px 15px; border-radius: 6px; line-height: 1.6;">⚠️ ${formattedText}</div>`;
+    });
     finalSummary = finalSummary.replace(/(?:★?주의할\s*점|★?주의사항|⚠️\s*주의|★?주의):\s*([\s\S]*)$/g, function(match, text) {
       const formattedText = text.trim().replace(/\n/g, '<br>');
       return `<div style="margin-top: 15px; color: #e11d48; font-weight: 800; background-color: #ffe4e6; padding: 12px 15px; border-radius: 6px; line-height: 1.6;">⚠️ ${formattedText}</div>`;
     });
     finalSummary += `\n\n(🔥 Hot: ${topPlatform})`;
+    finalSummary = finalSummary.replace(/\n/g, '<br>');
 
     console.log("✅ AI 요약 완료!");
 

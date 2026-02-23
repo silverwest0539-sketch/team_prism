@@ -79,8 +79,16 @@ exports.getAllTrends = (keyword, date) => {
   return result;
 };
 
+const API_KEYS = process.env.YOUTUBE_API_KEYS ? process.env.YOUTUBE_API_KEYS.split(',') : [];
+console.log(`🔑 로드된 API 키 개수: ${API_KEYS.length}개`);
+let currentKeyIndex = 0;
+
+const getActiveKey = () => API_KEYS[currentKeyIndex];
+const rotateKey = () => {
+  currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+};
+
 exports.getAnalysis = async (keyword, startDate, endDate) => {
-  const API_KEY = process.env.YOUTUBE_API_KEY;
   const now = Date.now();
 
   // 캐시 확인
@@ -186,27 +194,56 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
 
   // 3. 유튜브 영상 검색
   let relatedVideos = [];
-  if (API_KEY) {
-    try {
-      const searchParams = { part: 'snippet', q: keyword, type: 'video', maxResults: 3, key: API_KEY, regionCode: 'KR', order: 'date' };
-      if (startDate) searchParams.publishedAfter = toISODate(startDate);
-      if (endDate) searchParams.publishedBefore = toISODate(endDate, true);
-
-      const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', { params: searchParams });
-      const videoIds = searchRes.data.items.map(i => i.id.videoId).join(',');
+  
+  // API 키가 있고 키워드가 있을 때만 실행
+  if (API_KEYS.length > 0 && keyword) {
+    const fetchYoutubeWithRotation = async (retryCount = 0) => {
+      const currentKey = getActiveKey();
       
-      if (videoIds) {
-        const videoRes = await axios.get('https://www.googleapis.com/youtube/v3/videos', { params: { part: 'snippet,statistics', id: videoIds, key: API_KEY } });
-        relatedVideos = videoRes.data.items.map(item => ({
-          id: item.id, title: item.snippet.title, channel: item.snippet.channelTitle,
-          views: item.statistics.viewCount, thumbnail: item.snippet.thumbnails.medium.url, publish_time: item.snippet.publishedAt
-        }));
-      }
-    } catch (err) {
-      console.error("❌ 유튜브 API 에러:", err.message);
-    }
-  }
+      try {
+        // A. 영상 검색 (Search API)
+        const searchParams = { 
+          part: 'snippet', q: keyword, type: 'video', maxResults: 3, 
+          key: currentKey, regionCode: 'KR', order: 'date' 
+        };
+        if (startDate) searchParams.publishedAfter = toISODate(startDate);
+        if (endDate) searchParams.publishedBefore = toISODate(endDate, true);
 
+        const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', { params: searchParams });
+        const videoIds = searchRes.data.items.map(i => i.id.videoId).join(',');
+        
+        if (!videoIds) return [];
+
+        // B. 영상 상세 정보 (Videos API - 조회수 등 가져오기)
+        const videoRes = await axios.get('https://www.googleapis.com/youtube/v3/videos', { 
+          params: { part: 'snippet,statistics', id: videoIds, key: currentKey } 
+        });
+
+        return videoRes.data.items.map(item => ({
+          id: item.id, 
+          title: item.snippet.title, 
+          channel: item.snippet.channelTitle,
+          views: item.statistics.viewCount, 
+          thumbnail: item.snippet.thumbnails.medium.url, 
+          publish_time: item.snippet.publishedAt
+        }));
+
+      } catch (err) {
+        // 할당량 초과(403) 시 키 교체 후 재시도
+        const isQuotaError = err.response?.status === 403;
+        if (isQuotaError && retryCount < API_KEYS.length - 1) {
+          console.log(`🔄 [Trend API Rotation] 할당량 초과로 키 교체 (Index: ${currentKeyIndex})`);
+          rotateKey();
+          return fetchYoutubeWithRotation(retryCount + 1); // 재시도
+        }
+        
+        console.error("❌ 유튜브 API 최종 실패:", err.message);
+        return []; // 모든 키 소진 또는 일반 에러 시 빈 배열 반환
+      }
+    };
+
+    relatedVideos = await fetchYoutubeWithRotation();
+  }
   if (relatedVideos.length === 0) {
     const youtubeComments = parsedComments.filter(c => c.source.toLowerCase().includes('youtube'));
     relatedVideos = youtubeComments.slice(0, 3).map((c, i) => ({
@@ -222,7 +259,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
     history, comments: parsedComments, wordCloud: wordCloudData, videos: relatedVideos 
   };
 
-  if (!startDate && !endDate) {
+  if (!startDate && !endDate && relatedVideos.length > 0) {
     searchCache[keyword] = { data: finalResponse, timestamp: now };
   }
 
