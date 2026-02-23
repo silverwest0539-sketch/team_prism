@@ -1,6 +1,7 @@
 const axios = require('axios');
 const Parser = require('rss-parser');
 const { findKeywordOverAll, getHistoryData } = require('../dataLoader');
+const db = require('../database');
 
 const parser = new Parser();
 let summaryCache = {};
@@ -25,77 +26,40 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
   }
 
   try {
-    // 3. 로컬 데이터 수집
-    const currentItem = findKeywordOverAll(keyword);
-    if (!currentItem) {
+    // 3. DB 데이터 수집 (기존 로컬 데이터 로직 대체)
+    const [kwRows] = await db.execute(
+      `SELECT keyword_id FROM TREND_KEYWORD WHERE keyword_name = ?`,
+      [keyword]
+    );
+
+    // 키워드가 DB에 없으면 종료
+    if (kwRows.length === 0) {
       if (!startDate && !endDate) delete summaryLocks[keyword];
       return { status: 200, summary: "데이터가 부족하여 분석할 수 없습니다." };
     }
+    const keywordId = kwRows[0].keyword_id;
 
-    const historyMap = getHistoryData();
-    const dates = Object.keys(historyMap).sort();
+    // 대중 반응(댓글) 및 플랫폼 통계 수집
+    const [exampleRows] = await db.execute(
+      `SELECT u.platform, u.content
+       FROM USAGE_EXAMPLE u
+       JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
+       WHERE ke.keyword_id = ?`,
+      [keywordId]
+    );
+
     let collectedComments = [];
     let platformStats = {};
 
-    // 💡 [디버깅] 현재 서버가 인식하고 있는 모든 키워드 목록 확인
-    let availableKeywords = new Set();
-    dates.forEach(date => {
-      const dayData = historyMap[date];
-      if (dayData && dayData.all) {
-        dayData.all.forEach(item => {
-          if (item.Keyword) availableKeywords.add(item.Keyword);
-          if (item.keyword) availableKeywords.add(item.keyword);
-        });
+    exampleRows.forEach(row => {
+      const commentText = row.content;
+      // DB에 플랫폼 정보가 없으면 '기타'로 처리
+      const platformName = row.platform || '기타';
+
+      if (commentText) {
+         collectedComments.push(commentText);
       }
-    });
-    console.log(`📂 [Data Check] 현재 검색 가능한 키워드 목록:`, Array.from(availableKeywords).join(', '));
-
-    dates.forEach(date => {
-      const dayData = historyMap[date];
-      if (!dayData) return;
-
-      // JSON의 키들("all", "youtube", "ruliweb" 등)을 모두 순회
-      Object.keys(dayData).forEach(categoryKey => {
-        const items = dayData[categoryKey];
-        if (!Array.isArray(items)) return; // 배열이 아니면 패스
-
-        // "Keyword"가 일치하는 항목 찾기 (대소문자 방어)
-        const targetItem = items.find(item => 
-          (item.Keyword || item.keyword) === keyword
-        );
-
-        if (targetItem && targetItem.Examples) {
-          targetItem.Examples.forEach(rawComment => {
-            // 방어 1: 데이터가 비어있으면(null, undefined) 패스
-            if (!rawComment) return;
-
-            // 방어 2: 데이터가 문자열이 아닌 경우, 텍스트 형태로 강제 변환/추출
-            let commentText = "";
-            if (typeof rawComment === 'string') {
-              commentText = rawComment; // 정상적인 문자열인 경우
-            } else if (typeof rawComment === 'object') {
-              // 객체 형태인 경우, 주로 쓰이는 key 값(text, content, comment 등)에서 추출
-              commentText = rawComment.text || rawComment.content || rawComment.comment || JSON.stringify(rawComment);
-            } else {
-              // 숫자나 다른 타입일 경우 강제로 문자열 변환
-              commentText = String(rawComment);
-            }
-
-            // 1. 변환된 안전한 텍스트를 원본 댓글 수집 배열에 추가
-            collectedComments.push(commentText);
-
-            // 2. 플랫폼 통계 수집 (.match 에러 완벽 방어)
-            const platformMatch = commentText.match(/^\[([^\]]+)\]/);
-            
-            if (platformMatch) {
-              const platformName = platformMatch[1]; // 추출된 플랫폼 이름
-              platformStats[platformName] = (platformStats[platformName] || 0) + 1;
-            } else if (categoryKey !== 'all') {
-              platformStats[categoryKey] = (platformStats[categoryKey] || 0) + 1;
-            }
-          });
-        }
-      });
+      platformStats[platformName] = (platformStats[platformName] || 0) + 1;
     });
 
     // 🏆 확산처(Top Platform) 계산
@@ -169,7 +133,7 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
     [🚨 필수 출력 템플릿 🚨] - 반드시 아래의 1, 2, 3번 양식을 그대로 복사해서 내용만 채울 것!
     1. **정의 및 배경**: (여기에 내용 작성 - 줄임말 해독 포함, 추측성 가격 정보 금지)
     2. **여론 및 반응**: (여기에 내용 작성 - 감정과 주요 의견 요약. 가격 비판 반응 주의)
-    3. **크리에이터 팁 & 주의점**: (꿀팁을 먼저 작성한 후, 리스크 발생 시에만 내용 맨 마지막에 <<< 와 >>> 로 감싸서 경고할 것. 절대 >>> 기호 뒤에 부연 설명이나 문장을 덧붙이지 말 것! 만약 특별한 주의사항이 없다면 "리스크 발생 시 주의할 것" 같은 무의미한 문장을 절대 생성하지 말고 <<< >>> 기호도 쓰지 말 것!)
+    3. **크리에이터 팁 & 주의점**: (콘텐츠 제작 꿀팁을 최우선으로 작성함. 만약 비도덕적, 불법적, 혹은 커뮤니티 가이드라인 위반 등 '실질적 리스크'가 데이터상에 존재할 때만 내용 맨 마지막에 <<< 주의사항 내용 >>> 형태로 작성함. '리스크 발생 시 주의할 것' 같은 알맹이 없는 문구는 절대 생성하지 말 것. 특별한 주의사항이 없다면 <<< >>> 기호 자체를 출력하지 말고 꿀팁 문장으로 즉시 종료할 것.)
 
     [스타일 제약]
     1. '다.'로 끝내지 말 것. (~함, ~임 체 사용)

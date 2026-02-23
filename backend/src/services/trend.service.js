@@ -96,6 +96,15 @@ exports.getAllTrends = async (keyword, date) => {
   return rows;
 };
 
+const API_KEYS = process.env.YOUTUBE_API_KEYS ? process.env.YOUTUBE_API_KEYS.split(',') : [];
+console.log(`🔑 로드된 API 키 개수: ${API_KEYS.length}개`);
+let currentKeyIndex = 0;
+
+const getActiveKey = () => API_KEYS[currentKeyIndex];
+const rotateKey = () => {
+  currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+};
+
 exports.getAnalysis = async (keyword, startDate, endDate) => {
   const now = Date.now();
 
@@ -165,23 +174,21 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
   const wordCloudData = extractWordCloudData(parsedComments, keyword);
 
   // ── 4. 유튜브 영상 검색 ───────────────────────────────
-  const API_KEYS = process.env.YOUTUBE_API_KEYS ? process.env.YOUTUBE_API_KEYS.split(',') : [];
-  let currentKeyIndex = 0;
-  const getActiveKey = () => API_KEYS[currentKeyIndex];
-  const rotateKey    = () => { currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length; };
-
   let relatedVideos = [];
 
   if (API_KEYS.length > 0 && keyword) {
     const fetchYoutubeWithRotation = async (retryCount = 0) => {
       const currentKey = getActiveKey();
+
       try {
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
         const searchParams = {
           part: 'snippet', q: keyword, type: 'video',
-          maxResults: 3, key: currentKey, regionCode: 'KR', order: 'date',
+          maxResults: 3, key: currentKey, regionCode: 'KR', order: 'viewCount', publishedAfter: threeDaysAgo.toISOString()
         };
-        if (startDate) searchParams.publishedAfter  = toISODate(startDate);
-        if (endDate)   searchParams.publishedBefore = toISODate(endDate, true);
+        // if (startDate) searchParams.publishedAfter  = toISODate(startDate);
+        // if (endDate)   searchParams.publishedBefore = toISODate(endDate, true);
 
         const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', { params: searchParams });
         const videoIds  = searchRes.data.items.map(i => i.id.videoId).join(',');
@@ -194,7 +201,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
           id:           item.id,
           title:        item.snippet.title,
           channel:      item.snippet.channelTitle,
-          views:        item.statistics.viewCount,
+          views:        parseInt(item.statistics.viewCount || 0),
           thumbnail:    item.snippet.thumbnails.medium.url,
           publish_time: item.snippet.publishedAt,
         }));
