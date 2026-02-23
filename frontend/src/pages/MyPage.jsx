@@ -75,6 +75,23 @@ const MyPage = () => {
     }
   };
 
+  const handleWithdraw = async () => {
+    try {
+      const response = await axios.delete('http://localhost:5000/api/auth/withdraw', {
+        data: { email: userInfo.email } // DELETE 요청 본문
+      });
+
+      if (response.data.success) {
+        alert(response.data.message);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        window.location.href = '/login'; // 데이터 파기 후 로그인 페이지로 강제 이동
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || '회원 탈퇴 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <div className="page pb-20">
       {/* 페이지 헤더 */}
@@ -258,13 +275,14 @@ const MyPage = () => {
               {/* 3. 회원 탈퇴 */}
               {activeModal === 'withdraw' && (
                 <div className="text-center">
-                   <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><Trash size={32} /></div>
-                   <h4 className="text-lg font-bold mb-2">정말 탈퇴하시겠습니까?</h4>
-                   <p className="text-gray-500 text-sm mb-6">모든 데이터가 삭제되며 복구할 수 없습니다.</p>
-                   <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><Trash size={32} /></div>
+                  <h4 className="text-lg font-bold mb-2">정말 탈퇴하시겠습니까?</h4>
+                  <p className="text-gray-500 text-sm mb-6">모든 데이터가 삭제되며 복구할 수 없습니다.</p>
+                  <div className="flex flex-col sm:flex-row gap-3">
                       <button onClick={closeModal} className="flex-1 py-3 border rounded-lg hover:bg-gray-50">취소</button>
-                      <button className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700">탈퇴하기</button>
-                   </div>
+                      {/* onClick 이벤트 교체 */}
+                      <button onClick={handleWithdraw} className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700">탈퇴하기</button>
+                  </div>
                 </div>
               )}
             </div>

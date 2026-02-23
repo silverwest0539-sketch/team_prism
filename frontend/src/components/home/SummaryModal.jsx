@@ -11,6 +11,7 @@ import {
   LineChart, Line, Tooltip, ResponsiveContainer, XAxis
 } from 'recharts';
 import { addScrap, removeScrap, isScrapped, getScrap, updateScrap } from '../../utils/storage';
+import axios from 'axios';
 
 export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const navigate = useNavigate();
@@ -18,24 +19,22 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const [loading, setLoading] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
-  // 메모 상태
-  const [memo, setMemo] = useState('');
-  const [isMemoOpen, setIsMemoOpen] = useState(false);
-  const [memoSaved, setMemoSaved] = useState(false);
-  const memoRef = useRef(null);
-
   // 모달 데이터 로딩 로직
   useEffect(() => {
     if (isOpen && data?.keyword) {
       setLoading(true);
-      setIsBookmarked(isScrapped(data.keyword));
+      
+      // 1. [변경됨] DB에서 스크랩 여부 확인
+      const savedUser = JSON.parse(localStorage.getItem('user'));
+      if (savedUser?.email) {
+        axios.get(`http://localhost:5000/api/scraps/check?email=${savedUser.email}&keyword=${data.keyword}`)
+          .then(res => setIsBookmarked(res.data.isBookmarked))
+          .catch(() => setIsBookmarked(false));
+      } else {
+        setIsBookmarked(false);
+      }
 
-      // 기존 메모 불러오기
-      const existing = getScrap(data.keyword);
-      setMemo(existing?.memo || '');
-      setIsMemoOpen(false);
-      setMemoSaved(false);
-
+      // 2. [기존 유지] 상세 분석 데이터 로딩
       const typeParam = data.type || 'trend';
       fetch(`http://localhost:5000/api/analysis?keyword=${data.keyword}&type=${typeParam}`)
         .then(res => res.json())
@@ -67,9 +66,9 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   };
 
   // 즐겨찾기 토글
-  const toggleBookmark = () => {
+  const toggleBookmark = async () => {
     // 1. 로그인 여부 확인
-    const savedUser = localStorage.getItem('user'); //
+    const savedUser = JSON.parse(localStorage.getItem('user'));
 
     if (!savedUser) {
       // 2. 로그인이 안 되어 있다면 알림 후 중단
@@ -81,33 +80,20 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
     }
 
     // 3. 로그인이 되어 있다면 기존 스크랩 로직 실행
-    if (isBookmarked) {
-      removeScrap(data.keyword);
-      setIsBookmarked(false);
-    } else {
-      addScrap({
-        keyword: data.keyword,
-        rank: data.rank,
-        type: data.type || 'trend',
-        desc: data.desc || '요약 정보 없음'
-      });
-      setIsBookmarked(true);
-    }
-    onScrapChange?.();
-  };
-
-  // 메모 저장
-  const handleSaveMemo = () => {
-    if (!localStorage.getItem('user')) {
-      alert('메모 저장 기능은 로그인이 필요합니다.');
-      return;
-    }
-    
-    if (isScrapped(data.keyword)) {
-      updateScrap(data.keyword, { memo });
-      setMemoSaved(true);
-      setTimeout(() => setMemoSaved(false), 1500);
-      onScrapChange?.();
+    try {
+      if (isBookmarked) {
+        await axios.delete(`http://localhost:5000/api/scraps?email=${savedUser.email}&keyword=${data.keyword}`);
+        setIsBookmarked(false);
+      } else {
+        await axios.post('http://localhost:5000/api/scraps', {
+          email: savedUser.email,
+          keyword: data.keyword
+        });
+        setIsBookmarked(true);
+      }
+      onScrapChange?.(); // 리렌더링 트리거
+    } catch (error) {
+      alert('스크랩 처리 중 오류가 발생했습니다.');
     }
   };
 
@@ -253,56 +239,6 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
               )}
             </div>
           </div>
-
-          {/* (5) 메모 섹션 (스크랩된 키워드만 표시) */}
-          {isBookmarked && (
-            <div>
-              <button
-                onClick={() => {
-                  setIsMemoOpen(!isMemoOpen);
-                  if (!isMemoOpen) setTimeout(() => memoRef.current?.focus(), 100);
-                }}
-                className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-indigo-600 transition-colors mb-3"
-              >
-                <NotePencil size={18} className="text-indigo-500" />
-                내 메모
-                <span className="text-xs font-normal text-gray-400">
-                  {memo ? '(작성됨)' : '(클릭하여 작성)'}
-                </span>
-              </button>
-
-              {isMemoOpen && (
-                <div className="space-y-2 animate-[fadeIn_0.15s_ease-out]">
-                  <textarea
-                    ref={memoRef}
-                    value={memo}
-                    onChange={(e) => setMemo(e.target.value)}
-                    placeholder="이 키워드에 대한 메모를 남겨보세요..."
-                    className="w-full p-3 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all"
-                    rows={3}
-                    maxLength={200}
-                  />
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-gray-400">{memo.length}/200</span>
-                    <button
-                      onClick={handleSaveMemo}
-                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                        memoSaved
-                          ? 'bg-green-100 text-green-600'
-                          : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
-                      }`}
-                    >
-                      {memoSaved ? (
-                        <><Check size={14} weight="bold" /> 저장됨</>
-                      ) : (
-                        '저장'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
         </div>
 

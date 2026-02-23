@@ -1,0 +1,89 @@
+const authService = require('../services/auth.service');
+
+exports.sendCode = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: "이메일이 필요합니다." });
+
+  try {
+    await authService.sendAuthCode(email);
+    res.json({ success: true, message: "인증번호가 발송되었습니다." });
+  } catch (error) {
+    if (error.message === "ALREADY_EXISTS") {
+      return res.status(409).json({ success: false, message: "이미 사용 중인 이메일입니다." });
+    }
+    console.error("인증번호 발송 에러:", error);
+    res.status(500).json({ success: false, message: "서버 에러가 발생했습니다." });
+  }
+};
+
+exports.signup = async (req, res) => {
+  const { email, nickname, password, code } = req.body;
+  try {
+    await authService.signup(email, nickname, password, code);
+    res.status(201).json({ success: true, message: "회원가입 성공" });
+  } catch (error) {
+    if (error.message === "INVALID_CODE") return res.status(400).json({ success: false, message: "인증번호가 일치하지 않습니다." });
+    if (error.message === "EXPIRED_CODE") return res.status(400).json({ success: false, message: "인증번호가 만료되었습니다. 다시 요청해주세요." });
+    console.error(error);
+    res.status(500).json({ success: false, message: "서버 에러" });
+  }
+};
+
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const result = await authService.login(email, password);
+    res.json({ success: true, ...result }); // token, user 포함
+  } catch (error) {
+    if (error.message === "INVALID_CREDENTIALS") return res.status(401).json({ success: false, message: "정보가 틀렸습니다." });
+    res.status(500).json({ success: false, message: "서버 에러" });
+  }
+};
+
+exports.findPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    await authService.findPassword(email);
+    res.json({ success: true, message: "임시 비밀번호가 메일로 발송되었습니다." });
+  } catch (error) {
+    if (error.message === "NOT_FOUND") return res.status(404).json({ success: false, message: "가입되지 않은 이메일입니다." });
+    console.error("비밀번호 찾기 에러:", error);
+    res.status(500).json({ success: false, message: "서버 에러가 발생했습니다." });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  const { email, newNickname } = req.body;
+  try {
+    await authService.updateProfile(email, newNickname);
+    res.json({ success: true, message: "이름이 성공적으로 변경되었습니다.", nickname: newNickname });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  const { email, currentPassword, newPassword } = req.body;
+  try {
+    await authService.changePassword(email, currentPassword, newPassword);
+    res.json({ success: true, message: "비밀번호가 성공적으로 변경되었습니다." });
+  } catch (error) {
+    if (error.message === "NOT_FOUND") return res.status(404).json({ success: false, message: "유저를 찾을 수 없습니다." });
+    if (error.message === "INVALID_PASSWORD") return res.status(401).json({ success: false, message: "현재 비밀번호가 일치하지 않습니다." });
+    console.error(error);
+    res.status(500).json({ success: false, message: "서버 오류 발생" });
+  }
+};
+
+exports.withdraw = async (req, res) => {
+  const { email } = req.body;
+  try {
+    await authService.withdraw(email);
+    res.json({ success: true, message: "회원 탈퇴가 완료되었습니다." });
+  } catch (error) {
+    if (error.message === "NOT_FOUND") return res.status(404).json({ success: false, message: "유저를 찾을 수 없습니다." });
+    console.error("회원 탈퇴 에러:", error);
+    res.status(500).json({ success: false, message: "회원 탈퇴 처리 중 오류 발생" });
+  }
+};

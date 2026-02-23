@@ -12,17 +12,18 @@ import { getScraps, removeScrap, updateScrap, reorderScraps, getAllTags } from '
 import { formatDate } from '../../utils/formatters';
 import SummaryModal from '../home/SummaryModal';
 import CompareModal from '../scrap/CompareModal';
+import axios from 'axios';
 
-// ─── 태그 프리셋 색상 ───
-const TAG_COLORS = {
-    '마케팅': 'bg-purple-100 text-purple-700 border-purple-200',
-    '경쟁사': 'bg-red-100 text-red-700 border-red-200',
-    '트렌드': 'bg-blue-100 text-blue-700 border-blue-200',
-    '아이디어': 'bg-amber-100 text-amber-700 border-amber-200',
-    '리서치': 'bg-green-100 text-green-700 border-green-200',
-};
-const DEFAULT_TAG_COLOR = 'bg-gray-100 text-gray-600 border-gray-200';
-const getTagColor = (tag) => TAG_COLORS[tag] || DEFAULT_TAG_COLOR;
+// // ─── 태그 프리셋 색상 ───
+// const TAG_COLORS = {
+//     '마케팅': 'bg-purple-100 text-purple-700 border-purple-200',
+//     '경쟁사': 'bg-red-100 text-red-700 border-red-200',
+//     '트렌드': 'bg-blue-100 text-blue-700 border-blue-200',
+//     '아이디어': 'bg-amber-100 text-amber-700 border-amber-200',
+//     '리서치': 'bg-green-100 text-green-700 border-green-200',
+// };
+// const DEFAULT_TAG_COLOR = 'bg-gray-100 text-gray-600 border-gray-200';
+// const getTagColor = (tag) => TAG_COLORS[tag] || DEFAULT_TAG_COLOR;
 
 // ─── 변동 뱃지 (더미: 해시 기반 할당, 실제론 API 연동) ───
 const BADGE_TYPES = [
@@ -60,11 +61,11 @@ const ScrapPage = () => {
     // 뷰 모드 (grid / list)
     const [viewMode, setViewMode] = useState('grid');
 
-    // 태그 관련
-    const [activeTag, setActiveTag] = useState('전체');
-    const [tagInput, setTagInput] = useState('');
-    const [editingTagFor, setEditingTagFor] = useState(null);
-    const tagInputRef = useRef(null);
+    // // 태그 관련
+    // const [activeTag, setActiveTag] = useState('전체');
+    // const [tagInput, setTagInput] = useState('');
+    // const [editingTagFor, setEditingTagFor] = useState(null);
+    // const tagInputRef = useRef(null);
 
     // 비교 모드
     const [isCompareMode, setIsCompareMode] = useState(false);
@@ -87,11 +88,23 @@ const ScrapPage = () => {
     const prevCountRef = useRef(0);
 
     // ─── 데이터 로드 ───
-    useEffect(() => {
-        const data = getScraps();
-        setScraps(data);
-        prevCountRef.current = data.length;
+    const fetchScraps = useCallback(async () => {
+        const savedUser = JSON.parse(localStorage.getItem('user'));
+        if (!savedUser?.email) return;
+
+        try {
+            const response = await axios.get(`http://localhost:5000/api/scraps?email=${savedUser.email}`);
+            if (response.data.success) {
+                setScraps(response.data.scraps);
+            }
+        } catch (error) {
+            console.error("스크랩 데이터를 불러오는데 실패했습니다.", error);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchScraps();
+    }, [fetchScraps]);
 
     // Empty State 도달 감지
     useEffect(() => {
@@ -103,29 +116,22 @@ const ScrapPage = () => {
     }, [scraps.length]);
 
     // 전체 태그 목록
-    const allTags = useMemo(() => ['전체', ...getAllTags()], [scraps]);
+    // const allTags = useMemo(() => ['전체', ...getAllTags()], [scraps]);
 
     // ─── 필터 + 검색 + 정렬 파이프라인 ───
     const processedScraps = useMemo(() => {
         let result = [...scraps];
 
-        // 1. 태그 필터
-        if (activeTag !== '전체') {
-            result = result.filter(item => (item.tags || []).includes(activeTag));
-        }
-
-        // 2. 검색
+        // 1. 검색
         if (searchQuery.trim()) {
             const q = searchQuery.trim().toLowerCase();
             result = result.filter(item =>
                 item.keyword.toLowerCase().includes(q) ||
-                (item.desc || '').toLowerCase().includes(q) ||
-                (item.memo || '').toLowerCase().includes(q) ||
-                (item.tags || []).some(tag => tag.toLowerCase().includes(q))
+                (item.desc || '').toLowerCase().includes(q)
             );
         }
 
-        // 3. 정렬
+        // 2. 정렬
         if (sortBy === 'newest') {
             result.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
         } else if (sortBy === 'oldest') {
@@ -135,43 +141,63 @@ const ScrapPage = () => {
         } else if (sortBy === 'name_desc') {
             result.sort((a, b) => b.keyword.localeCompare(a.keyword, 'ko'));
         }
-        // 'custom'은 원래 순서 유지
 
         return result;
-    }, [scraps, activeTag, searchQuery, sortBy]);
+    }, [scraps, searchQuery, sortBy]);
 
     // ─── 핸들러 ───
 
-    const refreshScraps = useCallback(() => {
-        setScraps(getScraps());
-    }, []);
+    const refreshScraps = () => {
+        fetchScraps();
+    };
 
     // 단일 삭제 (애니메이션 포함)
-    const handleDelete = (e, keyword) => {
+    const handleDelete = async (e, keyword) => {
         e.stopPropagation();
+        const savedUser = JSON.parse(localStorage.getItem('user'));
+        if (!savedUser?.email) return;
+
         if (window.confirm(`'${keyword}' 스크랩을 삭제하시겠습니까?`)) {
             setRemovingKeywords(new Set([keyword]));
-            setTimeout(() => {
-                removeScrap(keyword);
-                refreshScraps();
+            try {
+                await axios.delete(`http://localhost:5000/api/scraps?email=${savedUser.email}&keyword=${keyword}`);
+                setTimeout(() => {
+                    refreshScraps();
+                    setRemovingKeywords(new Set());
+                }, 300);
+            } catch (error) {
+                alert('삭제에 실패했습니다.');
                 setRemovingKeywords(new Set());
-            }, 300);
+            }
         }
     };
 
     // 다중 삭제
-    const handleBulkDelete = () => {
+    const handleBulkDelete = async () => {
         if (deleteSelection.size === 0) return;
+        const savedUser = JSON.parse(localStorage.getItem('user'));
+        if (!savedUser?.email) return;
+
         const count = deleteSelection.size;
         if (window.confirm(`선택된 ${count}개의 스크랩을 삭제하시겠습니까?`)) {
             setRemovingKeywords(new Set(deleteSelection));
-            setTimeout(() => {
-                deleteSelection.forEach(keyword => removeScrap(keyword));
-                refreshScraps();
+            try {
+                // 병렬로 API 호출
+                const promises = Array.from(deleteSelection).map(keyword => 
+                    axios.delete(`http://localhost:5000/api/scraps?email=${savedUser.email}&keyword=${keyword}`)
+                );
+                await Promise.all(promises);
+
+                setTimeout(() => {
+                    refreshScraps();
+                    setRemovingKeywords(new Set());
+                    setDeleteSelection(new Set());
+                    setIsDeleteMode(false);
+                }, 300);
+            } catch (error) {
+                alert('일부 항목 삭제에 실패했습니다.');
                 setRemovingKeywords(new Set());
-                setDeleteSelection(new Set());
-                setIsDeleteMode(false);
-            }, 300);
+            }
         }
     };
 
@@ -223,26 +249,26 @@ const ScrapPage = () => {
     const handleScrapChange = () => refreshScraps();
 
     // ─── 태그 관리 ───
-    const handleAddTag = (keyword) => {
-        const tag = tagInput.trim();
-        if (!tag) return;
-        const item = scraps.find(s => s.keyword === keyword);
-        const currentTags = item?.tags || [];
-        if (!currentTags.includes(tag)) {
-            updateScrap(keyword, { tags: [...currentTags, tag] });
-            refreshScraps();
-        }
-        setTagInput('');
-        setEditingTagFor(null);
-    };
+    // const handleAddTag = (keyword) => {
+    //     const tag = tagInput.trim();
+    //     if (!tag) return;
+    //     const item = scraps.find(s => s.keyword === keyword);
+    //     const currentTags = item?.tags || [];
+    //     if (!currentTags.includes(tag)) {
+    //         updateScrap(keyword, { tags: [...currentTags, tag] });
+    //         refreshScraps();
+    //     }
+    //     setTagInput('');
+    //     setEditingTagFor(null);
+    // };
 
-    const handleRemoveTag = (e, keyword, tag) => {
-        e.stopPropagation();
-        const item = scraps.find(s => s.keyword === keyword);
-        const newTags = (item?.tags || []).filter(t => t !== tag);
-        updateScrap(keyword, { tags: newTags });
-        refreshScraps();
-    };
+    // const handleRemoveTag = (e, keyword, tag) => {
+    //     e.stopPropagation();
+    //     const item = scraps.find(s => s.keyword === keyword);
+    //     const newTags = (item?.tags || []).filter(t => t !== tag);
+    //     updateScrap(keyword, { tags: newTags });
+    //     refreshScraps();
+    // };
 
     // ─── 비교 모드 ───
     const toggleCompareSelect = (keyword) => {
@@ -289,13 +315,11 @@ const ScrapPage = () => {
         if (data.length === 0) return;
 
         const BOM = '\uFEFF';
-        const headers = ['키워드', '순위', '타입', '태그', '메모', '저장일'];
+        const headers = ['키워드', '순위', '타입', '저장일'];
         const rows = data.map(item => [
             item.keyword,
             item.rank || '?',
             item.type || 'trend',
-            (item.tags || []).join(', '),
-            (item.memo || '').replace(/"/g, '""'),
             item.savedAt ? new Date(item.savedAt).toLocaleDateString('ko-KR') : ''
         ]);
 
@@ -430,63 +454,7 @@ const ScrapPage = () => {
                         {item.desc}
                     </p>
 
-                    {/* 메모 미리보기 */}
-                    {item.memo && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg mb-3 max-w-fit">
-                            <NotePencil size={12} weight="fill" />
-                            <span className="truncate max-w-[200px]">{item.memo}</span>
-                        </div>
-                    )}
 
-                    {/* 태그 영역 */}
-                    <div className="flex flex-wrap gap-1.5 mb-3 min-h-[24px]">
-                        {(item.tags || []).map(tag => (
-                            <span
-                                key={tag}
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${getTagColor(tag)}`}
-                            >
-                                {tag}
-                                <button
-                                    onClick={(e) => handleRemoveTag(e, item.keyword, tag)}
-                                    className="hover:opacity-70 ml-0.5"
-                                >
-                                    <X size={10} weight="bold" />
-                                </button>
-                            </span>
-                        ))}
-
-                        {editingTagFor === item.keyword ? (
-                            <form
-                                onClick={(e) => e.stopPropagation()}
-                                onSubmit={(e) => { e.preventDefault(); handleAddTag(item.keyword); }}
-                                className="flex items-center"
-                            >
-                                <input
-                                    ref={tagInputRef}
-                                    type="text"
-                                    value={tagInput}
-                                    onChange={(e) => setTagInput(e.target.value)}
-                                    onBlur={() => { setEditingTagFor(null); setTagInput(''); }}
-                                    placeholder="태그 입력"
-                                    className="w-16 px-1.5 py-0.5 text-[10px] border border-indigo-300 rounded-full focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                                    maxLength={10}
-                                    autoFocus
-                                />
-                            </form>
-                        ) : (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingTagFor(item.keyword);
-                                    setTagInput('');
-                                }}
-                                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold border border-dashed border-gray-300 text-gray-400 hover:border-indigo-400 hover:text-indigo-500 transition"
-                            >
-                                <Plus size={10} weight="bold" />
-                                태그
-                            </button>
-                        )}
-                    </div>
 
                     <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50">
                         <span>{item.savedAt ? formatDate(item.savedAt) : '날짜 정보 없음'} 저장됨</span>
@@ -550,7 +518,7 @@ const ScrapPage = () => {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="키워드, 태그, 메모로 검색..."
+                            placeholder="키워드 검색..."
                             className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all bg-white"
                         />
                         {searchQuery && (
@@ -563,30 +531,12 @@ const ScrapPage = () => {
                         )}
                     </div>
 
-                    {/* ─── 태그 필터 바 ─── */}
-                    <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
-                        <Tag size={16} className="text-gray-400 flex-shrink-0" />
-                        {allTags.map(tag => (
-                            <button
-                                key={tag}
-                                onClick={() => setActiveTag(tag)}
-                                className={`px-3 py-1 rounded-full text-xs font-bold border whitespace-nowrap transition-all ${
-                                    activeTag === tag
-                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-                                }`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-
                     {/* ─── 툴바: 카운트 + 정렬 + 뷰전환 + 모드 토글 ─── */}
                     <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-6">
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                             <span className="text-xs text-gray-400">
                                 {processedScraps.length}개 키워드
-                                {searchQuery && ` (검색: "${searchQuery}")`}
+                                {/* {searchQuery && ` (검색: "${searchQuery}")`} */}
                             </span>
 
                             {/* 정렬 드롭다운 */}
