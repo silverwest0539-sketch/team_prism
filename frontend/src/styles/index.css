@@ -1,10 +1,115 @@
 /* src/styles/index.css */
-/* 커스텀 CSS 파일 import */
-@import "./components.css";
-@import "./utilities.css";
+@import './components.css';
+@import './utilities.css';
 
-/* Tailwind 기본 레이어 */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  @keyframes toastFlyBob {
+    0%,
+    100% {
+      transform: translateY(-12px) rotate(-4deg);
+    }
+    50% {
+      transform: translateY(12px) rotate(4deg);
+    }
+  }
+
+  .animate-toast-fly-bob {
+    animation: toastFlyBob 360ms ease-in-out infinite;
+  }
+}
+
+.app-toast-viewport {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  width: min(92vw, 460px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  pointer-events: none;
+}
+
+.app-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.875rem;
+  padding: 0.85rem 0.9rem 0.85rem 1rem;
+  border: 1px solid transparent;
+  box-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.5);
+  animation: toast-enter 180ms ease-out;
+}
+
+.app-toast__message {
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.app-toast__close {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.app-toast__close:hover {
+  opacity: 1;
+}
+
+.app-toast--info {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #3730a3;
+}
+
+.app-toast--success {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.app-toast--warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.app-toast--error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .app-toast-viewport {
+    top: 0.75rem;
+    width: calc(100vw - 1rem);
+  }
+
+  .app-toast {
+    padding: 0.8rem 0.8rem 0.8rem 0.9rem;
+  }
+}

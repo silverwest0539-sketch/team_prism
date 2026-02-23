@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import InputPanel from '../components/creation/InputPanel';
 import ResultPanel from '../components/creation/ResultPanel';
+import { showToast } from '../utils/toast';
 
 const CreationPage = () => {
   const navigate = useNavigate();
@@ -15,7 +16,9 @@ const CreationPage = () => {
     const savedUser = localStorage.getItem('user');
 
     if (!savedUser) {
-      alert('콘텐츠 생성 서비스는 로그인 후 이용할 수 있습니다. 로그인 페이지로 이동합니다.');
+      showToast('콘텐츠 생성 서비스는 로그인 후 이용할 수 있습니다. 로그인 페이지로 이동합니다.', {
+        type: 'warning',
+      });
       navigate('/login', { replace: true });
       return;
     }
@@ -44,11 +47,13 @@ const CreationPage = () => {
       if (data.success) {
         setGeneratedResult(data.result);
       } else {
-        alert(`생성 실패: ${data.error || '알 수 없는 오류'}`);
+        showToast(`생성 실패: ${data.error || '알 수 없는 오류'}`, { type: 'error' });
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('서버 연결에 실패했습니다. 백엔드 터미널이 켜져 있는지 확인하세요.');
+      showToast('서버 연결에 실패했습니다. 백엔드 터미널이 켜져 있는지 확인하세요.', {
+        type: 'error',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -64,7 +69,7 @@ const CreationPage = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">콘텐츠 생성 스튜디오</h1>
           <p className="text-sm sm:text-base text-gray-500 mt-1">
-            저장된 브랜드 톤앤매너로 수정부터 내보내기까지 한 번에 완료하세요.
+            다양한 브랜드 톤앤매너로 수정부터 재생성까지 한 번에 완료하세요.
           </p>
         </div>
       </div>

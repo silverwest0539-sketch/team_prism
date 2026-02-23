@@ -2,61 +2,60 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { showToast } from '../utils/toast';
 
-const LOGO_TRIGGER_COUNT = 5;
-const CLICK_RESET_MS = 1500;
-const EASTER_EGG_MS = 1600;
+const EASTER_EGG_MS = 1800;
 const EASTER_EGG_IMAGE = '/flying_toasts.png';
+const EASTER_EGG_HINT = 'Shift + Alt';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [logoClickCount, setLogoClickCount] = useState(0);
   const [isEasterEggActive, setIsEasterEggActive] = useState(false);
   const [showEasterEggToast, setShowEasterEggToast] = useState(false);
   const [showEasterEggImage, setShowEasterEggImage] = useState(false);
   const [isImageFlying, setIsImageFlying] = useState(false);
 
-  const clickResetTimerRef = useRef(null);
   const easterEggTimerRef = useRef(null);
 
   useEffect(() => {
     return () => {
-      if (clickResetTimerRef.current) clearTimeout(clickResetTimerRef.current);
       if (easterEggTimerRef.current) clearTimeout(easterEggTimerRef.current);
     };
   }, []);
 
-  const handleLogoClick = () => {
-    if (clickResetTimerRef.current) clearTimeout(clickResetTimerRef.current);
+  const triggerEasterEgg = () => {
+    setIsEasterEggActive(true);
+    setShowEasterEggToast(true);
+    setShowEasterEggImage(true);
+    setIsImageFlying(false);
 
-    const nextCount = logoClickCount + 1;
-    if (nextCount >= LOGO_TRIGGER_COUNT) {
-      setLogoClickCount(0);
-      setIsEasterEggActive(true);
-      setShowEasterEggToast(true);
-      setShowEasterEggImage(true);
+    requestAnimationFrame(() => {
+      setIsImageFlying(true);
+    });
+
+    if (easterEggTimerRef.current) clearTimeout(easterEggTimerRef.current);
+    easterEggTimerRef.current = setTimeout(() => {
+      setIsEasterEggActive(false);
+      setShowEasterEggToast(false);
+      setShowEasterEggImage(false);
       setIsImageFlying(false);
+    }, EASTER_EGG_MS);
+  };
 
-      requestAnimationFrame(() => {
-        setIsImageFlying(true);
-      });
-
-      if (easterEggTimerRef.current) clearTimeout(easterEggTimerRef.current);
-      easterEggTimerRef.current = setTimeout(() => {
-        setIsEasterEggActive(false);
-        setShowEasterEggToast(false);
-        setShowEasterEggImage(false);
-        setIsImageFlying(false);
-      }, EASTER_EGG_MS);
+  const handleLogoActivate = (hasEasterEggCombo) => {
+    if (hasEasterEggCombo) {
+      triggerEasterEgg();
       return;
     }
 
-    setLogoClickCount(nextCount);
-    clickResetTimerRef.current = setTimeout(() => {
-      setLogoClickCount(0);
-    }, CLICK_RESET_MS);
+    navigate('/home');
+  };
+
+  const handleLogoClick = (event) => {
+    const hasEasterEggCombo = event.shiftKey && event.altKey;
+    handleLogoActivate(hasEasterEggCombo);
   };
 
   const handleLogin = async (e) => {
@@ -70,11 +69,11 @@ const LoginPage = () => {
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        alert(`환영합니다! ${response.data.user.nickname}님`);
+        showToast(`환영합니다! ${response.data.user.nickname}님`, { type: 'success' });
         navigate('/home');
       }
     } catch (error) {
-      alert(error.response?.data?.message || '로그인 실패');
+      showToast(error.response?.data?.message || '로그인에 실패했습니다.', { type: 'error' });
     }
   };
 
@@ -87,19 +86,20 @@ const LoginPage = () => {
       )}
 
       {showEasterEggImage && (
-        <div className="pointer-events-none fixed inset-0 z-40">
-          <img
-            src={EASTER_EGG_IMAGE}
-            alt="Flying toasts"
-            className="fixed left-1/2 top-1/2 w-[78vw] max-w-[500px] select-none drop-shadow-2xl"
+        <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
+          <div
+            className="fixed left-[-25vw] top-1/2"
             style={{
-              transform: isImageFlying
-                ? 'translate(calc(-50% + 55vw), calc(-50% - 48vh)) scale(0.72) rotate(18deg)'
-                : 'translate(-50%, -50%) scale(1) rotate(0deg)',
-              opacity: isImageFlying ? 0 : 1,
-              transition: `transform ${EASTER_EGG_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity ${EASTER_EGG_MS}ms ease-out`,
+              transform: isImageFlying ? 'translate(145vw, -50%)' : 'translate(0, -50%)',
+              transition: `transform ${EASTER_EGG_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1)`,
             }}
-          />
+          >
+            <img
+              src={EASTER_EGG_IMAGE}
+              alt="Flying toasts"
+              className="w-[62vw] max-w-[380px] select-none drop-shadow-2xl animate-toast-fly-bob"
+            />
+          </div>
         </div>
       )}
 
@@ -112,7 +112,7 @@ const LoginPage = () => {
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
-                handleLogoClick();
+                handleLogoActivate(event.shiftKey && event.altKey);
               }
             }}
             className={`text-4xl font-bold mb-2 transition-all duration-500 cursor-pointer select-none ${
@@ -120,7 +120,7 @@ const LoginPage = () => {
                 ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-pink-500 to-emerald-500 scale-110 drop-shadow-[0_0_12px_rgba(99,102,241,0.45)]'
                 : 'text-indigo-600 hover:text-indigo-700'
             }`}
-            title="Prism"
+            title={`Prism (이스터에그: ${EASTER_EGG_HINT} + 클릭)`}
             aria-label="Prism 로고"
           >
             Prism

@@ -12,6 +12,7 @@ import {
 } from '@phosphor-icons/react';
 import { LineChart, Line, Tooltip, ResponsiveContainer, XAxis } from 'recharts';
 import axios from 'axios';
+import { showToast } from '../../utils/toast';
 
 export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const navigate = useNavigate();
@@ -109,7 +110,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
       }
       onScrapChange?.();
     } catch (error) {
-      alert('스크랩 처리 중 오류가 발생했습니다.');
+      showToast('스크랩 처리 중 오류가 발생했습니다.', { type: 'error' });
     }
   };
 

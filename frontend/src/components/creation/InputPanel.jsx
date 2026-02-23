@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowsClockwise, MagicWand } from '@phosphor-icons/react';
+import { showToast } from '../../utils/toast';
 
 const DEFAULT_KEYWORD = '저당 간식';
 
@@ -25,7 +26,7 @@ const InputPanel = ({ onGenerate, isLoading, initialKeyword = '' }) => {
   const handleSubmit = () => {
     const finalKeyword = keyword.trim();
     if (!finalKeyword) {
-      alert('주제 키워드를 입력해 주세요.');
+      showToast('주제 키워드를 입력해 주세요.', { type: 'warning' });
       return;
     }
 
