@@ -69,78 +69,105 @@ exports.getRisingContents = (platform) => {
 };
 
 // 2. 유튜브 영상 조회 (캐시 적용)
+const API_KEYS = process.env.YOUTUBE_API_KEYS ? process.env.YOUTUBE_API_KEYS.split(',') : [];
+let currentKeyIndex = 0;
+
+// 키 로테이션 함수
+const getActiveKey = () => API_KEYS[currentKeyIndex];
+const rotateKey = () => {
+  if (API_KEYS.length > 1) {
+    currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+    console.log(`🔄 [API Rotation] 다음 키로 교체되었습니다. (Index: ${currentKeyIndex})`);
+  }
+};
+
 exports.getVideos = async (category) => {
-  const API_KEY = process.env.YOUTUBE_API_KEY;
   const CACHE_DURATION = 2 * 60 * 60 * 1000;
   const now = Date.now();
 
+  // 1. 캐시 확인
   if (videoCache[category] && (now - videoCache[category].timestamp < CACHE_DURATION)) {
     console.log(`📦 [Video Cache] '${category}' - 캐시 데이터 반환`);
-    return videoCache[category].data;
+    // 캐시 원본 수정을 방지하기 위해 복사본 반환 권장
+    return JSON.parse(JSON.stringify(videoCache[category].data));
   }
 
-  console.log(`📡 [Youtube API] '${category}' - 새 데이터 요청 중...`);
-  let videos = [];
+  // 2. 실제 API 호출을 담당하는 내부 함수 (재시도 로직 포함)
+  const fetchFromYoutube = async (retryCount = 0) => {
+    const currentKey = getActiveKey(); // 현재 활성화된 키 가져오기
+    console.log(`📡 [Youtube API] '${category}' - 요청 중... (Key Index: ${currentKeyIndex})`);
 
+    try {
+      let response;
+      if (category === '챌린지') {
+        const date = new Date();
+        date.setDate(date.getDate() - 3);
+        response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+          params: {
+            part: 'snippet', q: '챌린지', type: 'video', videoDuration: 'short',
+            order: 'viewCount', publishedAfter: date.toISOString(), 
+            maxResults: 50, regionCode: 'KR', 
+            key: currentKey // 수정: 정의된 키 사용
+          }
+        });
+      } else {
+        const categoryMap = { '전체': '', '음악': '10', '엔터테인먼트': '24', '게임': '20', '뉴스': '25', '스포츠': '17', '브이로그': '22' };
+        const categoryId = categoryMap[category] || '';
+        const apiParams = { 
+          part: 'snippet,statistics', chart: 'mostPopular', regionCode: 'KR', 
+          maxResults: 12, 
+          key: currentKey // 수정: 정의된 키 사용
+        };
+        if (categoryId) apiParams.videoCategoryId = categoryId;
+        response = await axios.get('https://www.googleapis.com/youtube/v3/videos', { params: apiParams });
+      }
+      return response.data;
+
+    } catch (error) {
+      // 403 에러(할당량 초과) 발생 시 로테이션 수행
+      const isQuotaError = error.response?.status === 403;
+      
+      if (isQuotaError && retryCount < API_KEYS.length - 1) {
+        rotateKey(); // 다음 키로 교체
+        return fetchFromYoutube(retryCount + 1); // 재귀 호출로 재시도
+      }
+      throw error; // 모든 키를 소진했거나 다른 에러인 경우 throw
+    }
+  };
+
+  // 3. 실행 및 결과 처리
   try {
+    const apiData = await fetchFromYoutube();
+    let videos = [];
+
+    // --- 기존의 데이터 가공(map) 로직 시작 ---
     if (category === '챌린지') {
-      const date = new Date();
-      date.setDate(date.getDate() - 3);
-      const publishedAfter = date.toISOString();
-
-      const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
-        params: {
-          part: 'snippet', q: '챌린지', type: 'video', videoDuration: 'short',
-          order: 'viewCount', publishedAfter, maxResults: 50, regionCode: 'KR', key: API_KEY
-        }
-      });
-
-      const strictFilteredItems = response.data.items.filter(item => {
+      const strictFilteredItems = apiData.items.filter(item => {
         const text = (item.snippet.title + " " + item.snippet.description);
-        const specificChallengeRegex = /#[^\s#]+챌린지/g;
-        const matches = text.match(specificChallengeRegex);
-        if (matches) return matches.some(tag => tag !== '#챌린지');
-        return false;
+        const matches = text.match(/#[^\s#]+챌린지/g);
+        return matches && matches.some(tag => tag !== '#챌린지');
       });
-
       videos = strictFilteredItems.slice(0, 12).map(item => ({
-        id: item.id.videoId,
-        title: item.snippet.title,
-        channel: item.snippet.channelTitle,
-        views: 0,
-        publish_time: item.snippet.publishedAt,
+        id: item.id.videoId, title: item.snippet.title, channel: item.snippet.channelTitle,
+        views: 0, publish_time: item.snippet.publishedAt,
         thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium.url,
         scraped_category_name: '챌린지'
       }));
-
     } else {
-      const categoryMap = { '전체': '', '음악': '10', '엔터테인먼트': '24', '게임': '20', '뉴스': '25', '스포츠': '17', '브이로그': '22' };
-      const categoryId = categoryMap[category] || '';
-      const apiParams = { part: 'snippet,statistics', chart: 'mostPopular', regionCode: 'KR', maxResults: 12, key: API_KEY };
-      if (categoryId) apiParams.videoCategoryId = categoryId;
-
-      const response = await axios.get('https://www.googleapis.com/youtube/v3/videos', { params: apiParams });
-
-      videos = response.data.items.map(item => ({
-        id: item.id,
-        title: item.snippet.title,
-        channel: item.snippet.channelTitle,
-        views: item.statistics.viewCount || 0,
-        publish_time: item.snippet.publishedAt,
-        thumbnail: item.snippet.thumbnails.medium.url,
-        scraped_category_name: category || '인기'
+      videos = apiData.items.map(item => ({
+        id: item.id, title: item.snippet.title, channel: item.snippet.channelTitle,
+        views: item.statistics.viewCount || 0, publish_time: item.snippet.publishedAt,
+        thumbnail: item.snippet.thumbnails.medium.url, scraped_category_name: category || '인기'
       }));
     }
+    // --- 기존의 데이터 가공(map) 로직 끝 ---
 
-    if (videos.length > 0) {
-      videoCache[category] = { data: videos, timestamp: Date.now() };
-    }
+    videoCache[category] = { data: videos, timestamp: Date.now() };
     return videos;
 
   } catch (error) {
-    console.error(`❌ 유튜브 API 에러 (${category}):`, error.message);
-    if (videoCache[category]) return videoCache[category].data; // Fallback
-    return [];
+    console.error(`❌ 유튜브 API 최종 에러 (${category}):`, error.response?.data?.error?.message || error.message);
+    return videoCache[category]?.data || []; // 실패 시 마지막 캐시라도 반환
   }
 };
 

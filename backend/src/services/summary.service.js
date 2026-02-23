@@ -37,30 +37,79 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
     let collectedComments = [];
     let platformStats = {};
 
+    // 💡 [디버깅] 현재 서버가 인식하고 있는 모든 키워드 목록 확인
+    let availableKeywords = new Set();
     dates.forEach(date => {
       const dayData = historyMap[date];
-      if (dayData.integrated) {
-        const item = dayData.integrated.find(i => i.Keyword === keyword);
-        if (item?.Examples) collectedComments.push(...item.Examples);
-      }
-      if (dayData.platform) {
-        Object.keys(dayData.platform).forEach(pKey => {
-          const pList = Array.isArray(dayData.platform[pKey]) ? dayData.platform[pKey] : [];
-          const pItem = pList.find(pi => (pi.Keyword || pi.keyword) === keyword);
-          if (pItem) {
-            const count = parseInt(pItem.Total_Mentions || pItem.Count || 0, 10);
-            platformStats[pKey] = (platformStats[pKey] || 0) + count;
-            if (pItem.Examples) collectedComments.push(...pItem.Examples);
-          }
+      if (dayData && dayData.all) {
+        dayData.all.forEach(item => {
+          if (item.Keyword) availableKeywords.add(item.Keyword);
+          if (item.keyword) availableKeywords.add(item.keyword);
         });
       }
     });
+    console.log(`📂 [Data Check] 현재 검색 가능한 키워드 목록:`, Array.from(availableKeywords).join(', '));
 
+    dates.forEach(date => {
+      const dayData = historyMap[date];
+      if (!dayData) return;
+
+      // JSON의 키들("all", "youtube", "ruliweb" 등)을 모두 순회
+      Object.keys(dayData).forEach(categoryKey => {
+        const items = dayData[categoryKey];
+        if (!Array.isArray(items)) return; // 배열이 아니면 패스
+
+        // "Keyword"가 일치하는 항목 찾기 (대소문자 방어)
+        const targetItem = items.find(item => 
+          (item.Keyword || item.keyword) === keyword
+        );
+
+        if (targetItem && targetItem.Examples) {
+          targetItem.Examples.forEach(rawComment => {
+            // 방어 1: 데이터가 비어있으면(null, undefined) 패스
+            if (!rawComment) return;
+
+            // 방어 2: 데이터가 문자열이 아닌 경우, 텍스트 형태로 강제 변환/추출
+            let commentText = "";
+            if (typeof rawComment === 'string') {
+              commentText = rawComment; // 정상적인 문자열인 경우
+            } else if (typeof rawComment === 'object') {
+              // 객체 형태인 경우, 주로 쓰이는 key 값(text, content, comment 등)에서 추출
+              commentText = rawComment.text || rawComment.content || rawComment.comment || JSON.stringify(rawComment);
+            } else {
+              // 숫자나 다른 타입일 경우 강제로 문자열 변환
+              commentText = String(rawComment);
+            }
+
+            // 1. 변환된 안전한 텍스트를 원본 댓글 수집 배열에 추가
+            collectedComments.push(commentText);
+
+            // 2. 플랫폼 통계 수집 (.match 에러 완벽 방어)
+            const platformMatch = commentText.match(/^\[([^\]]+)\]/);
+            
+            if (platformMatch) {
+              const platformName = platformMatch[1]; // 추출된 플랫폼 이름
+              platformStats[platformName] = (platformStats[platformName] || 0) + 1;
+            } else if (categoryKey !== 'all') {
+              platformStats[categoryKey] = (platformStats[categoryKey] || 0) + 1;
+            }
+          });
+        }
+      });
+    });
+
+    // 🏆 확산처(Top Platform) 계산
     let topPlatform = "알 수 없음";
     let maxCount = -1;
     Object.entries(platformStats).forEach(([plat, count]) => {
-      if (count > maxCount) { maxCount = count; topPlatform = plat; }
+      if (count > maxCount && plat !== '알 수 없음' && plat !== '기타') { 
+        maxCount = count; 
+        topPlatform = plat; 
+      }
     });
+
+    console.log(`📊 [Data Check] 추출된 플랫폼 통계:`, platformStats);
+    console.log(`💬 [Data Check] 수집된 원본 댓글 수: ${collectedComments.length}개`);
 
     // 4. 데이터 셔플 & 정제
     const shuffleArray = (array) => {
@@ -109,7 +158,26 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
 
     // 6. Prompt 구성
     const systemPrompt = `당신은 콘텐츠 크리에이터를 위한 '트렌드 분석 전문가'입니다. 오직 제공된 [뉴스 팩트]와 [대중 반응]을 종합하여 키워드를 콘텐츠로 다룰 때 필요한 정보를 브리핑하세요. 말투는 "~함", "~임" 체를 사용하여 보고서처럼 명확하게 작성하세요.`;
-    const userPrompt = `[분석 키워드]: ${keyword}\n[최신 뉴스 팩트]: ${newsContext}\n[주요 확산처]: ${topPlatform}\n[대중 반응]:\n${commentsForPrompt}\n\n위 내용을 바탕으로 **총 450자 이내**로 명확하게 요약해.\n\n[필수 문장 구성]\n1. **정의 및 배경**: [줄임말 해독] 포함, 추측성 가격 정보 금지.\n2. **여론 및 반응**: 감정과 주요 의견 요약. 가격 비판 반응 주의.\n3. **크리에이터 팁 & 주의점**: 꿀팁 작성. 리스크 발생 시에만 문장을 <<< 와 >>> 로 감쌀 것.\n\n[스타일 제약]\n1. '다.'로 끝내지 말 것.\n2. 사실 지어내지 말 것.\n3. 예시 베끼지 말 것.\n4. 반복 출력 금지.`;
+    const userPrompt = `[분석 키워드]: ${keyword}
+    [최신 뉴스 팩트]: ${newsContext}
+    [주요 확산처]: ${topPlatform}
+    [대중 반응]:
+    ${commentsForPrompt}
+
+    위 내용을 바탕으로 **총 450자 이내**로 명확하게 요약해.
+
+    [🚨 필수 출력 템플릿 🚨] - 반드시 아래의 1, 2, 3번 양식을 그대로 복사해서 내용만 채울 것!
+    1. **정의 및 배경**: (여기에 내용 작성 - 줄임말 해독 포함, 추측성 가격 정보 금지)
+    2. **여론 및 반응**: (여기에 내용 작성 - 감정과 주요 의견 요약. 가격 비판 반응 주의)
+    3. **크리에이터 팁 & 주의점**: (꿀팁을 먼저 작성한 후, 리스크 발생 시에만 내용 맨 마지막에 <<< 와 >>> 로 감싸서 경고할 것. 절대 >>> 기호 뒤에 부연 설명이나 문장을 덧붙이지 말 것! 만약 특별한 주의사항이 없다면 "리스크 발생 시 주의할 것" 같은 무의미한 문장을 절대 생성하지 말고 <<< >>> 기호도 쓰지 말 것!)
+
+    [스타일 제약]
+    1. '다.'로 끝내지 말 것. (~함, ~임 체 사용)
+    2. 사실 지어내지 말 것.
+    3. 예시 베끼지 말 것.
+    4. 반복 출력 금지.
+    5. [우선순위 강제 규칙]: [최신 뉴스 팩트]의 내용과 [대중 반응]의 문맥이 서로 다른 대상(예: 뉴스=스팸문자, 반응=먹는 스팸)을 지칭할 경우, 무조건 **[대중 반응]의 문맥을 진짜 트렌드로 간주**하고, 맥락에 맞지 않는 뉴스 팩트는 요약에서 완전히 버릴 것.
+    6. 꼬리말 금지: 3번 항목의 출력이 끝난 이후에는 "또한,", "참고로" 등의 어떠한 추가 문장도 덧붙이지 말고 즉시 출력을 종료할 것.`;
 
     // 7. AI API 요청
     const provider = process.env.AI_PROVIDER || 'local';
@@ -133,10 +201,22 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
     }
 
     // 8. 텍스트 후처리
-    let finalSummary = rawContent.trim().replace(/\*\*/g, '').replace(/\[작성 양식\]/g, '').replace(/\[출력 예시\]/g, '');
-    finalSummary = finalSummary.replace(/<<<(.*?)>>>/g, '<span style="color: #e11d48; font-weight: 800; background-color: #ffe4e6; padding: 2px 5px; border-radius: 4px;">⚠️ $1</span>');
-    finalSummary = finalSummary.replace(/(★?주의할\s*점|★?주의사항|⚠️\s*주의|★?주의):\s*(.*)/g, '<br><span style="color: #e11d48; font-weight: 800; background-color: #ffe4e6; padding: 2px 5px; border-radius: 4px;">⚠️ $2</span>');
+   let finalSummary = rawContent.trim()
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+      .replace(/\[작성 양식\]/g, '')
+      .replace(/\[출력 예시\]/g, '');
+    finalSummary = finalSummary.replace(/<<<([\s\S]*?)>>>\.?/g, function(match, text) {
+      // 박스 내부의 텍스트 끝에 있는 마침표(.)나 공백도 깔끔하게 제거
+      let cleanText = text.trim().replace(/\.$/, ''); 
+      const formattedText = cleanText.replace(/\n/g, '<br>');
+      return `<div style="margin-top: 15px; color: #e11d48; font-weight: 800; background-color: #ffe4e6; padding: 12px 15px; border-radius: 6px; line-height: 1.6;">⚠️ ${formattedText}</div>`;
+    });
+    finalSummary = finalSummary.replace(/(?:★?주의할\s*점|★?주의사항|⚠️\s*주의|★?주의):\s*([\s\S]*)$/g, function(match, text) {
+      const formattedText = text.trim().replace(/\n/g, '<br>');
+      return `<div style="margin-top: 15px; color: #e11d48; font-weight: 800; background-color: #ffe4e6; padding: 12px 15px; border-radius: 6px; line-height: 1.6;">⚠️ ${formattedText}</div>`;
+    });
     finalSummary += `\n\n(🔥 Hot: ${topPlatform})`;
+    finalSummary = finalSummary.replace(/\n/g, '<br>');
 
     console.log("✅ AI 요약 완료!");
 

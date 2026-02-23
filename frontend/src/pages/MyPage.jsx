@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, X, Shield, Trash } from 'lucide-react';
 import axios from 'axios';
+import { showToast } from '../utils/toast';
 // 스크랩 페이지 컴포넌트 불러오기
 import ScrapPage from '../components/mypage/ScrapPage';
 
@@ -47,19 +48,19 @@ const MyPage = () => {
         // 2. localStorage 업데이트 (사이드바 등 반영 위함)
         localStorage.setItem('user', JSON.stringify(updatedUser));
         
-        alert(response.data.message);
+        showToast(response.data.message || '프로필이 저장되었습니다.', { type: 'success' });
         closeModal();
         window.location.reload(); // 전체 UI 동기화를 위해 새로고침 권장
       }
     } catch (error) {
-      alert('이름 수정 중 오류가 발생했습니다.');
+      showToast('이름 수정 중 오류가 발생했습니다.', { type: 'error' });
     }
   };
 
   // 비밀번호 변경 함수
   const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('새 비밀번호 확인이 일치하지 않습니다.');
+      showToast('새 비밀번호 확인이 일치하지 않습니다.', { type: 'warning' });
       return;
     }
     try {
@@ -68,10 +69,10 @@ const MyPage = () => {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
       });
-      alert('비밀번호가 변경되었습니다.');
+      showToast('비밀번호가 변경되었습니다.', { type: 'success' });
       setActiveModal(null);
     } catch (error) {
-      alert(error.response?.data?.message || '변경 실패');
+      showToast(error.response?.data?.message || '비밀번호 변경에 실패했습니다.', { type: 'error' });
     }
   };
 
@@ -82,13 +83,15 @@ const MyPage = () => {
       });
 
       if (response.data.success) {
-        alert(response.data.message);
+        showToast(response.data.message || '회원 탈퇴가 완료되었습니다.', { type: 'success' });
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         window.location.href = '/login'; // 데이터 파기 후 로그인 페이지로 강제 이동
       }
     } catch (error) {
-      alert(error.response?.data?.message || '회원 탈퇴 중 오류가 발생했습니다.');
+      showToast(error.response?.data?.message || '회원 탈퇴 중 오류가 발생했습니다.', {
+        type: 'error',
+      });
     }
   };
 

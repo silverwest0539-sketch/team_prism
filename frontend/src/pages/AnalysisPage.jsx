@@ -116,6 +116,8 @@ const SimpleWordCloud = ({ words }) => {
   );
 };
 
+
+
 // --- Ellipsis Pagination Helper ---
 const DOTS = 'dots';
 
@@ -146,6 +148,106 @@ function getPaginationItems(currentPage, totalPages, siblingCount = 1) {
 
   return items;
 }
+
+const CommentItem = ({ comment, globalIndex, keyword }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const textRef = useRef(null);
+  const link = comment.link;
+
+  // 키워드 하이라이팅 함수
+  const highlightText = (text, targetKeyword) => {
+    if (!targetKeyword || !text) return text;
+    
+    // 키워드를 기준으로 텍스트를 나눔 (대소문자 구분 없이 매칭)
+    const parts = text.split(new RegExp(`(${targetKeyword})`, 'gi'));
+    
+    return parts.map((part, index) => 
+      part.toLowerCase() === targetKeyword.toLowerCase() ? (
+        // 일치하는 키워드에 옅은 노란색 배경과 볼드 처리
+        <span key={index} className="bg-yellow-200 text-gray-900 font-bold px-0.5 rounded">
+          {part}
+        </span>
+      ) : (
+        part // 일치하지 않는 나머지 텍스트는 그대로 출력
+      )
+    );
+  };
+
+  const formatComment = (text) => {
+    if (!text) return null;
+    const sentences = text.split(/(?<=[.?!])\s+|(?=@)/);
+    return sentences.map((sentence, idx) => {
+      const trimmed = sentence.trim();
+      if (!trimmed) return null;
+      return (
+        <p key={idx} className="mb-2 last:mb-0">
+          {highlightText(trimmed, keyword)}
+        </p>
+      );
+    });
+  };
+
+  useEffect(() => {
+    if (textRef.current) {
+      // scrollHeight(실제 텍스트 전체 높이)가 clientHeight(화면에 보이는 3줄 높이)보다 크면 넘친 것
+      const { scrollHeight, clientHeight } = textRef.current;
+      setIsOverflowing(scrollHeight > clientHeight);
+    }
+  }, [comment.text]); // 텍스트 데이터가 바뀔 때마다 다시 계산
+
+  return (
+    <div className="group">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-sm font-bold text-gray-700">
+          반응 {globalIndex}{' '}
+          <span className="text-xs font-normal text-gray-400 ml-1">({comment.source})</span>
+        </span>
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Star size={14} className="text-gray-400 hover:text-yellow-400 cursor-pointer" />
+          <Copy size={14} className="text-gray-400 hover:text-indigo-600 cursor-pointer" />
+        </div>
+      </div>
+
+      <div className="relative p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent hover:border-indigo-100 hover:bg-indigo-50/30 transition-all shadow-sm">
+        <div 
+          ref={textRef} 
+          className={isExpanded ? '' : 'line-clamp-3'}
+        >
+          {formatComment(comment.text)}
+        </div>
+
+        <div className="mt-2 flex justify-between items-end">
+          <div>
+            {isOverflowing && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-xs font-bold text-gray-400 hover:text-indigo-600 transition-colors"
+              >
+                {isExpanded ? '접기 ▲' : '더보기 ▼'}
+              </button>
+            )}
+          </div>
+
+          {link && (
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-indigo-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+              title="클릭하여 원문 보기"
+            >
+              <span>원문 보러가기</span>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AnalysisPage = () => {
   const [searchParams] = useSearchParams();
@@ -329,23 +431,6 @@ const AnalysisPage = () => {
     });
   };
 
-  // 댓글 텍스트 포맷팅 (문장 단위 분리)
-  const formatComment = (text) => {
-    if (!text) return null;
-    // 문장 끝(. ? !) 뒤에 공백이 있을 때 분리
-    // @(멘션) 앞에서 분리 (유튜브 댓글 특성 고려)
-    const sentences = text.split(/(?<=[.?!])\s+|(?=@)/);
-
-    return sentences.map((sentence, idx) => {
-      const trimmed = sentence.trim();
-      if (!trimmed) return null;
-      return (
-        <p key={idx} className='mb-2 last:mb-0'>
-          {trimmed}
-        </p>
-      )
-    })
-  }
 
   // 실제 데이터가 존재하는 플랫폼(source) 목록만 추출
   const availablePlatforms = useMemo(() => {
@@ -668,42 +753,14 @@ const AnalysisPage = () => {
               {currentUsageExamples?.length > 0 ? (
                 currentUsageExamples.map((comment, i) => {
                   const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
-                  const sourceName = comment.platform || comment.source;
-                  const link = comment.link;
-
+                  
                   return (
-                    <div key={i} className="group">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-bold text-gray-700">
-                          반응 {globalIndex}{' '}
-                          <span className="text-xs font-normal text-gray-400 ml-1">({comment.source})</span>
-                        </span>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Star size={14} className="text-gray-400 hover:text-yellow-400 cursor-pointer" />
-                          <Copy size={14} className="text-gray-400 hover:text-indigo-600 cursor-pointer" />
-                        </div>
-                      </div>
-
-                      {link ? (
-                        <a
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent hover:border-indigo-400 hover:bg-indigo-50 hover:text-gray-900 transition-all cursor-pointer shadow-sm hover:shadow-md"
-                          title="클릭하여 원문 보기"
-                        >
-                          {formatComment(comment.text)}
-                          <div className="mt-2 flex justify-end items-center gap-1 text-xs text-indigo-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span>원문 보러가기</span>
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                          </div>
-                        </a>
-                      ) : (
-                        <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent group-hover:border-indigo-100 group-hover:bg-indigo-50/30 transition-all">
-                          {formatComment(comment.text)}
-                        </div>
-                      )}
-                    </div>
+                    <CommentItem 
+                      key={i} 
+                      comment={comment} 
+                      globalIndex={globalIndex}
+                      keyword={keyword} 
+                    />
                   );
                 })
               ) : (

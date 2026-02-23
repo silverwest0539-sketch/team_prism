@@ -13,6 +13,7 @@ import { formatDate } from '../../utils/formatters';
 import SummaryModal from '../home/SummaryModal';
 import CompareModal from '../scrap/CompareModal';
 import axios from 'axios';
+import { showToast } from '../../utils/toast';
 
 // // ─── 태그 프리셋 색상 ───
 // const TAG_COLORS = {
@@ -166,7 +167,7 @@ const ScrapPage = () => {
                     setRemovingKeywords(new Set());
                 }, 300);
             } catch (error) {
-                alert('삭제에 실패했습니다.');
+                showToast('삭제에 실패했습니다.', { type: 'error' });
                 setRemovingKeywords(new Set());
             }
         }
@@ -195,7 +196,7 @@ const ScrapPage = () => {
                     setIsDeleteMode(false);
                 }, 300);
             } catch (error) {
-                alert('일부 항목 삭제에 실패했습니다.');
+                showToast('일부 항목 삭제에 실패했습니다.', { type: 'error' });
                 setRemovingKeywords(new Set());
             }
         }

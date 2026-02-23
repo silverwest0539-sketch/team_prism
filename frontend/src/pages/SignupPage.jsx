@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { showToast } from '../utils/toast';
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
@@ -350,7 +351,7 @@ const SignupPage = () => {
       });
 
       if (response.data.success) {
-        alert('회원가입이 완료되었습니다.');
+        showToast('회원가입이 완료되었습니다.', { type: 'success' });
         navigate('/login');
       }
     } catch (error) {
@@ -358,7 +359,7 @@ const SignupPage = () => {
       if (message.includes('인증')) {
         setFieldError('emailAuth', message);
       } else {
-        alert(message);
+        showToast(message, { type: 'error' });
       }
     } finally {
       setIsSubmitting(false);
@@ -366,12 +367,28 @@ const SignupPage = () => {
   };
 
   const activePolicy = activePolicyType ? POLICY_CONTENT[activePolicyType] : null;
+  const handleLogoClick = () => navigate('/home');
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="card-soft w-full max-w-md shadow-lg">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-indigo-600 mb-2">Prism</h1>
+          <h1
+            role="button"
+            tabIndex={0}
+            onClick={handleLogoClick}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleLogoClick();
+              }
+            }}
+            className="text-3xl font-bold text-indigo-600 mb-2 cursor-pointer hover:text-indigo-700"
+            title="Prism"
+            aria-label="Prism 로고"
+          >
+            Prism
+          </h1>
           <p className="text-gray-600 font-medium">지금 시작, Prism과 함께하세요</p>
         </div>
 

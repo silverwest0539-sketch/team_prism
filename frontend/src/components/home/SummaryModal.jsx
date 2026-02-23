@@ -12,6 +12,7 @@ import {
 } from '@phosphor-icons/react';
 import { LineChart, Line, Tooltip, ResponsiveContainer, XAxis } from 'recharts';
 import axios from 'axios';
+import { showToast } from '../../utils/toast';
 
 export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const navigate = useNavigate();
@@ -109,7 +110,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
       }
       onScrapChange?.();
     } catch (error) {
-      alert('스크랩 처리 중 오류가 발생했습니다.');
+      showToast('스크랩 처리 중 오류가 발생했습니다.', { type: 'error' });
     }
   };
 
@@ -184,7 +185,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
                 <div className="h-full flex items-center justify-center text-xs text-gray-400">데이터 로딩 중...</div>
               ) : detailData?.history ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={detailData.history}>
+                  <LineChart data={detailData.history.slice(-3)}>
                     <Tooltip
                       contentStyle={{
                         borderRadius: '8px',

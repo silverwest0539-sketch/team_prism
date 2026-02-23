@@ -1,6 +1,7 @@
 // src/App.jsx
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import ToastViewport from './components/common/ToastViewport';
 import Layout from './components/layout/Layout';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -16,7 +17,7 @@ const MyPage = lazy(() => import('./pages/MyPage'));
 
 const PageFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 text-sm text-gray-500">
-    ÆäÀÌÁö ·Îµù Áß...
+    í˜ì´ì§€ ë¡œë”© ì¤‘...
   </div>
 );
 
@@ -25,6 +26,7 @@ const withLayout = (element) => <Layout>{element}</Layout>;
 function App() {
   return (
     <BrowserRouter>
+      <ToastViewport />
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
