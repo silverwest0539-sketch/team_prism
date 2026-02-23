@@ -47,6 +47,35 @@ exports.getAllTrends = (keyword, date) => {
   if (date) result = result.filter(item => item.Date === date);
   if (keyword) result = result.filter(item => item.Keyword.includes(keyword));
 
+  // 프론트엔드 리스트에 내려가기 전에 source를 실제 플랫폼명으로 교체
+  result = result.map(item => {
+    // 1. 기본 source는 item 안에 있는 기존 값을 쓰거나, 없으면 'all'로 간주
+    let displaySource = item.source || 'all'; 
+
+    // 2. 만약 현재 source가 'all'이고, Examples 데이터가 존재한다면
+    if (displaySource === 'all' && item.Examples && item.Examples.length > 0) {
+      const firstComment = item.Examples[0];
+      
+      // 첫 번째 댓글이 문자열인지 확인하고 정규식으로 앞의 [플랫폼명]을 추출
+      if (typeof firstComment === 'string') {
+        const match = firstComment.match(/^\[(.*?)\]/);
+        if (match) {
+          displaySource = match[1]; // 예: 'x_trends', 'youtube' 등
+          displaySource = displaySource.replace('_trends', ''); // '_trends' 꼬리표 떼기 (선택)
+        }
+      } else if (typeof firstComment === 'object' && firstComment !== null && firstComment.platform) {
+        // 혹시 객체 형태라면 여기서 가져옵니다.
+        displaySource = firstComment.platform.replace('_trends', '');
+      }
+    }
+
+    // 기존 객체를 유지하면서 source만 교체하여 반환
+    return {
+      ...item,
+      source: displaySource
+    };
+  });
+
   return result;
 };
 
@@ -93,6 +122,31 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
     // 댓글 추출 로직
     const extractComments = (item, defaultSource) => {
       if (!item || !item.Examples) return;
+      
+      // 🌟 [추가된 로직] defaultSource가 'all'일 경우, 첫 번째 댓글에서 실제 사이트명을 찾습니다.
+      let actualSource = defaultSource;
+      
+      if (defaultSource === 'all') {
+        if (!Array.isArray(item.Examples) && typeof item.Examples === 'object') {
+          // 1. 데이터가 객체 형태인 경우 (예: { "fmkorea": [...] }) 첫 번째 키값을 가져옵니다.
+          const keys = Object.keys(item.Examples);
+          if (keys.length > 0) actualSource = keys[0];
+        } else {
+          // 2. 데이터가 배열 형태인 경우 첫 번째 요소에서 플랫폼 이름을 추출합니다.
+          const examplesList = Array.isArray(item.Examples) ? item.Examples : [];
+          if (examplesList.length > 0) {
+            const firstEx = examplesList[0];
+            if (typeof firstEx === 'object' && firstEx !== null && firstEx.platform) {
+              actualSource = firstEx.platform;
+            } else if (typeof firstEx === 'string' && firstEx.startsWith('[')) {
+              const match = firstEx.match(/^\[(.*?)\]/);
+              if (match) actualSource = match[1];
+            }
+          }
+        }
+      }
+
+      // 기존처럼 배열 형태로 평탄화
       const examplesList = Array.isArray(item.Examples) ? item.Examples : (typeof item.Examples === 'object' ? Object.values(item.Examples).flat() : []);
 
       examplesList.forEach(ex => {
@@ -100,7 +154,8 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
         const text = isObj ? (ex.comment || ex.text) : ex;
         if (!text || typeof text !== 'string') return;
 
-        let source = isObj ? (ex.platform || defaultSource) : defaultSource;
+        // 🌟 defaultSource 대신 actualSource를 적용합니다.
+        let source = isObj ? (ex.platform || actualSource) : actualSource;
         let link = isObj ? (ex.link || null) : null;
         let cleanText = text;
 
