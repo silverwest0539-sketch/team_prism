@@ -193,7 +193,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
     }
   
     // 최신순 정렬
-    commentsSql += ` ORDER BY u.collected_date DESC`;
+    commentsSql += ` ORDER BY u.collected_date DESC LIMIT 100`;
   
     const [exampleRows] = await db.execute(commentsSql, commentsParams);
   
@@ -219,7 +219,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
       };
     });
   
-    const wordCloudData = extractWordCloudData(parsedComments, keyword);
+    const wordCloudData = await extractWordCloudData(parsedComments, keyword);
   
 
   // ── 4. 유튜브 영상 검색 ───────────────────────────────
@@ -301,14 +301,14 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
 exports.getAutocomplete = async (prefix) => {
   if (!prefix) return [];
   
-  // 입력한 단어가 포함된(LIKE %단어%) 키워드를 최대 10개까지 조회
+  // 입력한 단어가 포함된(LIKE 단어%) 키워드를 최대 10개까지 조회
   const [rows] = await db.execute(
     `SELECT keyword_name 
      FROM TREND_KEYWORD 
      WHERE keyword_name LIKE ? 
      ORDER BY keyword_name ASC 
      LIMIT 10`,
-    [`%${prefix}%`]
+    [`${prefix}%`]
   );
   
   return rows.map(row => row.keyword_name);

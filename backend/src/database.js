@@ -11,7 +11,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   port: 3307,
   waitForConnections: true,
-  connectionLimit: 2, // 공용 서버 부담을 줄이기 위해 2~3개로 대폭 축소
+  connectionLimit: 15, 
   queueLimit: 0
 });
 

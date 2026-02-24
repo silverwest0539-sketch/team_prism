@@ -44,7 +44,9 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
       `SELECT u.platform, u.content
        FROM USAGE_EXAMPLE u
        JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
-       WHERE ke.keyword_id = ?`,
+       WHERE ke.keyword_id = ?
+       ORDER BY u.collected_date DESC 
+       LIMIT 200`,
       [keywordId]
     );
 
