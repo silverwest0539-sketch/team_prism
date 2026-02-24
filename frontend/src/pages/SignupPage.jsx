@@ -1,9 +1,24 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { showToast } from '../utils/toast';
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+const normalizeEmailCode = (code) => String(code || '').replace(/\D/g, '').slice(0, 6);
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const EMAIL_CODE_REGEX = /^\d{6}$/;
+const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,64}$/;
+const NICKNAME_MAX_LENGTH = 20;
+const PASSWORD_MAX_LENGTH = 64;
+const EMAIL_SEND_COOLDOWN_SECONDS = 60;
+
+const getSafeErrorMessage = (error, fallbackMessage) => {
+  const status = error?.response?.status;
+  if (status === 429) return '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.';
+  if (status >= 500) return '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+  return fallbackMessage;
+};
 
 const POLICY_CONTENT = {
   service: {
@@ -188,8 +203,10 @@ const SignupPage = () => {
     password: '',
     passwordConfirm: '',
   });
-  const [emailCheckStatus, setEmailCheckStatus] = useState('idle'); // idle | duplicate | available
+  const [emailCheckStatus, setEmailCheckStatus] = useState('idle'); // idle | available
   const [emailMessage, setEmailMessage] = useState('');
+  const [isSendingEmailCode, setIsSendingEmailCode] = useState(false);
+  const [emailCooldownSeconds, setEmailCooldownSeconds] = useState(0);
   const [isPasswordConfirmFocused, setIsPasswordConfirmFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agreements, setAgreements] = useState({
@@ -199,12 +216,33 @@ const SignupPage = () => {
   const [activePolicyType, setActivePolicyType] = useState(null); // 'service' | 'privacy' | null
   const [formErrors, setFormErrors] = useState(EMPTY_ERRORS);
 
+  useEffect(() => {
+    if (emailCooldownSeconds <= 0) return undefined;
+
+    const timer = setInterval(() => {
+      setEmailCooldownSeconds((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [emailCooldownSeconds]);
+
   const isPasswordMismatch =
     form.passwordConfirm.trim().length > 0 && form.password !== form.passwordConfirm;
   const showEmailCodeInput = emailCheckStatus === 'available';
   const showEmailMessage = Boolean(emailMessage) && emailCheckStatus !== 'available';
   const showPasswordFeedback = isPasswordConfirmFocused && isPasswordMismatch;
   const isAllAgreementChecked = agreements.service && agreements.privacy;
+  const isEmailCheckButtonDisabled =
+    isSubmitting || isSendingEmailCode || emailCooldownSeconds > 0;
+
+  const getEmailCheckButtonLabel = () => {
+    if (isSendingEmailCode) return '전송 중...';
+    if (emailCooldownSeconds > 0) return `${emailCooldownSeconds}초 후 재시도`;
+    if (emailCheckStatus === 'available') return '인증번호 재전송';
+    return '인증번호 받기';
+  };
+
+  const emailCheckButtonLabel = getEmailCheckButtonLabel();
 
   const inputClass = (hasError) =>
     `form-input ${hasError ? 'border-red-400 focus:ring-red-200 focus:ring-2' : ''}`;
@@ -219,9 +257,18 @@ const SignupPage = () => {
 
   const updateField = (field) => (event) => {
     const { value } = event.target;
+    let nextValue = value;
+
+    if (field === 'emailCode') {
+      nextValue = normalizeEmailCode(value);
+    } else if (field === 'nickname') {
+      nextValue = value.slice(0, NICKNAME_MAX_LENGTH);
+    } else if (field === 'password' || field === 'passwordConfirm') {
+      nextValue = value.slice(0, PASSWORD_MAX_LENGTH);
+    }
 
     setForm((prev) => {
-      const next = { ...prev, [field]: value };
+      const next = { ...prev, [field]: nextValue };
       if (field === 'email') next.emailCode = '';
       return next;
     });
@@ -229,6 +276,7 @@ const SignupPage = () => {
     if (field === 'email') {
       setEmailCheckStatus('idle');
       setEmailMessage('');
+      setEmailCooldownSeconds(0);
       clearFieldError('email');
       clearFieldError('emailAuth');
       clearFieldError('emailCode');
@@ -258,6 +306,8 @@ const SignupPage = () => {
   };
 
   const handleEmailCheck = async () => {
+    if (isSendingEmailCode || emailCooldownSeconds > 0) return;
+
     const targetEmail = normalizeEmail(form.email);
 
     if (!targetEmail) {
@@ -267,37 +317,51 @@ const SignupPage = () => {
       return;
     }
 
+    if (!EMAIL_REGEX.test(targetEmail)) {
+      setEmailCheckStatus('idle');
+      setEmailMessage('');
+      setFieldError('email', '올바른 이메일 형식이 아닙니다.');
+      return;
+    }
+
     clearFieldError('email');
     clearFieldError('emailAuth');
+    setIsSendingEmailCode(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/send-code', {
+      const response = await apiClient.post('/auth/send-code', {
         email: targetEmail,
       });
 
       if (response.data.success) {
-        setForm((prev) => ({ ...prev, emailCode: '' }));
+        setForm((prev) => ({ ...prev, email: targetEmail, emailCode: '' }));
         setEmailCheckStatus('available');
         setEmailMessage('');
         clearFieldError('emailCode');
-      }
-    } catch (error) {
-      if (error.response?.status === 409) {
-        setEmailCheckStatus('duplicate');
-        setEmailMessage('이미 사용 중인 이메일입니다.');
+        setEmailCooldownSeconds(EMAIL_SEND_COOLDOWN_SECONDS);
       } else {
         setEmailCheckStatus('idle');
-        setEmailMessage(error.response?.data?.message || '인증번호 발송에 실패했습니다.');
+        setEmailMessage('인증번호 발송에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       }
+    } catch (error) {
+      setEmailCheckStatus('idle');
+      setEmailMessage(
+        getSafeErrorMessage(error, '입력한 정보로는 인증번호를 발송할 수 없습니다.'),
+      );
+    } finally {
+      setIsSendingEmailCode(false);
     }
   };
 
   const validateBeforeSubmit = () => {
     const nextErrors = { ...EMPTY_ERRORS };
     const normalizedEmail = normalizeEmail(form.email);
+    const normalizedEmailCode = normalizeEmailCode(form.emailCode);
 
     if (!normalizedEmail) {
       nextErrors.email = '이메일을 입력해 주세요.';
+    } else if (!EMAIL_REGEX.test(normalizedEmail)) {
+      nextErrors.email = '올바른 이메일 형식이 아닙니다.';
     }
 
     if (!form.nickname.trim()) {
@@ -306,8 +370,8 @@ const SignupPage = () => {
 
     if (!form.password.trim()) {
       nextErrors.password = '비밀번호를 입력해 주세요.';
-    } else if (form.password.length < 8) {
-      nextErrors.password = '비밀번호는 8자 이상이어야 합니다.';
+    } else if (!PASSWORD_REGEX.test(form.password)) {
+      nextErrors.password = '비밀번호는 영문/숫자/특수문자를 포함한 8~64자여야 합니다.';
     }
 
     if (!form.passwordConfirm.trim()) {
@@ -318,8 +382,8 @@ const SignupPage = () => {
 
     if (emailCheckStatus !== 'available') {
       nextErrors.emailAuth = '이메일 인증 과정을 먼저 진행해 주세요.';
-    } else if (!form.emailCode.trim()) {
-      nextErrors.emailCode = '인증번호를 입력해 주세요.';
+    } else if (!EMAIL_CODE_REGEX.test(normalizedEmailCode)) {
+      nextErrors.emailCode = '인증번호 6자리를 정확히 입력해 주세요.';
     }
 
     if (!agreements.service || !agreements.privacy) {
@@ -343,11 +407,11 @@ const SignupPage = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/signup', {
-        email: form.email,
-        nickname: form.nickname,
+      const response = await apiClient.post('/auth/signup', {
+        email: normalizeEmail(form.email),
+        nickname: form.nickname.trim(),
         password: form.password,
-        code: form.emailCode,
+        code: normalizeEmailCode(form.emailCode),
       });
 
       if (response.data.success) {
@@ -355,11 +419,12 @@ const SignupPage = () => {
         navigate('/login');
       }
     } catch (error) {
-      const message = error.response?.data?.message || '회원가입에 실패했습니다.';
-      if (message.includes('인증')) {
-        setFieldError('emailAuth', message);
+      const status = error?.response?.status;
+
+      if ([400, 401, 422].includes(status)) {
+        setFieldError('emailAuth', '인증번호가 올바르지 않거나 만료되었습니다.');
       } else {
-        showToast(message, { type: 'error' });
+        showToast(getSafeErrorMessage(error, '회원가입에 실패했습니다.'), { type: 'error' });
       }
     } finally {
       setIsSubmitting(false);
@@ -392,7 +457,7 @@ const SignupPage = () => {
           <p className="text-gray-600 font-medium">지금 시작, Prism과 함께하세요</p>
         </div>
 
-        <form onSubmit={handleSignup} className="space-y-5" noValidate>
+        <form onSubmit={handleSignup} className="space-y-5">
           <div>
             <label className="form-label">이메일</label>
             <div className="flex flex-col sm:flex-row gap-2 mb-2">
@@ -400,15 +465,20 @@ const SignupPage = () => {
                 type="email"
                 value={form.email}
                 onChange={updateField('email')}
+                autoComplete="email"
+                inputMode="email"
+                spellCheck={false}
+                maxLength={254}
                 placeholder="example@prism.com"
                 className={inputClass(Boolean(formErrors.email))}
               />
               <button
                 type="button"
                 onClick={handleEmailCheck}
-                className="btn-auth-primary !w-full sm:!w-auto px-5 whitespace-nowrap"
+                disabled={isEmailCheckButtonDisabled}
+                className="btn-auth-primary !w-full sm:!w-auto px-5 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {emailCheckStatus === 'available' ? '인증번호 재전송' : '인증번호 받기'}
+                {emailCheckButtonLabel}
               </button>
             </div>
 
@@ -424,6 +494,10 @@ const SignupPage = () => {
                   type="text"
                   value={form.emailCode}
                   onChange={updateField('emailCode')}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  pattern="[0-9]{6}"
                   placeholder="인증번호 6자리 입력"
                   className={`form-input border-indigo-300 bg-indigo-50 mt-2 ${
                     formErrors.emailCode ? 'border-red-400 focus:ring-red-200 focus:ring-2' : ''
@@ -442,6 +516,8 @@ const SignupPage = () => {
               type="text"
               value={form.nickname}
               onChange={updateField('nickname')}
+              autoComplete="nickname"
+              maxLength={NICKNAME_MAX_LENGTH}
               placeholder="사용할 닉네임"
               className={inputClass(Boolean(formErrors.nickname))}
             />
@@ -454,6 +530,9 @@ const SignupPage = () => {
               type="password"
               value={form.password}
               onChange={updateField('password')}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={PASSWORD_MAX_LENGTH}
               placeholder="8자 이상 입력해 주세요"
               className={inputClass(Boolean(formErrors.password))}
             />
@@ -469,6 +548,9 @@ const SignupPage = () => {
               onChange={updateField('passwordConfirm')}
               onFocus={() => setIsPasswordConfirmFocused(true)}
               onBlur={() => setIsPasswordConfirmFocused(false)}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={PASSWORD_MAX_LENGTH}
               placeholder="비밀번호를 다시 입력해 주세요"
               className={inputClass(Boolean(formErrors.passwordConfirm || showPasswordFeedback))}
             />

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, LogOut, Settings, X } from 'lucide-react';
-import { showToast } from '../../utils/toast';
+import { getStoredUser } from '../../utils/authStorage';
 
 const MAIN_MENUS = [
   { path: '/home', label: '트렌드 대시보드' },
@@ -30,14 +30,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
   }, []);
 
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        setUserInfo(JSON.parse(savedUser));
-      }
-    } catch {
-      setUserInfo(null);
-    }
+    setUserInfo(getStoredUser());
   }, []);
 
   useEffect(() => {
@@ -67,6 +60,12 @@ const Sidebar = ({ isOpen = false, onClose }) => {
   const requestLogout = () => {
     setIsProfileOpen(false);
     setIsLogoutConfirmOpen(true);
+  };
+
+  const openNotificationSettings = () => {
+    navigate('/mypage?modal=notification');
+    setIsProfileOpen(false);
+    onClose?.();
   };
 
   const cancelLogout = () => {
@@ -113,7 +112,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
                     <p className="text-xs text-gray-500 truncate">{userInfo.user_email || userInfo.email}</p>
                   </div>
                   <button
-                    onClick={() => showToast('알림 기능 준비 중입니다.', { type: 'info' })}
+                    onClick={openNotificationSettings}
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
                   >
                     <Bell className="w-4 h-4" /> 알림
@@ -224,7 +223,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
                 </button>
 
                 <button
-                  onClick={() => showToast('알림 기능 준비 중입니다.', { type: 'info' })}
+                  onClick={openNotificationSettings}
                   className="w-full flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   <Bell className="w-4 h-4" /> 알림

@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import InputPanel from '../components/creation/InputPanel';
 import ResultPanel from '../components/creation/ResultPanel';
 import { showToast } from '../utils/toast';
+import apiClient from '../utils/apiClient';
+import { getStoredUser } from '../utils/authStorage';
 
 const CreationPage = () => {
   const navigate = useNavigate();
@@ -13,7 +15,7 @@ const CreationPage = () => {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
+    const savedUser = getStoredUser();
 
     if (!savedUser) {
       showToast('콘텐츠 생성 서비스는 로그인 후 이용할 수 있습니다. 로그인 페이지로 이동합니다.', {
@@ -34,24 +36,19 @@ const CreationPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(inputData),
-      });
-
-      const data = await response.json();
+      const response = await apiClient.post('/generate', inputData);
+      const data = response.data;
 
       if (data.success) {
         setGeneratedResult(data.result);
+        if (data.selectedTemplate?.name) {
+          showToast(`적용 템플릿: ${data.selectedTemplate.name}`, { type: 'info', duration: 1800 });
+        }
       } else {
         showToast(`생성 실패: ${data.error || '알 수 없는 오류'}`, { type: 'error' });
       }
     } catch (error) {
-      console.error('Error:', error);
-      showToast('서버 연결에 실패했습니다. 백엔드 터미널이 켜져 있는지 확인하세요.', {
+      showToast(error.response?.data?.error || '서버 연결에 실패했습니다. 백엔드 터미널이 켜져 있는지 확인하세요.', {
         type: 'error',
       });
     } finally {

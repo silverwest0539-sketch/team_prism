@@ -1,12 +1,16 @@
 // src/pages/MyPage.jsx
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, X, Shield, Trash } from 'lucide-react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
+import { getStoredUser } from '../utils/authStorage';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { showToast } from '../utils/toast';
 // 스크랩 페이지 컴포넌트 불러오기
 import ScrapPage from '../components/mypage/ScrapPage';
 
 const MyPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeModal, setActiveModal] = useState(null);
   const [userInfo, setUserInfo] = useState({ nickname: '', email: '' });
   const [editNickname, setEditNickname] = useState('');
@@ -19,23 +23,32 @@ const MyPage = () => {
   });
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      const user = JSON.parse(savedUser);
+    const user = getStoredUser();
+    if (user) {
       setUserInfo(user);
       setEditNickname(user.nickname);
     }
   }, []);
 
+  useEffect(() => {
+    const modal = new URLSearchParams(location.search).get('modal');
+    if (modal === 'notification') {
+      setActiveModal('notification');
+    }
+  }, [location.search]);
+
   const closeModal = () => {
     setActiveModal(null);
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    if (location.search) {
+      navigate('/mypage', { replace: true });
+    }
   };
 
   // 닉네임 수정 함수
   const handleSaveProfile = async () => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/update-profile', {
+      const response = await apiClient.post('/auth/update-profile', {
         email: userInfo.email,
         newNickname: editNickname
       });
@@ -64,7 +77,7 @@ const MyPage = () => {
       return;
     }
     try {
-      await axios.post('http://localhost:5000/api/auth/change-password', {
+      await apiClient.post('/auth/change-password', {
         email: userInfo.email,
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
@@ -78,7 +91,7 @@ const MyPage = () => {
 
   const handleWithdraw = async () => {
     try {
-      const response = await axios.delete('http://localhost:5000/api/auth/withdraw', {
+      const response = await apiClient.delete('/auth/withdraw', {
         data: { email: userInfo.email } // DELETE 요청 본문
       });
 

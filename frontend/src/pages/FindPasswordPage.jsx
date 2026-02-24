@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../utils/toast';
 
@@ -13,7 +13,7 @@ const FindPasswordPage = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/find-password', { email });
+      const response = await apiClient.post('/auth/find-password', { email });
       showToast(response.data.message || '임시 비밀번호를 발송했습니다.', { type: 'success' });
       navigate('/login');
     } catch (error) {

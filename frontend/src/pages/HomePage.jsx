@@ -6,21 +6,24 @@ import SearchBar from '../components/common/SearchBar';
 import HeaderActions from '../components/common/HeaderActions';
 import SummaryModal from '../components/home/SummaryModal';
 import { formatViews, formatDate } from '../utils/formatters';
+import { toApiUrl } from '../utils/apiClient';
+import { getStoredUser } from '../utils/authStorage';
+import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 import { Star } from '@phosphor-icons/react';
 
 const HomePage = () => {
   const navigate = useNavigate();
   
-  // 상태 관리
+  // ?곹깭 愿由?
   const [risingKeywords, setRisingKeywords] = useState([]); 
   const [risingPlatforms, setRisingPlatforms] = useState([]); 
   const [selectedPlatform, setSelectedPlatform] = useState('youtube'); 
   const [youtubeVideos, setYoutubeVideos] = useState([]);
   const [youtubeCategory, setYoutubeCategory] = useState('전체');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [userName, setUserName] = useState('마케터');
+  const [userName, setUserName] = useState('');
   
-  // 모달 상태
+  // 紐⑤떖 ?곹깭
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState(null);
   const [communityPosts, setCommunityPosts] = useState([]);
@@ -31,10 +34,11 @@ const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleSearch = (e) => {
-    if (e.key === 'Enter' && searchTerm.trim()) {
-      // 여기에 검색 실행 로직을 작성하세요 (예: 페이지 이동, API 호출 등)
-      navigate(`/analysis?keyword=${searchTerm.trim()}`)
-    }
+    navigateToAnalysisOnEnter({
+      event: e,
+      keyword: searchTerm,
+      navigate,
+    });
   };
 
   const COMMUNITY_OPTIONS = [
@@ -48,11 +52,11 @@ const HomePage = () => {
   const MAIN_PLATFORM_OPTIONS = [
     { label: '유튜브', value: 'youtube' },
     { label: '더쿠', value: 'theqoo' },
-    { label: '디시인사이드', value: 'dcinside' }, // 상세: dc -> 메인: dcinside 유지
+    { label: '디시인사이드', value: 'dcinside' },
     { label: '루리웹', value: 'ruliweb' },
-    { label: '네이트판', value: 'natepan' }, // 상세: nate -> 메인: natepan 유지
+    { label: '네이트판', value: 'natepan' },
     { label: 'FM코리아', value: 'fmkorea' },
-    { label: 'X (트위터)', value: 'x' }, // 상세: x_trends -> 메인: x 유지
+    { label: 'X (트위터)', value: 'x' },
   ];
 
   const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '브이로그', '챌린지'];
@@ -64,34 +68,34 @@ const HomePage = () => {
 
   const closeModal = () => setIsModalOpen(false);
 
-  // 스크롤 핸들러 함수
+  // ?ㅽ겕濡??몃뱾???⑥닔
   const scroll = (direction) => {
     if (scrollRef.current) {
       const { current } = scrollRef;
-      // 한 번 클릭 시 이동할 거리 (약 카드 1~2개 너비 + gap)
+      // ??踰??대┃ ???대룞??嫄곕━ (??移대뱶 1~2媛??덈퉬 + gap)
       const scrollAmount = direction === 'left' ? -300 : 300;
       current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
 
-  // API 호출
+  // API ?몄텧
   useEffect(() => {
       const fetchData = async () => {
         try {
-          // 1. 급상승 키워드 로드 (기존 유지)
-          const trendRes = await fetch('http://localhost:5000/api/trends/rising');
+          // 1. 湲됱긽???ㅼ썙??濡쒕뱶 (湲곗〈 ?좎?)
+          const trendRes = await fetch(toApiUrl('/trends/rising'));
           const trendData = await trendRes.json();
           setRisingKeywords(trendData);
 
-          // 2. 급상승 플랫폼 로드 (기존 유지)
-          const platformRes = await fetch(`http://localhost:5000/api/trends/platform?platform=${selectedPlatform}`);
+          // 2. 湲됱긽???뚮옯??濡쒕뱶 (湲곗〈 ?좎?)
+          const platformRes = await fetch(toApiUrl(`/trends/platform?platform=${selectedPlatform}`));
           const platformData = await platformRes.json();
           setRisingPlatforms(platformData);
 
-          // ✅ 3. 유튜브 인기 동영상 로드 (카테고리 파라미터 추가!)
-          // 기존: fetch('http://localhost:5000/api/videos')
-          // 수정: 쿼리스트링으로 카테고리 전달
-          const videoRes = await fetch(`http://localhost:5000/api/videos?category=${encodeURIComponent(youtubeCategory)}`);
+          // ??3. ?좏뒠釉??멸린 ?숈쁺??濡쒕뱶 (移댄뀒怨좊━ ?뚮씪誘명꽣 異붽?!)
+          // 湲곗〈: fetch('/api/videos')
+          // ?섏젙: 荑쇰━?ㅽ듃留곸쑝濡?移댄뀒怨좊━ ?꾨떖
+          const videoRes = await fetch(toApiUrl(`/videos?category=${encodeURIComponent(youtubeCategory)}`));
           const videoData = await videoRes.json();
           setYoutubeVideos(videoData);
 
@@ -104,10 +108,10 @@ const HomePage = () => {
     }, [selectedPlatform, youtubeCategory]);
 
   useEffect(() => {
-    // 로컬 스토리지에서 유저 정보 가져오기
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      const { nickname } = JSON.parse(savedUser);
+    // 濡쒖뺄 ?ㅽ넗由ъ??먯꽌 ?좎? ?뺣낫 媛?몄삤湲?
+    const savedUser = getStoredUser();
+    if (savedUser?.nickname) {
+      const { nickname } = savedUser;
       setUserName(nickname);
     }
   }, []);
@@ -115,11 +119,11 @@ const HomePage = () => {
   useEffect(() => {
     const fetchCommunityPosts = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/community/posts?platform=${selectedComm}`);
+        const res = await fetch(toApiUrl(`/community/posts?platform=${selectedComm}`));
         const data = await res.json();
         setCommunityPosts(data);
       } catch (error) {
-        console.error('커뮤니티 인기글 로드 에러:', error);
+        console.error('而ㅻ??덊떚 ?멸린湲 濡쒕뱶 ?먮윭:', error);
       }
     };
 
@@ -132,7 +136,7 @@ const HomePage = () => {
       onClick={() => isDropdownOpen && setIsDropdownOpen(false)}
     >
       
-      {/* 상단 헤더 */}
+      {/* ?곷떒 ?ㅻ뜑 */}
       <div className="flex justify-between items-start mb-6">
         <SearchBar 
           placeholder="관심있는 키워드나 주제를 검색해보세요..." 
@@ -148,13 +152,12 @@ const HomePage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-10">
         
-        {/* 카드 1: 트렌드 키워드 */}
+        {/* 移대뱶 1: ?몃젋???ㅼ썙??*/}
         <div className="card-soft">
-          <div className="flex justify-between items-center mb-6 h-10">
+          <div className="mb-4">
             <h2 className="section-title-lg border-b-2 border-transparent hover:border-black transition-colors">
-              트렌드 키워드 Top 5
+              트렌드 일일 급상승 키워드 Top 5
             </h2>
-            <span className="text-xs text-gray-400">실시간 기준</span>
           </div>
           
           <ul className="flex flex-col gap-2">
@@ -183,36 +186,34 @@ const HomePage = () => {
           </ul>
         </div>
 
-        {/* 카드 2: 플랫폼별 키워드 */}
+        {/* 移대뱶 2: ?뚮옯?쇰퀎 ?ㅼ썙??*/}
         <div className="card-soft relative">
-          <div className="flex justify-between items-center mb-6 h-10">
+          <div className="flex justify-between items-center mb-4">
             <h2 className="section-title-lg">
-              플랫폼별 키워드
+              플랫폼별 일일 급상승 키워드 Top 5
             </h2>
-            
-            <div 
+            <div
               className="tab-wrap"
-              onClick={(e) => e.stopPropagation()} 
+              onClick={(e) => e.stopPropagation()}
             >
-
               <div className="relative">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`tab-btn flex items-center gap-1 ${
-                    // [수정] 유튜브/다른커뮤니티 구분 없이, 드롭다운이 열려있거나 값이 선택되어 있으면 활성화 색상(초록) 적용
-                    isDropdownOpen || selectedPlatform 
-                      ? 'tab-active text-green-600' 
+                    // [?섏젙] ?좏뒠釉??ㅻⅨ而ㅻ??덊떚 援щ텇 ?놁씠, ?쒕∼?ㅼ슫???대젮?덇굅??媛믪씠 ?좏깮?섏뼱 ?덉쑝硫??쒖꽦???됱긽(珥덈줉) ?곸슜
+                    isDropdownOpen || selectedPlatform
+                      ? 'tab-active text-green-600'
                       : 'text-gray-500 hover:text-gray-800'
                   }`}
                 >
                   <span className="font-medium">
-                    {/* [수정] 복잡한 삼항연산자 제거 -> 선택된 값의 Label을 그대로 표시 */}
+                    {/* [?섏젙] 蹂듭옟???쇳빆?곗궛???쒓굅 -> ?좏깮??媛믪쓽 Label??洹몃?濡??쒖떆 */}
                     {MAIN_PLATFORM_OPTIONS.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
                   </span>
-                  <svg 
-                    className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -268,14 +269,14 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* 유튜브 섹션 */}
-      <div className="mb-8 relative group"> {/* group 클래스 추가: 호버 시 버튼 표시 등 활용 가능 */}
+      {/* ?좏뒠釉??뱀뀡 */}
+      <div className="mb-8 relative group"> {/* group ?대옒??異붽?: ?몃쾭 ??踰꾪듉 ?쒖떆 ???쒖슜 媛??*/}
         <div className="flex justify-between items-end mb-4">
           <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">
             유튜브 일일 급상승 동영상
           </h2>
           
-          {/* 카테고리 탭 (우측 정렬이 필요하면 여기서 조정, 현재는 원래 위치 유지 위해 아래 div 사용) */}
+          {/* 移댄뀒怨좊━ ??(?곗륫 ?뺣젹???꾩슂?섎㈃ ?ш린??議곗젙, ?꾩옱???먮옒 ?꾩튂 ?좎? ?꾪빐 ?꾨옒 div ?ъ슜) */}
         </div>
 
         <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
@@ -290,10 +291,10 @@ const HomePage = () => {
           ))}
         </div>
         
-        {/* 슬라이더 컨테이너 */}
+        {/* ?щ씪?대뜑 而⑦뀒?대꼫 */}
         <div className="relative">
           
-          {/* 왼쪽 화살표 버튼 */}
+          {/* ?쇱そ ?붿궡??踰꾪듉 */}
           <button 
             onClick={() => scroll('left')}
             className="hidden sm:flex absolute left-1 lg:left-0 top-1/2 -translate-y-1/2 lg:-ml-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
@@ -302,8 +303,8 @@ const HomePage = () => {
             <ChevronLeft className="w-6 h-6 text-gray-600" />
           </button>
 
-          {/* 비디오 리스트 (Grid -> Flex & Scroll) */}
-          {/* slice(0, 5) -> slice(0, 10)으로 변경 */}
+          {/* 鍮꾨뵒??由ъ뒪??(Grid -> Flex & Scroll) */}
+          {/* slice(0, 5) -> slice(0, 10)?쇰줈 蹂寃?*/}
           <div 
             ref={scrollRef}
             className="flex overflow-x-auto gap-4 scrollbar-hide scroll-smooth pb-4 px-1"
@@ -337,7 +338,7 @@ const HomePage = () => {
 
                   <div className="mt-2 text-[11px] text-gray-400">
                     <span>{formatViews(video.views)}</span>
-                    <span>•</span>
+                    <span>·</span>
                     <span>{formatDate(video.publish_time)}</span>
                   </div>
                 </div>
@@ -345,7 +346,7 @@ const HomePage = () => {
             ))}
           </div>
 
-          {/* 오른쪽 화살표 버튼 */}
+          {/* ?ㅻⅨ履??붿궡??踰꾪듉 */}
           <button 
             onClick={() => scroll('right')}
             className="hidden sm:flex absolute right-1 lg:right-0 top-1/2 -translate-y-1/2 lg:-mr-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
@@ -357,7 +358,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* 3. UI 렌더링 (유튜브 섹션 </div> 바로 아래에 추가) */}
+      {/* 3. UI ?뚮뜑留?(?좏뒠釉??뱀뀡 </div> 諛붾줈 ?꾨옒??異붽?) */}
       <div className="mb-12">
         <div className="flex justify-between items-end mb-4">
           <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">
@@ -365,7 +366,7 @@ const HomePage = () => {
           </h2>
         </div>
 
-        {/* 커뮤니티 카테고리 탭 */}
+        {/* 而ㅻ??덊떚 移댄뀒怨좊━ ??*/}
         <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
           {COMMUNITY_OPTIONS.map((comm) => (
             <button
@@ -378,7 +379,7 @@ const HomePage = () => {
           ))}
         </div>
 
-        {/* 게시글 리스트 (그리드 2열 레이아웃) */}
+        {/* 寃뚯떆湲 由ъ뒪??(洹몃━??2???덉씠?꾩썐) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {communityPosts.length > 0 ? (
             communityPosts.map((post) => (
@@ -408,7 +409,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* 모달 */}
+      {/* 紐⑤떖 */}
       <SummaryModal 
         isOpen={isModalOpen} 
         onClose={closeModal} 
@@ -419,3 +420,5 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
+

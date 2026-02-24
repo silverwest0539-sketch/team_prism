@@ -1,7 +1,7 @@
 // src/pages/LoginPage.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { showToast } from '../utils/toast';
 
 const EASTER_EGG_MS = 1800;
@@ -61,7 +61,7 @@ const LoginPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await apiClient.post('/auth/login', {
         email,
         password,
       });

@@ -11,7 +11,8 @@ import {
   Star,
 } from '@phosphor-icons/react';
 import { LineChart, Line, Tooltip, ResponsiveContainer, XAxis } from 'recharts';
-import axios from 'axios';
+import apiClient, { toApiUrl } from '../../utils/apiClient';
+import { getStoredUser } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
 
 export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
@@ -28,12 +29,16 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
     setLoading(true);
 
-    const savedUserRaw = localStorage.getItem('user');
-    const savedUser = savedUserRaw ? JSON.parse(savedUserRaw) : null;
+    const savedUser = getStoredUser();
 
     if (savedUser?.email) {
-      axios
-        .get(`http://localhost:5000/api/scraps/check?email=${savedUser.email}&keyword=${data.keyword}`)
+      apiClient
+        .get('/scraps/check', {
+          params: {
+            email: savedUser.email,
+            keyword: data.keyword,
+          },
+        })
         .then((res) => setIsBookmarked(Boolean(res.data?.isBookmarked)))
         .catch(() => setIsBookmarked(false));
     } else {
@@ -45,7 +50,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
       type: data.type || 'trend',
     });
 
-    fetch(`http://localhost:5000/api/analysis?${params.toString()}`)
+    fetch(toApiUrl(`/analysis?${params.toString()}`))
       .then((res) => res.json())
       .then((result) => {
         if (result.found) {
@@ -80,8 +85,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   };
 
   const toggleBookmark = async () => {
-    const savedUserRaw = localStorage.getItem('user');
-    const savedUser = savedUserRaw ? JSON.parse(savedUserRaw) : null;
+    const savedUser = getStoredUser();
 
     if (!savedUser?.email) {
       if (
@@ -97,12 +101,15 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
     try {
       if (isBookmarked) {
-        await axios.delete(
-          `http://localhost:5000/api/scraps?email=${savedUser.email}&keyword=${data.keyword}`
-        );
+        await apiClient.delete('/scraps', {
+          params: {
+            email: savedUser.email,
+            keyword: data.keyword,
+          },
+        });
         setIsBookmarked(false);
       } else {
-        await axios.post('http://localhost:5000/api/scraps', {
+        await apiClient.post('/scraps', {
           email: savedUser.email,
           keyword: data.keyword,
         });

@@ -33,6 +33,8 @@ import SearchBar from '../components/common/SearchBar';
 
 // 유틸리티
 import { formatDateLabel, formatDateForInput, formatViews } from '../utils/formatters';
+import { toApiUrl } from '../utils/apiClient';
+import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 
 const DUMMY_DATA = {
   rank: '-',
@@ -248,8 +250,8 @@ const AnalysisPage = () => {
     if (currentEnd) query += `&endDate=${currentEnd}`;
 
     Promise.all([
-      fetch(`http://localhost:5000/api/analysis?${query}`).then((res) => res.json()),
-      fetch(`http://localhost:5000/api/news?${query}`).then((res) => res.json()),
+      fetch(toApiUrl(`/analysis?${query}`)).then((res) => res.json()),
+      fetch(toApiUrl(`/news?${query}`)).then((res) => res.json()),
     ])
       .then(([analysisData, newsData]) => {
         if (analysisData.found) {
@@ -289,7 +291,7 @@ const AnalysisPage = () => {
       if (start) query += `&startDate=${start}`;
       if (end) query += `&endDate=${end}`;
 
-      const res = await fetch(`http://localhost:5000/api/summary?${query}`);
+      const res = await fetch(toApiUrl(`/summary?${query}`));
       const data = await res.json();
       setAiSummary(data.summary);
     } catch (err) {
@@ -301,9 +303,12 @@ const AnalysisPage = () => {
   };
 
   const handleSearch = (e) => {
-    if (e.key === 'Enter' && searchTerm.trim()) {
-      navigate(`/analysis?keyword=${searchTerm}`);
-    }
+    navigateToAnalysisOnEnter({
+      event: e,
+      keyword: searchTerm,
+      navigate,
+      preserveRawKeyword: true,
+    });
   };
 
   const handleDateApply = () => {

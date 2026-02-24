@@ -12,7 +12,8 @@ import { getScraps, removeScrap, updateScrap, reorderScraps, getAllTags } from '
 import { formatDate } from '../../utils/formatters';
 import SummaryModal from '../home/SummaryModal';
 import CompareModal from '../scrap/CompareModal';
-import axios from 'axios';
+import apiClient from '../../utils/apiClient';
+import { getStoredUserEmail } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
 
 // // ─── 태그 프리셋 색상 ───
@@ -90,11 +91,13 @@ const ScrapPage = () => {
 
     // ─── 데이터 로드 ───
     const fetchScraps = useCallback(async () => {
-        const savedUser = JSON.parse(localStorage.getItem('user'));
-        if (!savedUser?.email) return;
+        const userEmail = getStoredUserEmail();
+        if (!userEmail) return;
 
         try {
-            const response = await axios.get(`http://localhost:5000/api/scraps?email=${savedUser.email}`);
+            const response = await apiClient.get('/scraps', {
+                params: { email: userEmail }
+            });
             if (response.data.success) {
                 setScraps(response.data.scraps);
             }
@@ -152,16 +155,25 @@ const ScrapPage = () => {
         fetchScraps();
     };
 
+    const deleteScrapItem = useCallback((email, keyword) => (
+        apiClient.delete('/scraps', {
+            params: {
+                email,
+                keyword,
+            }
+        })
+    ), []);
+
     // 단일 삭제 (애니메이션 포함)
     const handleDelete = async (e, keyword) => {
         e.stopPropagation();
-        const savedUser = JSON.parse(localStorage.getItem('user'));
-        if (!savedUser?.email) return;
+        const userEmail = getStoredUserEmail();
+        if (!userEmail) return;
 
         if (window.confirm(`'${keyword}' 스크랩을 삭제하시겠습니까?`)) {
             setRemovingKeywords(new Set([keyword]));
             try {
-                await axios.delete(`http://localhost:5000/api/scraps?email=${savedUser.email}&keyword=${keyword}`);
+                await deleteScrapItem(userEmail, keyword);
                 setTimeout(() => {
                     refreshScraps();
                     setRemovingKeywords(new Set());
@@ -176,8 +188,8 @@ const ScrapPage = () => {
     // 다중 삭제
     const handleBulkDelete = async () => {
         if (deleteSelection.size === 0) return;
-        const savedUser = JSON.parse(localStorage.getItem('user'));
-        if (!savedUser?.email) return;
+        const userEmail = getStoredUserEmail();
+        if (!userEmail) return;
 
         const count = deleteSelection.size;
         if (window.confirm(`선택된 ${count}개의 스크랩을 삭제하시겠습니까?`)) {
@@ -185,7 +197,7 @@ const ScrapPage = () => {
             try {
                 // 병렬로 API 호출
                 const promises = Array.from(deleteSelection).map(keyword => 
-                    axios.delete(`http://localhost:5000/api/scraps?email=${savedUser.email}&keyword=${keyword}`)
+                    deleteScrapItem(userEmail, keyword)
                 );
                 await Promise.all(promises);
 

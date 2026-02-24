@@ -1,10 +1,13 @@
 import React from 'react'
-import ReactDOM from 'react-dom/client' // <--- 이 줄이 빠져서 에러가 났던 것입니다!
+import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
-import './styles/index.css' // <--- Tailwind CSS 적용을 위해 필수
+import ErrorBoundary from './components/common/ErrorBoundary.jsx'
+import './styles/index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>,
 )
