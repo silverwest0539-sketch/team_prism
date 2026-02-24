@@ -60,28 +60,13 @@ const PLATFORM_OPTIONS = [
   { label: 'X (트위터)', value: 'x_trends' },
 ];
 
-
-const InfoCard = ({ title, value, subText, color }) => (
-  <div className="card relative overflow-hidden group card-hover h-40">
-    <div className={`absolute top-0 right-0 p-4 opacity-10 ${color}`}></div>
-    <div className="flex justify-between items-start z-10">
-      <h3 className="text-gray-500 font-medium text-sm">{title}</h3>
-      <div className={`p-2 rounded-lg bg-gray-50 ${color.replace('text-', 'text-opacity-80 text-')}`}></div>
-    </div>
-    <div className="z-10">
-      <div className="text-3xl font-bold text-gray-800 mb-1">{value}</div>
-      <div className="text-xs text-gray-400">{subText}</div>
-    </div>
-  </div>
-);
-
 const SENTIMENT_DATA = [
   { name: '긍정', value: 65, color: '#4F46E5' },
   { name: '중립', value: 25, color: '#9CA3AF' },
   { name: '부정', value: 10, color: '#EF4444' },
 ];
 
-// 간단한 워드클라우드 컴포넌트 (외부 라이브러리 없이 구현)
+// 간단한 워드클라우드 컴포넌트
 const SimpleWordCloud = ({ words }) => {
   if (!words || words.length === 0)
     return <div className="flex justify-center items-center h-full text-gray-400 text-sm">데이터 부족</div>;
@@ -116,36 +101,24 @@ const SimpleWordCloud = ({ words }) => {
   );
 };
 
-
-
 // --- Ellipsis Pagination Helper ---
 const DOTS = 'dots';
 
 function getPaginationItems(currentPage, totalPages, siblingCount = 1) {
   if (totalPages <= 1) return [1];
-
-  // 전체 페이지가 적으면 그대로 출력
-  const maxVisible = 2 * siblingCount + 5; // 1, ..., (siblings), ..., last
+  const maxVisible = 2 * siblingCount + 5;
   if (totalPages <= maxVisible) {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
-
   const leftSibling = Math.max(currentPage - siblingCount, 2);
   const rightSibling = Math.min(currentPage + siblingCount, totalPages - 1);
-
   const showLeftDots = leftSibling > 2;
   const showRightDots = rightSibling < totalPages - 1;
-
   const items = [1];
-
   if (showLeftDots) items.push(DOTS);
-
   for (let p = leftSibling; p <= rightSibling; p++) items.push(p);
-
   if (showRightDots) items.push(DOTS);
-
   items.push(totalPages);
-
   return items;
 }
 
@@ -155,21 +128,16 @@ const CommentItem = ({ comment, globalIndex, keyword }) => {
   const textRef = useRef(null);
   const link = comment.link;
 
-  // 키워드 하이라이팅 함수
   const highlightText = (text, targetKeyword) => {
     if (!targetKeyword || !text) return text;
-    
-    // 키워드를 기준으로 텍스트를 나눔 (대소문자 구분 없이 매칭)
     const parts = text.split(new RegExp(`(${targetKeyword})`, 'gi'));
-    
     return parts.map((part, index) => 
       part.toLowerCase() === targetKeyword.toLowerCase() ? (
-        // 일치하는 키워드에 옅은 노란색 배경과 볼드 처리
         <span key={index} className="bg-yellow-200 text-gray-900 font-bold px-0.5 rounded">
           {part}
         </span>
       ) : (
-        part // 일치하지 않는 나머지 텍스트는 그대로 출력
+        part
       )
     );
   };
@@ -190,11 +158,10 @@ const CommentItem = ({ comment, globalIndex, keyword }) => {
 
   useEffect(() => {
     if (textRef.current) {
-      // scrollHeight(실제 텍스트 전체 높이)가 clientHeight(화면에 보이는 3줄 높이)보다 크면 넘친 것
       const { scrollHeight, clientHeight } = textRef.current;
       setIsOverflowing(scrollHeight > clientHeight);
     }
-  }, [comment.text]); // 텍스트 데이터가 바뀔 때마다 다시 계산
+  }, [comment.text]);
 
   return (
     <div className="group">
@@ -238,9 +205,7 @@ const CommentItem = ({ comment, globalIndex, keyword }) => {
               title="클릭하여 원문 보기"
             >
               <span>원문 보러가기</span>
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
+              <Export size={12} />
             </a>
           )}
         </div>
@@ -261,16 +226,18 @@ const AnalysisPage = () => {
   const [endDate, setEndDate] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [news, setNews] = useState([]);
-  const [aiSummary, setAiSummary] = useState(''); // AI 요약 텍스트
-  const [isAiLoading, setIsAiLoading] = useState(false); // 로딩 상태
+  const [aiSummary, setAiSummary] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  
+  // [NEW] 스크랩 상태 추가
+  const [isScrapped, setIsScrapped] = useState(false);
 
-  // ✅ 페이지네이션(7개 고정)
+  // 페이지네이션(7개 고정)
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
 
   const commentsTopRef = useRef(null);
 
-  // 데이터 불러오기
   const fetchData = (currentStart, currentEnd) => {
     if (!keyword) return;
 
@@ -304,20 +271,19 @@ const AnalysisPage = () => {
       });
   };
 
-  // 초기 로드 (키워드 변경 시)
   useEffect(() => {
-    setAiSummary(null);       // AI 요약 텍스트 초기화
+    setAiSummary(null);
     setIsAiLoading(true)
     setStartDate('');
     setEndDate('');
     setCurrentPage(1);
+    setIsScrapped(false); // 키워드 변경 시 스크랩 상태 초기화
     fetchData('', '');
     fetchAiSummary(keyword, '', '');
   }, [keyword]);
 
   const fetchAiSummary = async (targetKeyword, start, end) => {
     setIsAiLoading(true);
-
     try {
       let query = `keyword=${targetKeyword}`;
       if (start) query += `&startDate=${start}`;
@@ -346,20 +312,29 @@ const AnalysisPage = () => {
     fetchAiSummary(keyword, startDate, endDate)
   };
 
-  // 날짜 초기화 핸들러
   const handleDateReset = () => {
-    setStartDate(''); // 입력창 초기화
-    setEndDate('');   // 입력창 초기화
+    setStartDate('');
+    setEndDate('');
     setCurrentPage(1);
-    fetchData('', ''); // 전체 기간으로 데이터 다시 요청
-    fetchAiSummary(keyword, '', ''); // AI 요약도 전체 기간으로 다시 요청
+    fetchData('', '');
+    fetchAiSummary(keyword, '', '');
+  };
+
+  // [NEW] 스크랩 기능 (임시 구현)
+  const handleScrapToggle = () => {
+    setIsScrapped(!isScrapped);
+    // TODO: backend api 호출 (components/mypage/ScrapPage.jsx 연동)
+  };
+
+  // [NEW] 콘텐츠 생성 페이지 이동
+  const handleGoToCreation = () => {
+    navigate('/creation'); // 실제 라우터 경로에 맞게 수정
   };
 
 
   // 데이터 필터링
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
-
     if (!data) {
       return {
         ...sourceData,
@@ -371,21 +346,16 @@ const AnalysisPage = () => {
         videos: [],
       };
     }
-
     const historyFiltered = data.history.filter((h) => {
       const d = formatDateForInput(h.date);
       return (!startDate || d >= startDate) && (!endDate || d <= endDate);
     });
-
-    // ✅ 플랫폼 필터를 comments에 반영
     let allComments = sourceData.comments || [];
     if (selectedPlatform !== 'all') {
       allComments = allComments.filter((c) => (c?.source || '').includes(selectedPlatform));
     }
-
     const youtubeComments = (allComments || []).filter((c) => (c?.source || '').includes('youtube'));
     const otherComments = (allComments || []).filter((c) => !(c?.source || '').includes('youtube'));
-
     return {
       ...data,
       history: historyFiltered,
@@ -397,17 +367,14 @@ const AnalysisPage = () => {
     };
   }, [data, startDate, endDate, selectedPlatform]);
 
-  // 오른쪽: 실제 사용 사례 (모든 텍스트 댓글)
   const usageExamples = useMemo(() => {
     if (!filteredData?.comments) return [];
     return filteredData.comments;
   }, [filteredData]);
 
-  // 페이지네이션 계산
   const totalItems = usageExamples.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
 
-  // currentPage가 totalPages보다 커지는 케이스 방어(플랫폼 변경 등)
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(1);
   }, [totalPages, currentPage]);
@@ -425,39 +392,29 @@ const AnalysisPage = () => {
 
   const goToPage = (p) => {
     setCurrentPage(p);
-    // UX: 페이지 변경 시 리스트 상단으로
     requestAnimationFrame(() => {
       commentsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
 
-
-  // 실제 데이터가 존재하는 플랫폼(source) 목록만 추출
   const availablePlatforms = useMemo(() => {
-    if (!data || !data.comments) return ['all']; // 데이터가 없으면 '전체(all)'만
-    
-    // comments 배열에서 플랫폼 이름(source)만 쏙 뽑아서 중복 제거
+    if (!data || !data.comments) return ['all']; 
     const sources = data.comments.map(comment => comment.source);
     const uniqueSources = [...new Set(sources)];
-    
-    // 'all'은 기본으로 항상 포함시키고, 존재하는 플랫폼들을 합침
     return ['all', ...uniqueSources]; 
   }, [data]);
 
   const filteredPlatforms = PLATFORM_OPTIONS.filter(opt => 
-  opt.value === 'all' || availablePlatforms.includes(opt.value)
-);
+    opt.value === 'all' || availablePlatforms.includes(opt.value)
+  );
     
   return (
     <div className="page space-y-6">
       {/* 상단 헤더 */}
-      {/* 1. justify-between을 제거하고 gap-4로 요소 간 간격을 줍니다. */}
       <header className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4">
         <Link to="/home" className="p-2 bg-white rounded-full text-gray-500 hover:text-indigo-600 shadow-sm transition">
           <CaretLeft size={20} />
         </Link>
-
-        {/* 2. 검색창이 남은 공간을 채우도록 flex-1을 감싸거나 SearchBar에 적용합니다. */}
         <div className="flex-1">
           <SearchBar
             placeholder="분석하고 싶은 키워드 검색 (예: 쿠팡)"
@@ -467,82 +424,122 @@ const AnalysisPage = () => {
             className="search-input w-full" 
           />
         </div>
-
-        {/* 
-           [삭제됨] 
-           이 위치에 있던 <div className="flex items-center gap-4">...</div> 
-           (알림 Bell 아이콘 및 사용자 원형 아이콘) 코드를 완전히 삭제했습니다.
-        */}
       </header>
 
-      {/* 메인 콘텐츠 */}
+      {/* 메인 콘텐츠 - [변경] w-full로 넓게 사용 */}
       <div
-        className={`container-7xl transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
+        className={`w-full transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
           !keyword ? 'blur-disabled' : 'blur-enabled'
         }`}
       >
-        {/* 타이틀 */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-2">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 flex items-center flex-wrap gap-2 sm:gap-3">
-              {keyword || '검색 키워드 예시'}
-              <span className="pill bg-indigo-50 text-indigo-600">#{filteredData.rank || '-'}위</span>
-            </h1>
+        {/* [변경] 타이틀 섹션 재구성 */}
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 mb-2">
+          
+          {/* 왼쪽: 스크랩+키워드+순위+스코어텍스트 */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              {/* 스크랩 아이콘 */}
+              <button 
+                onClick={handleScrapToggle}
+                className="p-1 hover:scale-110 transition-transform focus:outline-none"
+                title="스크랩"
+              >
+                <Star 
+                  size={32} 
+                  weight={isScrapped ? "fill" : "regular"} 
+                  className={isScrapped ? "text-yellow-400" : "text-gray-300 hover:text-yellow-400"}
+                />
+              </button>
+
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 flex items-center gap-3">
+                {keyword || '검색 키워드 예시'}
+              </h1>
+              
+              <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 font-bold text-sm">
+                #{filteredData.rank || '-'}위
+              </span>
+            </div>
+
+            {/* 트렌드 스코어 (텍스트화) */}
+            <div className="flex items-center gap-2 text-gray-600 ml-11">
+              <span className="text-sm font-medium">트렌드 스코어</span>
+              <span className="text-lg font-bold text-indigo-600">
+                {filteredData.score?.toFixed(1) || 0}점
+              </span>
+              <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                전일 대비 12% 상승 ▲
+              </span>
+            </div>
           </div>
           
-          {/* [수정됨] 스크린샷 요청에 따라 '내보내기' 버튼도 삭제했습니다. */}
+          {/* 오른쪽: 콘텐츠 생성 버튼 */}
           <div className="flex gap-2">
-             {/* 기존 <button>내보내기</button> 삭제함 */}
+             <button 
+               onClick={handleGoToCreation}
+               className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all hover:-translate-y-1"
+             >
+               <Export size={20} />
+               <span>콘텐츠 생성</span>
+             </button>
           </div>
         </div>
 
-        {/* 정보 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          <InfoCard
-            title="트렌드 스코어"
-            value={`${filteredData.score?.toFixed(1) || 0}점`}
-            subText="전일 대비 12% 상승 ▲"
-            color="text-indigo-600"
-          />
+        {/* [변경] 카드 섹션: 3개->2개, w-full */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full">
+          {/* InfoCard (Trend Score) 제거됨 */}
 
-          <div className="card h-40 flex flex-col justify-between">
+          {/* 기간 설정 카드 (너비 확장) */}
+          <div className="card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
-              <h3 className="text-gray-500 font-medium text-sm">분석 기간</h3>
-              <div className="p-2 rounded-lg bg-green-50 text-green-600">
-                <button 
+              <h3 className="text-gray-500 font-medium text-sm flex items-center gap-2">
+                <ArrowsClockwise size={18} /> 분석 기간 설정
+              </h3>
+              <button 
                   onClick={handleDateReset}
-                  className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg bg-gray-50 text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
                   title="전체 기간으로 초기화"
                 >
-                  <ArrowsClockwise size={15} weight="fill" />
-                </button>
-              </div>
+                  <ArrowsClockwise size={16} weight="bold"/>
+              </button>
             </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-gray-800 mb-1">
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="date-input w-[140px] sm:w-auto" />
-                ~
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="date-input w-[140px] sm:w-auto" />
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)} 
+                  className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all" 
+                />
+                <span className="text-gray-400">~</span>
+                <input 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)} 
+                  className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all" 
+                />
                 <button
                   onClick={handleDateApply}
-                  className="bg-white hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 text-xs px-2 py-1 rounded shadow-sm transition-all"
+                  className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
                 >
                   조회
                 </button>
               </div>
-              <div className="text-xs text-gray-400">직접 기간 설정 가능</div>
+              <div className="text-xs text-gray-400 text-right">원하는 기간을 직접 선택하세요</div>
             </div>
           </div>
 
-          <div className="card h-40 flex flex-col justify-between">
+          {/* 플랫폼 선택 카드 (너비 확장) */}
+          <div className="card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
-              <h3 className="text-gray-500 font-medium text-sm">플랫폼 선택</h3>
+              <h3 className="text-gray-500 font-medium text-sm flex items-center gap-2">
+                <BookmarkSimple size={18} /> 플랫폼 필터
+              </h3>
             </div>
             <div>
               <select
                 value={selectedPlatform}
                 onChange={(e) => setSelectedPlatform(e.target.value)}
-                className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-sm font-medium text-gray-700 bg-white cursor-pointer transition-all shadow-sm"
+                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-gray-700 bg-gray-50 focus:bg-white cursor-pointer transition-all"
               >
                 {filteredPlatforms.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -550,12 +547,13 @@ const AnalysisPage = () => {
                   </option>
                 ))}
               </select>
+              <div className="text-xs text-gray-400 mt-2 text-right">특정 커뮤니티 반응만 모아보기</div>
             </div>
           </div>
         </div>
 
-        {/* 차트 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:h-80">
+        {/* 차트 영역 (기존 유지) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:h-80 w-full">
           <div className="card lg:col-span-1 flex flex-col min-h-[280px] lg:min-h-0">
             <div className="card-header flex justify-between items-center">
               <h3 className="section-title">
@@ -624,22 +622,15 @@ const AnalysisPage = () => {
           </div>
         </div>
 
-        {/* 하단 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
+        {/* 하단 (AI요약, 뉴스, 댓글) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start w-full">
           {/* 왼쪽 */}
           <div className="card">
             <h3 className="section-title mb-4 pb-2 border-b flex justify-between">
               <span>AI 트렌드 요약</span>
-              {/* <span className="text-xs font-normal text-gray-400 mt-1">Updated 10m ago</span> */}
             </h3>
             <div className="p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-500 text-sm text-gray-700 leading-relaxed mb-6">
-              {/* 조건 1: 로딩 중이면 -> 로딩 애니메이션만 보여줌 
-                조건 2: 로딩 끝남 & 데이터 있음 -> 결과 텍스트 보여줌
-                조건 3: 로딩 끝남 & 데이터 없음 -> 아무것도 안 보여주거나 안내 문구
-              */}
-              
               {isAiLoading ? (
-                /* 로딩 중일 때 보여줄 화면 */
                 <div className="flex flex-col items-center justify-center py-4 gap-3">
                   <div className="flex gap-2">
                     <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
@@ -651,11 +642,9 @@ const AnalysisPage = () => {
                   </span>
                 </div>
               ) : (
-                /* 로딩이 완전히 끝났을 때만 출력 */
                 aiSummary ? (
                   <div className="animate-fade-in-up">
                       {aiSummary.split('\n').map((line, i) => {
-                          // 빈 줄은 무시
                           if (!line.trim()) return null;
                           return (
                               <p key={i} className="mb-2 pl-2 border-l-2 border-indigo-200" dangerouslySetInnerHTML={{ __html: line }}></p>
@@ -663,7 +652,6 @@ const AnalysisPage = () => {
                       })}
                   </div>
                 ) : (
-                  /* 초기 상태거나 데이터 없을 때 */
                   <p className="text-gray-400 text-center text-xs">키워드를 분석할 준비가 되었습니다.</p>
                 )
               )}
@@ -743,7 +731,7 @@ const AnalysisPage = () => {
           {/* 오른쪽: 실제 사용 사례 (커뮤니티) */}
           <div className="card h-fit flex flex-col">
             <div className="flex justify-between items-center mb-4 pb-2 border-b">
-              <h3 className="section-title">실제 사용 사례 (커뮤니티)</h3>
+              <h3 className="section-title">관련 댓글 반응</h3>
               <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-full">총 {totalItems}건</span>
             </div>
 

@@ -214,17 +214,6 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
           <div>
             <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
-              <TrendUp size={18} className="text-orange-500" /> AI 트렌드 요약
-            </h3>
-            <div className="bg-orange-50 p-4 rounded-xl text-sm text-gray-700 leading-relaxed border border-orange-100">
-              <span className="font-bold text-orange-700 mr-1">Insight:</span>
-              현재 해당 키워드는 소셜 미디어와 커뮤니티에서 동시에 급상승하고 있습니다. 주로 2030 세대의
-              관심도가 높으며, 긍정적인 바이럴이 확산되는 추세입니다. (이 내용은 현재 더미 데이터입니다.)
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
               <ChatCircle size={18} className="text-blue-500" /> 실제 반응 미리보기
             </h3>
             <div className="space-y-3">
