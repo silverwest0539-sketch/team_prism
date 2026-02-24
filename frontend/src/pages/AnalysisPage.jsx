@@ -670,7 +670,11 @@ const AnalysisPage = () => {
             <div className="flex-1 w-full min-h-0">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 {/* 7일치 데이터 사용 */}
-                <LineChart data={mainChartData}>
+                <LineChart 
+                  data={mainChartData}
+                  // [수정] left를 0으로 원상복구하되, right를 30으로 주어 오른쪽 끝 날짜 잘림 방지
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis
                     dataKey="date"
@@ -680,8 +684,15 @@ const AnalysisPage = () => {
                     tick={{ fill: '#9CA3AF', fontSize: 12 }}
                     dy={10}
                     interval={0} 
+                    padding={{ left: 10, right: 10 }}
                   />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#9CA3AF', fontSize: 12 }} 
+                    // [수정] 아까 30은 너무 좁아서 잘렸으니, 40 정도로 살짝 여유를 줌 (기본값 60보다는 좁음)
+                    width={40}
+                  />
                   <Tooltip
                     contentStyle={{
                       borderRadius: '12px',
