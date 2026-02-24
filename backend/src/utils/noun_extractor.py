@@ -7,7 +7,15 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 def extract_nouns():
     kiwi = Kiwi()
-    
+
+    user_words = [
+        '노시환', '김연아', '메시', '봄동비빔밥', '민희진'
+    ]
+
+    for word in user_words:
+        # 단어, 품사(NNP=고유명사), 우선순위(기본값보다 높은 10 적용)
+        kiwi.add_user_word(word, 'NNP', 10)
+
     # 1. Node.js로부터 표준 입력(stdin)으로 데이터 받기
     input_data = sys.stdin.read()
     if not input_data:

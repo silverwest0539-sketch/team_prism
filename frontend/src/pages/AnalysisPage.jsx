@@ -35,7 +35,9 @@ import SearchBar from '../components/common/SearchBar';
 
 // 유틸리티
 import { formatDateLabel, formatDateForInput, formatViews } from '../utils/formatters';
-import { toApiUrl } from '../utils/apiClient';
+import apiClient, { toApiUrl } from '../utils/apiClient';
+import { getStoredUser } from '../utils/authStorage';
+import { showToast } from '../utils/toast';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 
 const DUMMY_DATA = {
@@ -249,7 +251,7 @@ const AnalysisPage = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isScrapped, setIsScrapped] = useState(false);
 
-  // [NEW] ★ 차트 확대 모달 상태 추가
+  // 차트 확대 모달 상태 추가
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
 
   // 페이지네이션
@@ -306,7 +308,19 @@ const AnalysisPage = () => {
     setStartDate(yesterdayDate);
     setEndDate(todayDate);
     setCurrentPage(1);
-    setIsScrapped(false);
+    
+    const savedUser = getStoredUser();
+    if (savedUser?.email) {
+      apiClient
+        .get('/scraps/check', {
+          params: { email: savedUser.email, keyword: keyword },
+        })
+        .then((res) => setIsScrapped(Boolean(res.data?.isBookmarked)))
+        .catch(() => setIsScrapped(false));
+    } else {
+      setIsScrapped(false);
+    }
+
     fetchData(yesterdayDate, todayDate);
     fetchAiSummary(keyword, yesterdayDate, todayDate);
   }, [keyword]);
@@ -355,8 +369,42 @@ const AnalysisPage = () => {
     fetchAiSummary(keyword, yesterdayDate, todayDate);
   };
 
-  const handleScrapToggle = () => {
-    setIsScrapped(!isScrapped);
+  const handleScrapToggle = async () => {
+    const savedUser = getStoredUser();
+
+    // 로그인이 안 되어 있을 경우 예외 처리
+    if (!savedUser?.email) {
+      if (
+        window.confirm(
+          '관심 키워드 저장(스크랩) 기능은 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?'
+        )
+      ) {
+        navigate('/login');
+      }
+      return;
+    }
+
+    try {
+      if (isScrapped) {
+        // 이미 스크랩된 상태면 삭제 요청
+        await apiClient.delete('/scraps', {
+          params: { email: savedUser.email, keyword: keyword },
+        });
+        setIsScrapped(false);
+        showToast('스크랩이 취소되었습니다.', { type: 'info' });
+      } else {
+        // 스크랩 안 된 상태면 추가 요청
+        await apiClient.post('/scraps', {
+          email: savedUser.email,
+          keyword: keyword,
+        });
+        setIsScrapped(true);
+        showToast('관심 키워드로 저장되었습니다.', { type: 'success' });
+      }
+    } catch (error) {
+      console.error(error);
+      showToast('스크랩 처리 중 오류가 발생했습니다.', { type: 'error' });
+    }
   };
 
   const handleGoToCreation = () => {
@@ -509,11 +557,11 @@ const AnalysisPage = () => {
             </div>
             
             {/* 순위 표시가 필요하다면 여기에 추가 */}
-            {filteredData.rank && (
+            {/* {filteredData.rank && (
                <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 font-bold text-sm">
                  #{filteredData.rank}위
                </span>
-            )}
+            )} */}
           </div>
           
           {/* 오른쪽: 콘텐츠 생성 버튼 */}
