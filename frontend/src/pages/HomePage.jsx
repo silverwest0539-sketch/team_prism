@@ -33,14 +33,6 @@ const HomePage = () => {
     // [추가] 트렌드 더보기 모달 상태
   const [isTrendModalOpen, setIsTrendModalOpen] = useState(false);
 
-  // [추가] 모달용 Top 20 더미 데이터 (실제 API 연동 시 이 부분을 API 데이터로 대체)
-  const top20Keywords = Array.from({ length: 20 }, (_, i) => ({
-    rank: i + 1,
-    keyword: i < 5 ? risingKeywords[i]?.keyword || `트렌드 키워드 ${i+1}` : `순위권 키워드 ${i+1}`,
-    isUp: i % 3 === 0, // 임의의 상승/하락 표시
-    change: i % 3 === 0 ? `+${(20-i)*10}%` : i % 3 === 1 ? `-${i*5}%` : '-'
-  }));
-
   const scrollRef = useRef(null);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -180,7 +172,7 @@ const HomePage = () => {
           </div>
           
           <ul className="flex flex-col gap-2">
-            {risingKeywords.map((item, index) => (
+            {risingKeywords.slice(0, 5).map((item, index) => (
               <li 
                 key={index} 
                 onClick={() => openModal({ 
@@ -462,7 +454,7 @@ const HomePage = () => {
                 {/* 왼쪽 컬럼 (1위 ~ 10위) */}
                 <div className="space-y-2">
                   <h4 className="text-sm font-bold text-gray-400 mb-3 pl-2">1위 ~ 10위</h4>
-                  {top20Keywords.slice(0, 10).map((item) => (
+                  {risingKeywords.slice(0, 10).map((item) => (
                     <div 
                       key={item.rank}
                       onClick={() => {
@@ -490,7 +482,7 @@ const HomePage = () => {
                 {/* 오른쪽 컬럼 (11위 ~ 20위) */}
                 <div className="space-y-2 mt-6 md:mt-0">
                   <h4 className="text-sm font-bold text-gray-400 mb-3 pl-2">11위 ~ 20위</h4>
-                  {top20Keywords.slice(10, 20).map((item) => (
+                  {risingKeywords.slice(10, 20).map((item) => (
                     <div 
                       key={item.rank}
                       onClick={() => {
