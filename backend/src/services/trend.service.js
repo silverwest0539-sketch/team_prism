@@ -97,6 +97,15 @@ exports.getAllTrends = async (keyword, date) => {
   return rows;
 };
 
+const API_KEYS = process.env.YOUTUBE_API_KEYS ? process.env.YOUTUBE_API_KEYS.split(',') : [];
+console.log(`🔑 로드된 API 키 개수: ${API_KEYS.length}개`);
+let currentKeyIndex = 0;
+
+const getActiveKey = () => API_KEYS[currentKeyIndex];
+const rotateKey = () => {
+  currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+};
+
 exports.getAnalysis = async (keyword, startDate, endDate) => {
   const now = Date.now();
 
@@ -144,103 +153,146 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
   statsSql += ` ORDER BY stat_date ASC`;
 
   const [statsRows] = await db.execute(statsSql, statsParams);
-  const history = statsRows.map(row => ({
-    date:       row.stat_date.toISOString().slice(0, 10).replace(/-/g, ''),
-    mentions:   row.mention_count,
-    trendScore: row.trend_score,
-  }));
+    
+    const history = statsRows.map(row => {
+      let dateStr = "";
+      if (row.stat_date) {
+        // 시간대(Timezone) 문제 해결: 한국 시간에 맞게 날짜 오프셋 보정
+        const dateObj = new Date(row.stat_date);
+        const offset = dateObj.getTimezoneOffset() * 60000;
+        const localDate = new Date(dateObj.getTime() - offset);
+        
+        // 프론트엔드가 요구하는 'YYYYMMDD' 형식으로 변환
+        dateStr = localDate.toISOString().slice(0, 10).replace(/-/g, '');
+      }
+  
+      return {
+        date: dateStr,
+        mentions: row.mention_count || 0,
+        score: row.trend_score || 0,
+      };
+    });
 
   // ── 3. 댓글 예시 ─────────────────────────────────────
-  const [exampleRows] = await db.execute(
-    `SELECT u.platform, u.url, u.content
-     FROM USAGE_EXAMPLE u
-     JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
-     WHERE ke.keyword_id = ?`,
-    [keywordId]
-  );
-
-  const parsedComments = exampleRows.map(row => ({
-    source: row.platform,
-    text:   row.content,
-    link:   row.url,
-  }));
-
-  const wordCloudData = extractWordCloudData(parsedComments, keyword);
+  let commentsSql = `
+      SELECT u.platform, u.url, u.content, u.collected_date
+      FROM USAGE_EXAMPLE u
+      JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
+      WHERE ke.keyword_id = ?
+    `;
+    const commentsParams = [keywordId];
+  
+    // 프론트엔드에서 넘겨준 날짜로 댓글도 필터링
+    if (startDate) {
+      commentsSql += ` AND u.collected_date >= ?`;
+      commentsParams.push(startDate);
+    }
+    if (endDate) {
+      commentsSql += ` AND u.collected_date <= ?`;
+      commentsParams.push(endDate);
+    }
+  
+    // 최신순 정렬
+    commentsSql += ` ORDER BY u.collected_date DESC`;
+  
+    const [exampleRows] = await db.execute(commentsSql, commentsParams);
+  
+    const parsedComments = exampleRows.map(row => {
+      // DB의 날짜 데이터를 YYYY-MM-DD 형식의 문자열로 안전하게 변환
+      let formattedDate = null;
+      if (row.collected_date) {
+        const dateObj = new Date(row.collected_date);
+        // 유효한 날짜인지 체크
+        if (!isNaN(dateObj)) {
+          // 한국 시간(KST)을 고려한 오프셋 적용 후 변환 (선택 사항이나 권장됨)
+          const offset = dateObj.getTimezoneOffset() * 60000;
+          const localDate = new Date(dateObj.getTime() - offset);
+          formattedDate = localDate.toISOString().split('T')[0];
+        }
+      }
+  
+      return {
+        source: row.platform,
+        text:   row.content,
+        link:   row.url,
+        date:   formattedDate, // 추가된 날짜 데이터
+      };
+    });
+  
+    const wordCloudData = extractWordCloudData(parsedComments, keyword);
+  
 
   // ── 4. 유튜브 영상 검색 ───────────────────────────────
-  const API_KEYS = process.env.YOUTUBE_API_KEYS ? process.env.YOUTUBE_API_KEYS.split(',') : [];
-  let currentKeyIndex = 0;
-  const getActiveKey = () => API_KEYS[currentKeyIndex];
-  const rotateKey    = () => { currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length; };
-
   let relatedVideos = [];
-
-  if (API_KEYS.length > 0 && keyword) {
-    const fetchYoutubeWithRotation = async (retryCount = 0) => {
-      const currentKey = getActiveKey();
-      try {
-        const searchParams = {
-          part: 'snippet', q: keyword, type: 'video',
-          maxResults: 3, key: currentKey, regionCode: 'KR', order: 'date',
-        };
-        if (startDate) searchParams.publishedAfter  = toISODate(startDate);
-        if (endDate)   searchParams.publishedBefore = toISODate(endDate, true);
-
-        const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', { params: searchParams });
-        const videoIds  = searchRes.data.items.map(i => i.id.videoId).join(',');
-        if (!videoIds) return [];
-
-        const videoRes = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
-          params: { part: 'snippet,statistics', id: videoIds, key: currentKey },
-        });
-        return videoRes.data.items.map(item => ({
-          id:           item.id,
-          title:        item.snippet.title,
-          channel:      item.snippet.channelTitle,
-          views:        item.statistics.viewCount,
-          thumbnail:    item.snippet.thumbnails.medium.url,
-          publish_time: item.snippet.publishedAt,
-        }));
-      } catch (err) {
-        const isQuotaError = err.response?.status === 403;
-        if (isQuotaError && retryCount < API_KEYS.length - 1) {
-          console.log(`🔄 [Trend API Rotation] 할당량 초과로 키 교체 (Index: ${currentKeyIndex})`);
-          rotateKey();
-          return fetchYoutubeWithRotation(retryCount + 1);
+  
+    if (API_KEYS.length > 0 && keyword) {
+      const fetchYoutubeWithRotation = async (retryCount = 0) => {
+        const currentKey = getActiveKey();
+  
+        try {
+          const threeDaysAgo = new Date();
+          threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+          const searchParams = {
+            part: 'snippet', q: keyword, type: 'video',
+            maxResults: 3, key: currentKey, regionCode: 'KR', order: 'viewCount', publishedAfter: threeDaysAgo.toISOString()
+          };
+          // if (startDate) searchParams.publishedAfter  = toISODate(startDate);
+          // if (endDate)   searchParams.publishedBefore = toISODate(endDate, true);
+  
+          const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', { params: searchParams });
+          const videoIds  = searchRes.data.items.map(i => i.id.videoId).join(',');
+          if (!videoIds) return [];
+  
+          const videoRes = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+            params: { part: 'snippet,statistics', id: videoIds, key: currentKey },
+          });
+          return videoRes.data.items.map(item => ({
+            id:           item.id,
+            title:        item.snippet.title,
+            channel:      item.snippet.channelTitle,
+            views:        parseInt(item.statistics.viewCount || 0),
+            thumbnail:    item.snippet.thumbnails.medium.url,
+            publish_time: item.snippet.publishedAt,
+          }));
+        } catch (err) {
+          const isQuotaError = err.response?.status === 403;
+          if (isQuotaError && retryCount < API_KEYS.length - 1) {
+            console.log(`🔄 [Trend API Rotation] 할당량 초과로 키 교체 (Index: ${currentKeyIndex})`);
+            rotateKey();
+            return fetchYoutubeWithRotation(retryCount + 1);
+          }
+          console.error('❌ 유튜브 API 최종 실패:', err.message);
+          return [];
         }
-        console.error('❌ 유튜브 API 최종 실패:', err.message);
-        return [];
-      }
+      };
+      relatedVideos = await fetchYoutubeWithRotation();
+    }
+  
+    if (relatedVideos.length === 0) {
+      const youtubeComments = parsedComments.filter(c => c.source.toLowerCase().includes('youtube'));
+      relatedVideos = youtubeComments.slice(0, 3).map((c, i) => ({
+        id:           `local-${i}`,
+        title:        c.text.length > 50 ? c.text.substring(0, 50) + '...' : c.text,
+        channel:      'YouTube 반응 (Local)',
+        views:        0,
+        thumbnail:    'https://via.placeholder.com/320x180/E5E7EB/9CA3AF?text=No+Video',
+        publish_time: new Date().toISOString(),
+      }));
+    }
+  
+    const finalResponse = {
+      found:         true,
+      keyword:       keywordName,
+      totalMentions,
+      history,
+      comments:      parsedComments,
+      wordCloud:     wordCloudData,
+      videos:        relatedVideos,
     };
-    relatedVideos = await fetchYoutubeWithRotation();
-  }
-
-  if (relatedVideos.length === 0) {
-    const youtubeComments = parsedComments.filter(c => c.source.toLowerCase().includes('youtube'));
-    relatedVideos = youtubeComments.slice(0, 3).map((c, i) => ({
-      id:           `local-${i}`,
-      title:        c.text.length > 50 ? c.text.substring(0, 50) + '...' : c.text,
-      channel:      'YouTube 반응 (Local)',
-      views:        0,
-      thumbnail:    'https://via.placeholder.com/320x180/E5E7EB/9CA3AF?text=No+Video',
-      publish_time: new Date().toISOString(),
-    }));
-  }
-
-  const finalResponse = {
-    found:         true,
-    keyword:       keywordName,
-    totalMentions,
-    score:         trendScore,
-    history,
-    comments:      parsedComments,
-    wordCloud:     wordCloudData,
-    videos:        relatedVideos,
+  
+    if (!startDate && !endDate && relatedVideos.length > 0) {
+      searchCache[keyword] = { data: finalResponse, timestamp: now };
+    }
+  
+    return finalResponse;
   };
-
-  if (!startDate && !endDate && relatedVideos.length > 0) {
-    searchCache[keyword] = { data: finalResponse, timestamp: now };
-  }
-
-  return finalResponse;
-};

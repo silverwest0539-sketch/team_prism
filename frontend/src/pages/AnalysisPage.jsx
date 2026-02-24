@@ -500,6 +500,10 @@ const AnalysisPage = () => {
     opt.value === 'all' || availablePlatforms.includes(opt.value)
   );
 
+  const todayStr = getFormattedDate(new Date()).replace(/-/g, ''); // 예: "20260224"
+  const todayData = filteredData?.history?.find(h => h.date === todayStr);
+  const todayScore = todayData?.score || 0;
+
   // ---------------- Render ----------------
   return (
     <div className="page space-y-6">
@@ -547,12 +551,16 @@ const AnalysisPage = () => {
                 {keyword || '검색 키워드 예시'}
               </h1>
               <div className="flex items-baseline gap-1 text-gray-600">
-                <span className="text-xs sm:text-sm font-medium">트렌드 스코어</span>
-                <span className="text-sm sm:text-base font-bold text-indigo-600">
-                  {filteredData.score?.toFixed(1) || 0}점
-                </span>
-                {/* 상승률 표시는 필요시 주석 해제하여 사용 */}
-                {/* <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded">전일 대비 12% 상승 ▲</span> */}
+                {todayScore > 0 ? (
+                  // <span className="text-xs sm:text-sm font-medium">트렌드 스코어</span>,
+                  <span className="text-sm sm:text-base font-bold text-indigo-600 ml-1">
+                    트렌드 스코어 {todayScore}점
+                  </span>
+                ) : (
+                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md ml-1">
+                    오늘의 트렌드 키워드가 아닙니다
+                  </span>
+                )}
               </div>
             </div>
             
