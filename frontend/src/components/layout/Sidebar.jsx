@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, LogOut, Settings, X } from 'lucide-react';
 import { getStoredUser } from '../../utils/authStorage';
+import { showToast } from '../../utils/toast';
 
 const MAIN_MENUS = [
   { path: '/home', label: '트렌드 대시보드' },
@@ -63,9 +64,9 @@ const Sidebar = ({ isOpen = false, onClose }) => {
   };
 
   const openNotificationSettings = () => {
-    navigate('/mypage?modal=notification');
     setIsProfileOpen(false);
     onClose?.();
+    showToast('알림 기능은 현재 미구현 상태입니다.', { type: 'info' });
   };
 
   const cancelLogout = () => {

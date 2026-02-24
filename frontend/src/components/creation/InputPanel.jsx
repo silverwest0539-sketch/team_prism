@@ -1,5 +1,4 @@
 import React from 'react';
-import { ArrowsClockwise } from '@phosphor-icons/react';
 import { showToast } from '../../utils/toast';
 import CreationKeywordSection from './CreationKeywordSection';
 import CreationProfileSection from './CreationProfileSection';
@@ -7,7 +6,11 @@ import CreationPromptTemplateSection from './CreationPromptTemplateSection';
 import CreationTargetSection from './CreationTargetSection';
 import { useCreationForm } from './useCreationForm';
 
-const InputPanel = ({ onGenerate, isLoading, initialKeyword = '' }) => {
+const InputPanel = ({
+  onGenerate,
+  isLoading,
+  initialKeyword = '',
+}) => {
   const {
     keyword,
     selectedType,
@@ -16,12 +19,8 @@ const InputPanel = ({ onGenerate, isLoading, initialKeyword = '' }) => {
     target,
     otherRequests,
     selectedPromptTemplate,
-    promptTemplateText,
     isAutoProfileEnabled,
     recommendedProfile,
-    recommendedTemplate,
-    recommendedTemplateMeta,
-    selectedTemplateMeta,
     contentTypes,
     industries,
     setKeyword,
@@ -31,10 +30,7 @@ const InputPanel = ({ onGenerate, isLoading, initialKeyword = '' }) => {
     setTarget,
     setOtherRequests,
     toggleAutoProfile,
-    applyRecommendedTemplate,
     handlePromptTemplateChange,
-    restorePromptTemplateText,
-    handlePromptTemplateTextChange,
     buildSubmitPayload,
   } = useCreationForm({ initialKeyword });
 
@@ -49,61 +45,61 @@ const InputPanel = ({ onGenerate, isLoading, initialKeyword = '' }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 h-full min-h-0 flex flex-col overflow-y-auto">
-      <CreationKeywordSection
-        keyword={keyword}
-        onKeywordChange={setKeyword}
-        recommendedReason={recommendedProfile.reason}
-        isAutoProfileEnabled={isAutoProfileEnabled}
-        onToggleAutoProfile={toggleAutoProfile}
-      />
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 2xl:p-4 flex flex-col">
+      <div className="flex flex-col 2xl:grid 2xl:grid-cols-2 2xl:gap-3">
+        <div className="contents 2xl:flex 2xl:flex-col">
+          <div className="order-1 2xl:order-none">
+            <CreationKeywordSection
+              keyword={keyword}
+              onKeywordChange={setKeyword}
+              recommendedReason={recommendedProfile.reason}
+              isAutoProfileEnabled={isAutoProfileEnabled}
+              onToggleAutoProfile={toggleAutoProfile}
+            />
+          </div>
 
-      <CreationProfileSection
-        contentTypes={contentTypes}
-        selectedType={selectedType}
-        onSelectType={setSelectedType}
-        industries={industries}
-        industry={industry}
-        onChangeIndustry={setIndustry}
-        purpose={purpose}
-        onChangePurpose={setPurpose}
-      />
+          <div className="order-4 2xl:order-none">
+            <CreationTargetSection
+              target={target}
+              otherRequests={otherRequests}
+              onChangeTarget={setTarget}
+              onChangeOtherRequests={setOtherRequests}
+            />
+          </div>
+        </div>
 
-      <CreationPromptTemplateSection
-        recommendedTemplateMetaName={recommendedTemplateMeta.name}
-        recommendedTemplateReason={recommendedTemplate.reason}
-        selectedPromptTemplate={selectedPromptTemplate}
-        selectedTemplateMeta={selectedTemplateMeta}
-        promptTemplateText={promptTemplateText}
-        onApplyRecommendedTemplate={applyRecommendedTemplate}
-        onChangePromptTemplate={handlePromptTemplateChange}
-        onRestorePromptTemplateText={restorePromptTemplateText}
-        onChangePromptTemplateText={handlePromptTemplateTextChange}
-      />
+        <div className="contents 2xl:flex 2xl:flex-col">
+          <div className="order-2 2xl:order-none">
+            <CreationProfileSection
+              contentTypes={contentTypes}
+              selectedType={selectedType}
+              onSelectType={setSelectedType}
+              industries={industries}
+              industry={industry}
+              onChangeIndustry={setIndustry}
+              purpose={purpose}
+              onChangePurpose={setPurpose}
+            />
+          </div>
 
-      <CreationTargetSection
-        target={target}
-        otherRequests={otherRequests}
-        onChangeTarget={setTarget}
-        onChangeOtherRequests={setOtherRequests}
-      />
+          <div className="order-3 2xl:order-none">
+            <CreationPromptTemplateSection
+              selectedPromptTemplate={selectedPromptTemplate}
+              onChangePromptTemplate={handlePromptTemplateChange}
+            />
+          </div>
+        </div>
+      </div>
 
       <button
         type="button"
         onClick={handleSubmit}
         disabled={isLoading}
-        className={`w-full text-white font-bold py-3.5 sm:py-4 rounded-xl transition flex items-center justify-center gap-2 mt-auto text-base sm:text-lg shadow-md ${
+        className={`w-full text-white font-bold py-3.5 sm:py-4 2xl:py-3 rounded-xl transition flex items-center justify-center mt-2 2xl:mt-1 text-base sm:text-lg shadow-md ${
           isLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
         }`}
       >
-        {isLoading ? (
-          '✨ 열심히 쓰는 중...'
-        ) : (
-          <>
-            <ArrowsClockwise weight="bold" className="text-xl" />
-            수정사항 반영하여 다시 생성
-          </>
-        )}
+        {isLoading ? '생성 중...' : '생성'}
       </button>
     </div>
   );

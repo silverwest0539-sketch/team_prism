@@ -33,16 +33,18 @@ const MyPage = () => {
   useEffect(() => {
     const modal = new URLSearchParams(location.search).get('modal');
     if (modal === 'notification') {
-      setActiveModal('notification');
+      showToast('알림 기능은 현재 미구현 상태입니다.', { type: 'info' });
+      navigate('/mypage', { replace: true });
     }
-  }, [location.search]);
+  }, [location.search, navigate]);
 
   const closeModal = () => {
     setActiveModal(null);
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    if (location.search) {
-      navigate('/mypage', { replace: true });
-    }
+  };
+
+  const handleNotificationNotice = () => {
+    showToast('알림 기능은 현재 미구현 상태입니다.', { type: 'info' });
   };
 
   // 닉네임 수정 함수
@@ -151,7 +153,7 @@ const MyPage = () => {
 
             {/* 2. 알림 설정 */}
             <div 
-              onClick={() => setActiveModal('notification')}
+              onClick={handleNotificationNotice}
               className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors"
             >
               <div>
@@ -197,7 +199,6 @@ const MyPage = () => {
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900">
                 {activeModal === 'account' && '계정 정보 설정'}
-                {activeModal === 'notification' && '알림 설정'}
                 {activeModal === 'withdraw' && '회원 탈퇴'}
               </h3>
               <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full transition">
@@ -271,20 +272,6 @@ const MyPage = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
-
-              {/* 2. 알림 설정 */}
-              {activeModal === 'notification' && (
-                <div className="space-y-4">
-                  {['마케팅 정보 수신', '분석 완료 알림', '이메일 뉴스레터'].map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-center py-3 border-b border-gray-50 last:border-0">
-                      <span className="text-gray-900">{item}</span>
-                      <div className={`w-11 h-6 rounded-full relative cursor-pointer transition ${idx === 1 ? 'bg-blue-500' : 'bg-gray-200'}`}>
-                        <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all shadow-sm ${idx === 1 ? 'left-5' : 'left-0.5'}`}></div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
 
