@@ -56,20 +56,34 @@ exports.getRisingTrends = async () => {
 };
 
 exports.getPlatformTrends = async (platform) => {
-  let targetKey = platform || 'youtube';
-  if (platform === 'x')        targetKey = 'x_trends';
-  if (platform === 'dcinside') targetKey = 'dcinside';
-  if (platform === 'natepan')  targetKey = 'nate';
+  const col = {
+    youtube:  'youtube_score',
+    fmkorea:  'fmkorea_score',
+    ruliweb:  'ruliweb_score',
+    natepan:  'nate_score',
+    theqoo:   'theqoo_score',
+    dcinside: 'dcinside_score',
+  }[platform] || 'youtube_score';
 
-  const { getLatestPlatformData } = require('../dataLoader');
-  const platformData = getLatestPlatformData(targetKey) || [];
-  if (platformData.length === 0) return [];
+  const [[{ maxDate }]] = await db.execute(
+    `SELECT MAX(stat_date) AS maxDate FROM KEYWORD_STATS`
+  );
 
-  return platformData.slice(0, 5).map((item, index) => ({
-    rank:    item.Rank || index + 1,
-    keyword: item.Keyword || '알 수 없음',
-    count:   item.Target_Day_Mentions || item.Target_Week_Mentions || item.Total_Mentions || item.Mentions || 0,
-    score:   item.Trend_Score || item.Score || 0,
+  const [rows] = await db.execute(
+    `SELECT k.keyword_name, s.mention_count, s.${col} AS platform_score
+     FROM TREND_KEYWORD k
+     JOIN KEYWORD_STATS s ON k.keyword_id = s.keyword_id
+     WHERE s.stat_date = ? AND s.${col} IS NOT NULL
+     ORDER BY s.${col} DESC
+     LIMIT 5`,
+    [maxDate]
+  );
+
+  return rows.map((item, index) => ({
+    rank:    index + 1,
+    keyword: item.keyword_name,
+    count:   item.mention_count,
+    score:   item.platform_score,
   }));
 };
 
@@ -136,10 +150,17 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
 
   // ── 2. 히스토리 (날짜별 언급량) ──────────────────────
   let statsSql = `
-    SELECT stat_date, mention_count, COALESCE(trend_score, 0) AS trend_score
+    SELECT stat_date, mention_count, COALESCE(trend_score, 0) AS trend_score,
+      COALESCE(youtube_count, 0) AS youtube_count,
+      COALESCE(fmkorea_count, 0) AS fmkorea_count,
+      COALESCE(ruliweb_count, 0) AS ruliweb_count,
+      COALESCE(nate_count, 0) AS nate_count,
+      COALESCE(theqoo_count, 0) AS theqoo_count,
+      COALESCE(dcinside_count, 0) AS dcinside_count
     FROM KEYWORD_STATS
     WHERE keyword_id = ?
   `;
+
   const statsParams = [keywordId];
 
   if (startDate) {
@@ -169,6 +190,12 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
       return {
         date: dateStr,
         mentions: row.mention_count || 0,
+        youtube: row.youtube_count || 0,
+        fmkorea: row.fmkorea_count || 0,
+        ruliweb: row.ruliweb_count || 0,
+        nate: row.nate_count || 0,
+        theqoo: row.theqoo_count || 0,
+        dcinside: row.dcinside_count || 0,
         score: row.trend_score || 0,
       };
     });
