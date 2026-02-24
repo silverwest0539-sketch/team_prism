@@ -69,12 +69,6 @@ async function main() {
   const keywordIdMap = {};
   kwRows.forEach(row => { keywordIdMap[row.keyword_name] = row.keyword_id; });
 
-  // trend_score 맵 생성 (keyword → Trend_Score)
-  const trendScoreMap = {};
-  keywordsData.forEach(item => {
-    trendScoreMap[item.Keyword] = item.Trend_Score || 0;
-  });
-
   console.log(`  ✅ TREND_KEYWORD: ${allKeywords.length}개 처리`);
 
   // ── 2. USAGE_EXAMPLE + KEYWORD_EXAMPLE bulk insert ─
@@ -122,22 +116,17 @@ async function main() {
 
   console.log(`  ✅ USAGE_EXAMPLE: ${exampleCount}개 INSERT`);
 
-  // ── 3. KEYWORD_STATS bulk upsert ──────────────────
-  // timeline 데이터: mention_count만, trend_score는 NULL
-  // TARGET_DATE 행: trend_score도 같이 저장
+  // ── 3. KEYWORD_STATS: timeline 전체 날짜 언급량 삽입 ──
   console.log('\n📌 KEYWORD_STATS INSERT 중...');
 
   const statsValues = [];
 
   for (const [keyword, dateCounts] of Object.entries(timelineData)) {
-    const keywordId  = keywordIdMap[keyword];
+    const keywordId = keywordIdMap[keyword];
     if (!keywordId) continue;
 
     for (const [dateStr, mentions] of Object.entries(dateCounts)) {
-      const statDate   = toSqlDate(dateStr);
-      // TARGET_DATE 날짜면 trend_score 포함, 나머지는 NULL
-      const trendScore = statDate === targetSqlDate ? (trendScoreMap[keyword] ?? null) : null;
-      statsValues.push([keywordId, statDate, mentions, trendScore]);
+      statsValues.push([keywordId, toSqlDate(dateStr), mentions, null]);
     }
   }
 
@@ -145,13 +134,30 @@ async function main() {
     await db.query(
       `INSERT INTO KEYWORD_STATS (keyword_id, stat_date, mention_count, trend_score) VALUES ?
        ON DUPLICATE KEY UPDATE
-         mention_count = VALUES(mention_count),
-         trend_score   = VALUES(trend_score)`,
+         mention_count = VALUES(mention_count)`,
       [statsValues]
     );
   }
 
   console.log(`  ✅ KEYWORD_STATS: ${statsValues.length}개 INSERT/UPDATE`);
+
+  // ── 4. trend_score: TARGET_DATE 행에만 별도 UPDATE ──
+  console.log('\n📌 TREND_SCORE UPDATE 중...');
+
+  let scoreCount = 0;
+  for (const item of keywordsData) {
+    const keywordId = keywordIdMap[item.Keyword];
+    if (!keywordId) continue;
+
+    await db.query(
+      `UPDATE KEYWORD_STATS SET trend_score = ?
+       WHERE keyword_id = ? AND stat_date = ?`,
+      [item.Trend_Score ?? null, keywordId, targetSqlDate]
+    );
+    scoreCount++;
+  }
+
+  console.log(`  ✅ TREND_SCORE: ${scoreCount}개 UPDATE`);
   console.log('\n✅ 전체 완료');
   process.exit(0);
 }

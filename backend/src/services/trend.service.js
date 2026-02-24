@@ -5,7 +5,6 @@ const { toISODate, extractWordCloudData } = require('../utils/formatters');
 let searchCache = {};
 
 exports.getRisingTrends = async () => {
-  // 가장 최근 날짜와 그 전날 조회
   const [[{ maxDate }]] = await db.execute(
     `SELECT MAX(stat_date) AS maxDate FROM KEYWORD_STATS`
   );
@@ -14,19 +13,20 @@ exports.getRisingTrends = async () => {
     [maxDate]
   );
 
-  // 최신 날짜 언급량 + 전날 언급량 조회 → 상승률 계산 후 정렬
   const [rows] = await db.execute(
     `SELECT
        k.keyword_name,
-       t.mention_count                          AS today_count,
-       COALESCE(y.mention_count, 0)             AS yesterday_count,
-       t.mention_count / COALESCE(y.mention_count, 1) AS growth_ratio
+       t.mention_count                                AS today_count,
+       COALESCE(y.mention_count, 0)                   AS yesterday_count,
+       t.mention_count / COALESCE(y.mention_count, 1) AS growth_ratio,
+       t.trend_score                                  AS trend_score
      FROM TREND_KEYWORD k
      JOIN KEYWORD_STATS t
        ON k.keyword_id = t.keyword_id AND t.stat_date = ?
      LEFT JOIN KEYWORD_STATS y
        ON k.keyword_id = y.keyword_id AND y.stat_date = ?
-     ORDER BY growth_ratio DESC
+     WHERE t.trend_score IS NOT NULL
+     ORDER BY t.trend_score DESC
      LIMIT 5`,
     [maxDate, prevDate]
   );
@@ -45,11 +45,12 @@ exports.getRisingTrends = async () => {
         : '0.0%';
 
     return {
-      rank:    index + 1,
-      keyword: item.keyword_name,
-      count:   todayCount,
-      change:  changeStr,
-      isUp:    isUp ? true : (isDown ? false : null),
+      rank:       index + 1,
+      keyword:    item.keyword_name,
+      count:      todayCount,
+      change:     changeStr,
+      isUp:       isUp ? true : (isDown ? false : null),
+      trendScore: item.trend_score,
     };
   });
 };
@@ -96,19 +97,9 @@ exports.getAllTrends = async (keyword, date) => {
   return rows;
 };
 
-const API_KEYS = process.env.YOUTUBE_API_KEYS ? process.env.YOUTUBE_API_KEYS.split(',') : [];
-console.log(`🔑 로드된 API 키 개수: ${API_KEYS.length}개`);
-let currentKeyIndex = 0;
-
-const getActiveKey = () => API_KEYS[currentKeyIndex];
-const rotateKey = () => {
-  currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-};
-
 exports.getAnalysis = async (keyword, startDate, endDate) => {
   const now = Date.now();
 
-  // 캐시 확인
   if (!startDate && !endDate && searchCache[keyword] && (now - searchCache[keyword].timestamp < 60 * 60 * 1000)) {
     console.log(`📦 [Cache] 캐시된 분석 데이터 반환: ${keyword}`);
     return searchCache[keyword].data;
@@ -124,17 +115,19 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
   const keywordId   = kwRows[0].keyword_id;
   const keywordName = kwRows[0].keyword_name;
 
-  // 가장 최근 날짜의 언급량
+  // 가장 최근 날짜의 언급량 + 트렌드 스코어
   const [latestStats] = await db.execute(
-    `SELECT mention_count FROM KEYWORD_STATS
+    `SELECT mention_count, COALESCE(trend_score, 0) AS trend_score
+     FROM KEYWORD_STATS
      WHERE keyword_id = ? ORDER BY stat_date DESC LIMIT 1`,
     [keywordId]
   );
-  const totalMentions = latestStats.length > 0 ? latestStats[0].mention_count : 0;
+  const totalMentions = latestStats.length > 0 ? latestStats[0].mention_count  : 0;
+  const trendScore    = latestStats.length > 0 ? latestStats[0].trend_score    : 0;
 
   // ── 2. 히스토리 (날짜별 언급량) ──────────────────────
   let statsSql = `
-    SELECT stat_date, mention_count
+    SELECT stat_date, mention_count, COALESCE(trend_score, 0) AS trend_score
     FROM KEYWORD_STATS
     WHERE keyword_id = ?
   `;
@@ -151,89 +144,47 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
   statsSql += ` ORDER BY stat_date ASC`;
 
   const [statsRows] = await db.execute(statsSql, statsParams);
-  
-  const history = statsRows.map(row => {
-    let dateStr = "";
-    if (row.stat_date) {
-      // 시간대(Timezone) 문제 해결: 한국 시간에 맞게 날짜 오프셋 보정
-      const dateObj = new Date(row.stat_date);
-      const offset = dateObj.getTimezoneOffset() * 60000;
-      const localDate = new Date(dateObj.getTime() - offset);
-      
-      // 프론트엔드가 요구하는 'YYYYMMDD' 형식으로 변환
-      dateStr = localDate.toISOString().slice(0, 10).replace(/-/g, '');
-    }
-
-    return {
-      date: dateStr,
-      mentions: row.mention_count || 0,
-    };
-  });
+  const history = statsRows.map(row => ({
+    date:       row.stat_date.toISOString().slice(0, 10).replace(/-/g, ''),
+    mentions:   row.mention_count,
+    trendScore: row.trend_score,
+  }));
 
   // ── 3. 댓글 예시 ─────────────────────────────────────
-  let commentsSql = `
-    SELECT u.platform, u.url, u.content, u.collected_date
-    FROM USAGE_EXAMPLE u
-    JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
-    WHERE ke.keyword_id = ?
-  `;
-  const commentsParams = [keywordId];
+  const [exampleRows] = await db.execute(
+    `SELECT u.platform, u.url, u.content
+     FROM USAGE_EXAMPLE u
+     JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
+     WHERE ke.keyword_id = ?`,
+    [keywordId]
+  );
 
-  // 프론트엔드에서 넘겨준 날짜로 댓글도 필터링
-  if (startDate) {
-    commentsSql += ` AND u.collected_date >= ?`;
-    commentsParams.push(startDate);
-  }
-  if (endDate) {
-    commentsSql += ` AND u.collected_date <= ?`;
-    commentsParams.push(endDate);
-  }
-
-  // 최신순 정렬
-  commentsSql += ` ORDER BY u.collected_date DESC`;
-
-  const [exampleRows] = await db.execute(commentsSql, commentsParams);
-
-  const parsedComments = exampleRows.map(row => {
-    // DB의 날짜 데이터를 YYYY-MM-DD 형식의 문자열로 안전하게 변환
-    let formattedDate = null;
-    if (row.collected_date) {
-      const dateObj = new Date(row.collected_date);
-      // 유효한 날짜인지 체크
-      if (!isNaN(dateObj)) {
-        // 한국 시간(KST)을 고려한 오프셋 적용 후 변환 (선택 사항이나 권장됨)
-        const offset = dateObj.getTimezoneOffset() * 60000;
-        const localDate = new Date(dateObj.getTime() - offset);
-        formattedDate = localDate.toISOString().split('T')[0];
-      }
-    }
-
-    return {
-      source: row.platform,
-      text:   row.content,
-      link:   row.url,
-      date:   formattedDate, // 추가된 날짜 데이터
-    };
-  });
+  const parsedComments = exampleRows.map(row => ({
+    source: row.platform,
+    text:   row.content,
+    link:   row.url,
+  }));
 
   const wordCloudData = extractWordCloudData(parsedComments, keyword);
 
   // ── 4. 유튜브 영상 검색 ───────────────────────────────
+  const API_KEYS = process.env.YOUTUBE_API_KEYS ? process.env.YOUTUBE_API_KEYS.split(',') : [];
+  let currentKeyIndex = 0;
+  const getActiveKey = () => API_KEYS[currentKeyIndex];
+  const rotateKey    = () => { currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length; };
+
   let relatedVideos = [];
 
   if (API_KEYS.length > 0 && keyword) {
     const fetchYoutubeWithRotation = async (retryCount = 0) => {
       const currentKey = getActiveKey();
-
       try {
-        const threeDaysAgo = new Date();
-        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
         const searchParams = {
           part: 'snippet', q: keyword, type: 'video',
-          maxResults: 3, key: currentKey, regionCode: 'KR', order: 'viewCount', publishedAfter: threeDaysAgo.toISOString()
+          maxResults: 3, key: currentKey, regionCode: 'KR', order: 'date',
         };
-        // if (startDate) searchParams.publishedAfter  = toISODate(startDate);
-        // if (endDate)   searchParams.publishedBefore = toISODate(endDate, true);
+        if (startDate) searchParams.publishedAfter  = toISODate(startDate);
+        if (endDate)   searchParams.publishedBefore = toISODate(endDate, true);
 
         const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', { params: searchParams });
         const videoIds  = searchRes.data.items.map(i => i.id.videoId).join(',');
@@ -246,7 +197,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
           id:           item.id,
           title:        item.snippet.title,
           channel:      item.snippet.channelTitle,
-          views:        parseInt(item.statistics.viewCount || 0),
+          views:        item.statistics.viewCount,
           thumbnail:    item.snippet.thumbnails.medium.url,
           publish_time: item.snippet.publishedAt,
         }));
@@ -280,6 +231,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
     found:         true,
     keyword:       keywordName,
     totalMentions,
+    score:         trendScore,
     history,
     comments:      parsedComments,
     wordCloud:     wordCloudData,
