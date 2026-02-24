@@ -167,6 +167,8 @@ const CommentItem = ({ comment, globalIndex, keyword }) => {
     }
   }, [comment.text]);
 
+  const formattedDate = comment.date ? new Date(comment.date).toISOString().split('T')[0] : '';
+
   return (
     <div className="group">
       <div className="flex justify-between items-center mb-1">
@@ -174,10 +176,11 @@ const CommentItem = ({ comment, globalIndex, keyword }) => {
           반응 {globalIndex}{' '}
           <span className="text-xs font-normal text-gray-400 ml-1">({comment.source})</span>
         </span>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Star size={14} className="text-gray-400 hover:text-yellow-400 cursor-pointer" />
-          <Copy size={14} className="text-gray-400 hover:text-indigo-600 cursor-pointer" />
-        </div>
+        {formattedDate && (
+            <span className="text-xs text-gray-400">
+              {formattedDate}
+            </span>
+          )}
       </div>
 
       <div className="relative p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent hover:border-indigo-100 hover:bg-indigo-50/30 transition-all shadow-sm">
@@ -223,12 +226,23 @@ const AnalysisPage = () => {
   const keyword = searchParams.get('keyword');
   const navigate = useNavigate();
 
+  const getFormattedDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const initialToday = new Date();
+  const initialYesterday = new Date(initialToday);
+  initialYesterday.setDate(initialYesterday.getDate() - 1);
+
   // 기존 State
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(getFormattedDate(initialYesterday));
+  const [endDate, setEndDate] = useState(getFormattedDate(initialToday));
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [news, setNews] = useState([]);
   const [aiSummary, setAiSummary] = useState('');
@@ -280,14 +294,21 @@ const AnalysisPage = () => {
   };
 
   useEffect(() => {
+    if (!keyword) return;
+
     setAiSummary(null);
     setIsAiLoading(true);
-    setStartDate('');
-    setEndDate('');
+    const todayDate = getFormattedDate(new Date());
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayDate = getFormattedDate(yesterday);
+
+    setStartDate(yesterdayDate);
+    setEndDate(todayDate);
     setCurrentPage(1);
     setIsScrapped(false);
-    fetchData('', '');
-    fetchAiSummary(keyword, '', '');
+    fetchData(yesterdayDate, todayDate);
+    fetchAiSummary(keyword, yesterdayDate, todayDate);
   }, [keyword]);
 
   const fetchAiSummary = async (targetKeyword, start, end) => {
@@ -321,11 +342,17 @@ const AnalysisPage = () => {
   };
 
   const handleDateReset = () => {
-    setStartDate('');
-    setEndDate('');
+    const todayDate = getFormattedDate(new Date());
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayDate = getFormattedDate(yesterday);
+
+    setStartDate(yesterdayDate);
+    setEndDate(todayDate);
     setCurrentPage(1);
-    fetchData('', '');
-    fetchAiSummary(keyword, '', '');
+    
+    fetchData(yesterdayDate, todayDate);
+    fetchAiSummary(keyword, yesterdayDate, todayDate);
   };
 
   const handleScrapToggle = () => {
@@ -372,14 +399,14 @@ const AnalysisPage = () => {
     };
   }, [data, startDate, endDate, selectedPlatform]);
 
-  // [NEW] ★ 메인 차트용 데이터 가공 (최근 7일만 자르기)
+  // 메인 차트용 데이터 가공 (최근 7일만 자르기)
   const mainChartData = useMemo(() => {
     const history = filteredData?.history || [];
     // 데이터가 7개보다 많으면 뒤에서 7개만 자름, 아니면 그대로 사용
     return history.length > 7 ? history.slice(-7) : history;
   }, [filteredData]);
 
-  // [NEW] ★ 더보기 버튼 표시 여부
+  // 더보기 버튼 표시 여부
   const showMoreChartBtn = (filteredData?.history?.length || 0) > 7;
 
 
@@ -568,7 +595,7 @@ const AnalysisPage = () => {
         {/* 차트 영역 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:h-80 w-full">
           
-          {/* [NEW] ★ 언급량 추이 차트 (최근 7일 + 더보기 버튼) */}
+          {/* 언급량 추이 차트 (최근 7일 + 더보기 버튼) */}
           <div className="card lg:col-span-1 flex flex-col min-h-[280px] lg:min-h-0 relative">
             <div className="card-header flex justify-between items-center">
               <h3 className="section-title">
@@ -849,7 +876,7 @@ const AnalysisPage = () => {
         </div>
       )}
 
-      {/* [NEW] ★ 차트 확대 모달 */}
+      {/* 차트 확대 모달 */}
       {isChartModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden">

@@ -151,25 +151,70 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
   statsSql += ` ORDER BY stat_date ASC`;
 
   const [statsRows] = await db.execute(statsSql, statsParams);
-  const history = statsRows.map(row => ({
-    date:     row.stat_date.toISOString().slice(0, 10).replace(/-/g, ''),
-    mentions: row.mention_count,
-  }));
+  
+  const history = statsRows.map(row => {
+    let dateStr = "";
+    if (row.stat_date) {
+      // 시간대(Timezone) 문제 해결: 한국 시간에 맞게 날짜 오프셋 보정
+      const dateObj = new Date(row.stat_date);
+      const offset = dateObj.getTimezoneOffset() * 60000;
+      const localDate = new Date(dateObj.getTime() - offset);
+      
+      // 프론트엔드가 요구하는 'YYYYMMDD' 형식으로 변환
+      dateStr = localDate.toISOString().slice(0, 10).replace(/-/g, '');
+    }
+
+    return {
+      date: dateStr,
+      mentions: row.mention_count || 0,
+    };
+  });
 
   // ── 3. 댓글 예시 ─────────────────────────────────────
-  const [exampleRows] = await db.execute(
-    `SELECT u.platform, u.url, u.content
-     FROM USAGE_EXAMPLE u
-     JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
-     WHERE ke.keyword_id = ?`,
-    [keywordId]
-  );
+  let commentsSql = `
+    SELECT u.platform, u.url, u.content, u.collected_date
+    FROM USAGE_EXAMPLE u
+    JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
+    WHERE ke.keyword_id = ?
+  `;
+  const commentsParams = [keywordId];
 
-  const parsedComments = exampleRows.map(row => ({
-    source: row.platform,
-    text:   row.content,
-    link:   row.url,
-  }));
+  // 프론트엔드에서 넘겨준 날짜로 댓글도 필터링
+  if (startDate) {
+    commentsSql += ` AND u.collected_date >= ?`;
+    commentsParams.push(startDate);
+  }
+  if (endDate) {
+    commentsSql += ` AND u.collected_date <= ?`;
+    commentsParams.push(endDate);
+  }
+
+  // 최신순 정렬
+  commentsSql += ` ORDER BY u.collected_date DESC`;
+
+  const [exampleRows] = await db.execute(commentsSql, commentsParams);
+
+  const parsedComments = exampleRows.map(row => {
+    // DB의 날짜 데이터를 YYYY-MM-DD 형식의 문자열로 안전하게 변환
+    let formattedDate = null;
+    if (row.collected_date) {
+      const dateObj = new Date(row.collected_date);
+      // 유효한 날짜인지 체크
+      if (!isNaN(dateObj)) {
+        // 한국 시간(KST)을 고려한 오프셋 적용 후 변환 (선택 사항이나 권장됨)
+        const offset = dateObj.getTimezoneOffset() * 60000;
+        const localDate = new Date(dateObj.getTime() - offset);
+        formattedDate = localDate.toISOString().split('T')[0];
+      }
+    }
+
+    return {
+      source: row.platform,
+      text:   row.content,
+      link:   row.url,
+      date:   formattedDate, // 추가된 날짜 데이터
+    };
+  });
 
   const wordCloudData = extractWordCloudData(parsedComments, keyword);
 
