@@ -296,3 +296,20 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
   
     return finalResponse;
   };
+
+  // ── 5. 검색어 자동완성 (빠른 완성) ───────────────────────────────
+exports.getAutocomplete = async (prefix) => {
+  if (!prefix) return [];
+  
+  // 입력한 단어가 포함된(LIKE %단어%) 키워드를 최대 10개까지 조회
+  const [rows] = await db.execute(
+    `SELECT keyword_name 
+     FROM TREND_KEYWORD 
+     WHERE keyword_name LIKE ? 
+     ORDER BY keyword_name ASC 
+     LIMIT 10`,
+    [`%${prefix}%`]
+  );
+  
+  return rows.map(row => row.keyword_name);
+};

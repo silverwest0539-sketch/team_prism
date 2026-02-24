@@ -44,3 +44,15 @@ exports.getAnalysis = async (req, res) => {
     res.status(500).json({ error: 'Server Error' });
   }
 };
+
+exports.getAutocomplete = async (req, res) => {
+  try {
+    const { q } = req.query;
+    // trendService의 getAutocomplete 호출 (trendService가 상단에 require 되어 있어야 함)
+    const keywords = await trendService.getAutocomplete(q);
+    res.json(keywords);
+  } catch (error) {
+    console.error("❌ /api/trends/autocomplete 에러:", error);
+    res.status(500).json({ error: '자동완성 조회 실패' });
+  }
+};
