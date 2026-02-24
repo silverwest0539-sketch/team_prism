@@ -1,70 +1,88 @@
 const db = require('../database');
-const { findKeywordOverAll } = require('../dataLoader');
 
 // 1. 스크랩 목록 조회
 exports.getScrapsByUser = async (email) => {
-  const [rows] = await db.execute(
-    'SELECT * FROM USER_KEYWORD_SCRAP WHERE user_email = ? ORDER BY scrapped_at DESC', 
-    [email]
-  );
+  // DB JOIN을 사용하여 스크랩한 날짜와 키워드 이름을 한 번에 가져옵니다.
+  const [rows] = await db.execute(`
+    SELECT s.scrapped_at, k.keyword_name 
+    FROM USER_KEYWORD_SCRAP s
+    JOIN TREND_KEYWORD k ON s.keyword_id = k.keyword_id
+    WHERE s.user_email = ?
+    ORDER BY s.scrapped_at DESC
+  `, [email]);
   
-  return rows.map(row => {
-    const keywordInfo = findKeywordOverAll(row.keyword_id) || {};
-    return {
-      keyword: row.keyword_id, 
-      rank: keywordInfo.Rank || '?',
-      type: keywordInfo.type || 'trend',
-      desc: keywordInfo.desc || '요약 정보 없음',
-      savedAt: row.scrapped_at,
-      tags: [], 
-      memo: ''  
-    };
-  });
+  return rows.map(row => ({
+    keyword: row.keyword_name, 
+    rank: '-', // 실시간 랭킹은 별도 집계 필요
+    type: 'trend',
+    desc: '급상승 트렌드',
+    savedAt: row.scrapped_at,
+    tags: [], 
+    memo: ''  
+  }));
 };
 
 // 2. 스크랩 추가
-exports.addScrap = async (email, keyword) => {
-  // 1. 키워드 테이블에서 '발렌타인'에 해당하는 숫자 ID를 찾습니다.
-  // 🚨 주의: 'KEYWORDS' 테이블 이름과 'name' 컬럼명은 실제 DB에 맞게 수정해 주세요!
+exports.addScrap = async (email, keywordName) => {
+  // 1. 프론트에서 보낸 문자열(예: '봄동비빔밥')로 실제 DB의 keyword_id(숫자)를 찾음
   const [keywordRows] = await db.execute(
-    'SELECT id FROM KEYWORDS WHERE name = ?', 
-    [keyword]
+    'SELECT keyword_id FROM TREND_KEYWORD WHERE keyword_name = ?', 
+    [keywordName]
   );
   
   if (keywordRows.length === 0) {
-    // DB에 해당 키워드가 아예 없는 경우 에러 처리
     throw new Error("DB에 해당 키워드가 존재하지 않습니다.");
   }
   
-  const realKeywordId = keywordRows[0].id; // 찾아낸 실제 숫자 ID (예: 15)
+  const realKeywordId = keywordRows[0].keyword_id;
 
-  // 2. 찾아낸 숫자 ID를 사용하여 스크랩 중복 검사 및 추가를 진행합니다.
+  // 2. 중복 검사 후 스크랩 저장
   const [exists] = await db.execute(
     'SELECT * FROM USER_KEYWORD_SCRAP WHERE user_email = ? AND keyword_id = ?', 
-    [email, realKeywordId] // keyword 대신 realKeywordId 사용
+    [email, realKeywordId]
   );
   
   if (exists.length === 0) {
     await db.execute(
       'INSERT INTO USER_KEYWORD_SCRAP (user_email, keyword_id, scrapped_at) VALUES (?, ?, NOW())', 
-      [email, realKeywordId] // keyword 대신 realKeywordId 사용
+      [email, realKeywordId]
     );
   }
 };
 
 // 3. 스크랩 단일 삭제
-exports.deleteScrap = async (email, keyword) => {
+exports.deleteScrap = async (email, keywordName) => {
+  // 1. 문자열로 숫자 ID 찾기
+  const [keywordRows] = await db.execute(
+    'SELECT keyword_id FROM TREND_KEYWORD WHERE keyword_name = ?', 
+    [keywordName]
+  );
+  
+  if (keywordRows.length === 0) return; // 지울 게 없으면 그냥 종료
+  const realKeywordId = keywordRows[0].keyword_id;
+
+  // 2. 삭제 진행
   await db.execute(
     'DELETE FROM USER_KEYWORD_SCRAP WHERE user_email = ? AND keyword_id = ?', 
-    [email, keyword]
+    [email, realKeywordId]
   );
 };
 
-// 4. 스크랩 여부 확인
-exports.checkScrap = async (email, keyword) => {
+// 4. 스크랩 여부 확인 (별 아이콘 노란색 표시용)
+exports.checkScrap = async (email, keywordName) => {
+  // 1. 문자열로 숫자 ID 찾기
+  const [keywordRows] = await db.execute(
+    'SELECT keyword_id FROM TREND_KEYWORD WHERE keyword_name = ?', 
+    [keywordName]
+  );
+  
+  if (keywordRows.length === 0) return false;
+  const realKeywordId = keywordRows[0].keyword_id;
+
+  // 2. 스크랩 여부 체크
   const [rows] = await db.execute(
     'SELECT * FROM USER_KEYWORD_SCRAP WHERE user_email = ? AND keyword_id = ?', 
-    [email, keyword]
+    [email, realKeywordId]
   );
   return rows.length > 0;
 };
