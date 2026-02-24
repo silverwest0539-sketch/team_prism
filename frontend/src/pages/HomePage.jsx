@@ -1,7 +1,7 @@
 // src/pages/HomePage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom'
-import { PlayCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PlayCircle, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import SearchBar from '../components/common/SearchBar';
 import HeaderActions from '../components/common/HeaderActions';
 import SummaryModal from '../components/home/SummaryModal';
@@ -10,6 +10,7 @@ import { toApiUrl } from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 import { Star } from '@phosphor-icons/react';
+
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -28,6 +29,17 @@ const HomePage = () => {
   const [selectedKeyword, setSelectedKeyword] = useState(null);
   const [communityPosts, setCommunityPosts] = useState([]);
   const [selectedComm, setSelectedComm] = useState('theqoo');
+
+    // [추가] 트렌드 더보기 모달 상태
+  const [isTrendModalOpen, setIsTrendModalOpen] = useState(false);
+
+  // [추가] 모달용 Top 20 더미 데이터 (실제 API 연동 시 이 부분을 API 데이터로 대체)
+  const top20Keywords = Array.from({ length: 20 }, (_, i) => ({
+    rank: i + 1,
+    keyword: i < 5 ? risingKeywords[i]?.keyword || `트렌드 키워드 ${i+1}` : `순위권 키워드 ${i+1}`,
+    isUp: i % 3 === 0, // 임의의 상승/하락 표시
+    change: i % 3 === 0 ? `+${(20-i)*10}%` : i % 3 === 1 ? `-${i*5}%` : '-'
+  }));
 
   const scrollRef = useRef(null);
 
@@ -151,12 +163,20 @@ const HomePage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-10">
         
+        
         {/* 카드 1: 트렌드 급상승 키워드 */}
         <div className="card-soft">
-          <div className="mb-4">
-            <h2 className="section-title-lg border-b-2 border-transparent hover:border-black transition-colors">
+          {/* [수정됨] 헤더를 flex로 감싸서 제목과 더보기 버튼 배치 */}
+          <div className="flex justify-between items-end mb-4 border-b pb-2 border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">
               트렌드 일일 급상승 키워드 Top 5
             </h2>
+            <button 
+              onClick={() => setIsTrendModalOpen(true)}
+              className="text-xs text-gray-400 hover:text-indigo-600 font-medium flex items-center gap-1 transition-colors"
+            >
+              더보기 <Plus size={12} />
+            </button>
           </div>
           
           <ul className="flex flex-col gap-2">
@@ -411,7 +431,96 @@ const HomePage = () => {
         onClose={closeModal} 
         data={selectedKeyword} 
       />
-    </div>
+
+            {/* --- 트렌드 Top 20 모달 추가 --- */}
+      {isTrendModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            
+            {/* 모달 헤더 */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  🔥 실시간 트렌드 급상승 Top 20
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  현재 가장 화제가 되고 있는 키워드 전체 순위입니다.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsTrendModalOpen(false)}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* 모달 바디 (2단 그리드) */}
+            <div className="overflow-y-auto p-6 bg-gray-50/50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                
+                {/* 왼쪽 컬럼 (1위 ~ 10위) */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-gray-400 mb-3 pl-2">1위 ~ 10위</h4>
+                  {top20Keywords.slice(0, 10).map((item) => (
+                    <div 
+                      key={item.rank}
+                      onClick={() => {
+                        setIsTrendModalOpen(false); // 모달 닫고
+                        // 기존 모달 열기 로직 호출 (필요시)
+                        /* openModal({ ... }) */
+                      }}
+                      className="group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className={`text-lg font-bold w-6 text-center ${item.rank <= 3 ? 'text-indigo-600' : 'text-gray-500'}`}>
+                          {item.rank}
+                        </span>
+                        <span className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                          {item.keyword}
+                        </span>
+                      </div>
+                      <span className={`text-xs font-bold ${item.isUp ? 'text-red-500' : item.change === '-' ? 'text-gray-300' : 'text-blue-500'}`}>
+                        {item.change}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 오른쪽 컬럼 (11위 ~ 20위) */}
+                <div className="space-y-2 mt-6 md:mt-0">
+                  <h4 className="text-sm font-bold text-gray-400 mb-3 pl-2">11위 ~ 20위</h4>
+                  {top20Keywords.slice(10, 20).map((item) => (
+                    <div 
+                      key={item.rank}
+                      onClick={() => {
+                         setIsTrendModalOpen(false);
+                         /* openModal({ ... }) */
+                      }}
+                      className="group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="text-lg font-bold w-6 text-center text-gray-400">
+                          {item.rank}
+                        </span>
+                        <span className="font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">
+                          {item.keyword}
+                        </span>
+                      </div>
+                      <span className={`text-xs font-bold ${item.isUp ? 'text-red-500' : item.change === '-' ? 'text-gray-300' : 'text-blue-500'}`}>
+                        {item.change}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div> // HomePage 끝나는 태그
   );
 };
 
