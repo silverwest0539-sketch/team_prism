@@ -502,7 +502,7 @@ const AnalysisPage = () => {
 
   const todayStr = getFormattedDate(new Date()).replace(/-/g, ''); // 예: "20260224"
   const todayData = filteredData?.history?.find(h => h.date === todayStr);
-  const todayScore = todayData?.score || 0;
+  const todayScore = Math.round(todayData?.score || 0);
 
   // ---------------- Render ----------------
   return (
