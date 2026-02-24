@@ -1,73 +1,177 @@
 [
   {
     "Rank": 1,
-    "Keyword": "봄동비빔밥",
+    "Keyword": "아이폰",
     "Trend_Score": 100.0,
-    "Target_Day_Mentions": 16,
+    "Trend_Score_Raw": 3088.1762,
+    "Target_Day_Mentions": 35,
     "Prev_Day_Mentions": 1,
-    "Growth_Ratio": 16.0,
-    "Growth_Percentage": "+1500.0%",
-    "Entropy": 0.544,
+    "Growth_Ratio": 35.0,
+    "Growth_Percentage": "+3400.0%",
+    "Z_Score": 24.042,
+    "Title_Count": 1,
+    "Entropy": 0.144,
     "Platforms": 3,
     "Date_Range": "20260222→20260223",
     "Platform_List": [
+      "dcinside",
       "ruliweb",
-      "theqoo",
-      "youtube"
+      "theqoo"
     ],
     "Examples": {
-      "youtube": [
+      "dcinside": [
         {
-          "comment": "봄동비빔밥 계후안넣은거 ㄹㅇ 근본 쩝쩝박사",
-          "link": "https://www.youtube.com/watch?v=YdBYVJqy4jU"
+          "comment": "협력(하청)제작을 누가 인정하냐?대만이 만드는 아이폰/아이패드를 대만 브랜드라고 함?",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407445&_dcbest=1&page=1"
         },
         {
-          "comment": "최근 제일 만족스러운 유행 ㅋㅋ 봄동비빔밥이 유행이라 어머니랑 같이 만들고 맛있게 먹어서 너무 기분 좋음",
-          "link": "https://www.youtube.com/watch?v=YdBYVJqy4jU"
+          "comment": "저거 실성능은 따잇함 ㅋㅋ실제로 게임 돌리면 프레임응 아이폰이 더 잘나옴 ㅋㅋ아마도 밴치돌리면 오버해서 성능내게 하는게 아닐까 싶음 ㅋㅋ",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
         },
         {
-          "comment": "계란후라이나 대패삼겹살 넣고 비빈 봄동비빔밥 말고 이게 찐이지!!!!!!!",
-          "link": "https://www.youtube.com/watch?v=YdBYVJqy4jU"
+          "comment": "요즘은 아이폰이 제일 프레임 불안정함",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
         },
         {
-          "comment": "봄동비빔밥에 냉이된장국 먹고프다ㅠㅅㅠ배고파요",
-          "link": "https://www.youtube.com/watch?v=YdBYVJqy4jU"
+          "comment": "이거 믿고 갤럭시 사는 바보짓은 하지 말아라아이폰 사서 사람들하고 소통하면서 살아 ㅋㅋㅋㅋㅋ",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
         },
         {
-          "comment": "민와와 q&a 리스트 쫙 낋여옴 1. 기본 정보 (나이, 스펙, 가족관계 ..) 2. 환승연애 4 출연을 결심하게 된 이유 3. 환승연애 4 에서 본인이 입었던 룩중에 최애는? 4. 출연자들과의 근황 5. 본인은 앞머리 있/없 중 뭘 좋아하는지 6. 유튜브 하면서 가장 해보고 싶은 것 7. 유튜브 구독자명 (팬애칭) 만들 생각이 있는지 8. 유튜브 편집자분을 따로 구하신건지 9. 여행을 자주 가시는 것 같은데, 가본 여행지 중 가장 좋았던 곳 10. 올해 꼭 이루고 싶은 새해 목표 11. 올해 새해 첫 곡으로 어떤 노래를 들었는지 12. 환승연애 4, 인스타 게시물 등 자주 사용하는 옷 구매처는 어디인지 13. 민경의 렌시스 최애 렌즈는 무엇인지 14. 어떻게 다른 인플루언서 분들과의 친분을 쌓았는지 (솔지 3 하정님, 환연 2 나연님, 환연 3 유정님, 솔지 5 하은님 ..) 15. 사진이 잘 나오는 비결은 무엇인지 16. 평소 옷 코디 어떻게 하는지 17. 옷 잘 입는 비결은 무엇인지 18. 예고를 가게 된 이유 19. 무용으로 진로를 선택한 이유 20. 대학 입시는 어땠는지 21. 대전 사투리 쓴다고 느끼는지 (실제로 쓰는지) 22. 좋아하는 연예인 (롤모델) 23. 고향이 대전이어서 대전예고에 간건지 24. 출연하고 싶은 유튜브 채널 25. 출연하고 싶은 티비 프로그램 26. 평소에 즐겨보는 영상, 프로그램 27. 언제 자신의 인기를 실감하는지 28. 어떤 노래 장르를 많이 듣는지 29. 자신과 잘맞는 사람 유형 (성격 등) 30. 퍼스널컬러가 무엇인지 31. 잘 쓰고 있는 화장품은 무엇인지 32. 단발 해본 적 있는지 (앞으로 할 예정인지) 33. 머리 고데기 (펌) 와 생머리 중 자신이 더 선호하는 스타일은 무엇인지 34. 시도해 보고 싶은 스타일이 있는지, 있다면 무엇인지 35. 좋아하는 가수, 배우는 어느 분인지 36. 제일 좋아하는 영화, 드라마가 무엇인지 37. 대학원 생활 궁금해요 (나중에 스터디윗미도 낋여와조요..) 38. 요즘 유행하는 음식 먹어봤는지 (젤리 얼먹, 봄동비빔밥, 두쫀쿠) 39. 곽민경 사랑해",
-          "link": "https://www.youtube.com/watch?v=JCXZnoXx6zo"
+          "comment": "아 그래요? 흥미로운 얘기네요 훠훠훠 아이폰 주문 딸깍",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "2025 글로벌 판매량 순위 1위부터 4위까지 아이폰에게 따이며",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "근데 저러고 좀있음 아이폰 18이 와서 따지 않나암튼 실사용기 나오기 전까진 기다려보는게 맞을것 같은데",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "아이폰 XX 까지 숨 참는다",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "이젠 아이폰은 이길진 몰라도 중국폰에 발려",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "아이폰이 벤치점수 더 높은게 의미가 있긴하냐? 맥이 윈도우보다 벤치점수 더 높다고 맥 쓸거임?",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "아이폰 왜 떨어졌노",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "아이폰은 이제 영포티폰 됐자나 ㅋㅋ",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "이번에 디램 가격 올라서 출고가 올린다고 언플하던데 이것도 웃김 ㅋㅋㅋ올해 애플에 납품하는 디램 ddr5 납품가 5달러인 거 이미 다 뽀록났는데, 디램이 비싸서 출고가 올린다 타령 ㅋㅋ 정작 애플은 아이폰 출고가 동결하는데 카메라도, 디스플레이도 구린거 쓰면서 가격 올리는 건 양심이 있나 ㅋㅋ",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "S26이면 아이폰18이랑 비교해야되는 거아님?",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "와아 아이폰18 언제나옴?",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "아이폰 게 섯거라 ~~!!!",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "아이폰은 서클투서치 안되는거냐 바로번역 진짜 불편하다",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "꼬우면 니들도 넣던가 ㅋㅋㅋㅋㅋㅋㅋㅋ 아이폰 내 부품 대다수가 어차피 다 외주인데 ㅋㅋㅋ",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
         }
       ],
       "ruliweb": [
         {
-          "comment": "요새 트위터에 한창 핫한 음식이 이 봄동비빔밥 양푼으로 비벼서 달걀후라이 3,4개도 넣고 참기름 듬뿍뿌리는 폭력적인 사진들도 돌아다님....",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203520?page=5&m=humor&t=now"
-        }
-      ],
-      "theqoo": [
-        {
-          "comment": "두릅 맛있대서 먹어봤는데 취향은 아니였슨.... 봄동비빔밥 궁금하다",
-          "link": "https://theqoo.net/hot/4102665258?page=4"
-        },
-        {
-          "comment": "봄동 유행인이유 트위터하는 내 체감으로는 두쫀쿠 유행 너무 심하니까 누가 두쫀쿠 말고 건강한 봄동비빔밥이나 유행했으면 좋겠다->이거 알티타서 강호동봄동비빔밥짤도 올라오고 맛있단 반응+먹계들이 봄동비빔밥 사진 올리고 유튜브 요리채널들이 올리고 여기저기서 유행 이렇게 두쫀쿠가 너무 심해서 다른 유행좀 만들자해서 유행탄 느낌임ㅋㅋ",
-          "link": "https://theqoo.net/hot/4102629974?page=4"
-        },
-        {
-          "comment": "트위터 인스타만 들어가도 죄다 봄동비빔밥 먹음...",
-          "link": "https://theqoo.net/hot/4102629974?page=4"
+          "comment": "아이폰이라니...",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203787?page=2&m=humor&t=now"
         }
       ]
     }
   },
   {
     "Rank": 2,
+    "Keyword": "노시",
+    "Trend_Score": 30.37,
+    "Trend_Score_Raw": 937.9046,
+    "Target_Day_Mentions": 13,
+    "Prev_Day_Mentions": 0,
+    "Growth_Ratio": 13.0,
+    "Growth_Percentage": "+1200.0%",
+    "Z_Score": 9.192,
+    "Title_Count": 3,
+    "Entropy": 0.383,
+    "Platforms": 3,
+    "Date_Range": "20260222→20260223",
+    "Platform_List": [
+      "dcinside",
+      "fmkorea",
+      "ruliweb"
+    ],
+    "Examples": {
+      "dcinside": [
+        {
+          "comment": "폰세 와이스빨때문에 2위한건데 지들이 잘한줄아네ㅋㅋ노시환한데 160억 ㅇㅈㄹ하는 팀 수준",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407372&_dcbest=1&page=2"
+        }
+      ],
+      "fmkorea": [
+        {
+          "comment": "노시환보다 잘하는 선수가 있었어도 구단에서 장기 계약 안했던 이유가 리스크가 너무 커서인데 5년이나 4년 단위로 계약하는 게 구단 입장에서는 나을 듯. 중간에 누워버리면 답이 없음",
+          "link": "https://www.fmkorea.com/best/9401964676"
+        },
+        {
+          "comment": "안받으면 바보인 계약아닌가 노시환이 노장은 아니지만 fa는 무조건 총액싸움인데",
+          "link": "https://www.fmkorea.com/best/9401964676"
+        },
+        {
+          "comment": "노시환이 그렇게 잘해???",
+          "link": "https://www.fmkorea.com/best/9401964676"
+        },
+        {
+          "comment": "한화가 장기계약 리스크도 감당하겠다는 자세라 대단해보이네. 물가상승률도 감안해야하지만 노시환 입장에선 안받을 이유가 없는 제안이었을듯.",
+          "link": "https://www.fmkorea.com/best/9401964676"
+        },
+        {
+          "comment": "노시환이 하던거 평타만 해줘도 노시환이 노예계약 같은데",
+          "link": "https://www.fmkorea.com/best/9401964676"
+        },
+        {
+          "comment": "내가 노시환이면 2년치만 가불해달라하고 반포자이산다",
+          "link": "https://www.fmkorea.com/best/9401964676"
+        }
+      ],
+      "ruliweb": [
+        {
+          "comment": "???? 하 ㅋㅋㅋㅋ 종신프차 노시환 되버렸네",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203884?page=1&m=humor&t=now"
+        }
+      ]
+    }
+  },
+  {
+    "Rank": 3,
     "Keyword": "김연아",
-    "Trend_Score": 60.17,
+    "Trend_Score": 25.42,
+    "Trend_Score_Raw": 785.1612,
     "Target_Day_Mentions": 30,
     "Prev_Day_Mentions": 4,
     "Growth_Ratio": 7.5,
     "Growth_Percentage": "+650.0%",
+    "Z_Score": 11.628,
+    "Title_Count": 1,
     "Entropy": 0.298,
     "Platforms": 3,
     "Date_Range": "20260222→20260223",
@@ -154,70 +258,80 @@
     }
   },
   {
-    "Rank": 3,
-    "Keyword": "노시",
-    "Trend_Score": 59.51,
-    "Target_Day_Mentions": 13,
-    "Prev_Day_Mentions": 1,
-    "Growth_Ratio": 13.0,
-    "Growth_Percentage": "+1200.0%",
-    "Entropy": 0.383,
+    "Rank": 4,
+    "Keyword": "봄동비빔밥",
+    "Trend_Score": 23.62,
+    "Trend_Score_Raw": 729.4221,
+    "Target_Day_Mentions": 16,
+    "Prev_Day_Mentions": 0,
+    "Growth_Ratio": 16.0,
+    "Growth_Percentage": "+1500.0%",
+    "Z_Score": 11.314,
+    "Title_Count": 1,
+    "Entropy": 0.544,
     "Platforms": 3,
     "Date_Range": "20260222→20260223",
     "Platform_List": [
-      "dcinside",
-      "fmkorea",
-      "ruliweb"
+      "ruliweb",
+      "theqoo",
+      "youtube"
     ],
     "Examples": {
-      "dcinside": [
+      "youtube": [
         {
-          "comment": "폰세 와이스빨때문에 2위한건데 지들이 잘한줄아네ㅋㅋ노시환한데 160억 ㅇㅈㄹ하는 팀 수준",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407372&_dcbest=1&page=2"
-        }
-      ],
-      "fmkorea": [
-        {
-          "comment": "노시환보다 잘하는 선수가 있었어도 구단에서 장기 계약 안했던 이유가 리스크가 너무 커서인데 5년이나 4년 단위로 계약하는 게 구단 입장에서는 나을 듯. 중간에 누워버리면 답이 없음",
-          "link": "https://www.fmkorea.com/best/9401964676"
+          "comment": "봄동비빔밥 계후안넣은거 ㄹㅇ 근본 쩝쩝박사",
+          "link": "https://www.youtube.com/watch?v=YdBYVJqy4jU"
         },
         {
-          "comment": "안받으면 바보인 계약아닌가 노시환이 노장은 아니지만 fa는 무조건 총액싸움인데",
-          "link": "https://www.fmkorea.com/best/9401964676"
+          "comment": "최근 제일 만족스러운 유행 ㅋㅋ 봄동비빔밥이 유행이라 어머니랑 같이 만들고 맛있게 먹어서 너무 기분 좋음",
+          "link": "https://www.youtube.com/watch?v=YdBYVJqy4jU"
         },
         {
-          "comment": "노시환이 그렇게 잘해???",
-          "link": "https://www.fmkorea.com/best/9401964676"
+          "comment": "계란후라이나 대패삼겹살 넣고 비빈 봄동비빔밥 말고 이게 찐이지!!!!!!!",
+          "link": "https://www.youtube.com/watch?v=YdBYVJqy4jU"
         },
         {
-          "comment": "한화가 장기계약 리스크도 감당하겠다는 자세라 대단해보이네. 물가상승률도 감안해야하지만 노시환 입장에선 안받을 이유가 없는 제안이었을듯.",
-          "link": "https://www.fmkorea.com/best/9401964676"
+          "comment": "봄동비빔밥에 냉이된장국 먹고프다ㅠㅅㅠ배고파요",
+          "link": "https://www.youtube.com/watch?v=YdBYVJqy4jU"
         },
         {
-          "comment": "노시환이 하던거 평타만 해줘도 노시환이 노예계약 같은데",
-          "link": "https://www.fmkorea.com/best/9401964676"
-        },
-        {
-          "comment": "내가 노시환이면 2년치만 가불해달라하고 반포자이산다",
-          "link": "https://www.fmkorea.com/best/9401964676"
+          "comment": "민와와 q&a 리스트 쫙 낋여옴 1. 기본 정보 (나이, 스펙, 가족관계 ..) 2. 환승연애 4 출연을 결심하게 된 이유 3. 환승연애 4 에서 본인이 입었던 룩중에 최애는? 4. 출연자들과의 근황 5. 본인은 앞머리 있/없 중 뭘 좋아하는지 6. 유튜브 하면서 가장 해보고 싶은 것 7. 유튜브 구독자명 (팬애칭) 만들 생각이 있는지 8. 유튜브 편집자분을 따로 구하신건지 9. 여행을 자주 가시는 것 같은데, 가본 여행지 중 가장 좋았던 곳 10. 올해 꼭 이루고 싶은 새해 목표 11. 올해 새해 첫 곡으로 어떤 노래를 들었는지 12. 환승연애 4, 인스타 게시물 등 자주 사용하는 옷 구매처는 어디인지 13. 민경의 렌시스 최애 렌즈는 무엇인지 14. 어떻게 다른 인플루언서 분들과의 친분을 쌓았는지 (솔지 3 하정님, 환연 2 나연님, 환연 3 유정님, 솔지 5 하은님 ..) 15. 사진이 잘 나오는 비결은 무엇인지 16. 평소 옷 코디 어떻게 하는지 17. 옷 잘 입는 비결은 무엇인지 18. 예고를 가게 된 이유 19. 무용으로 진로를 선택한 이유 20. 대학 입시는 어땠는지 21. 대전 사투리 쓴다고 느끼는지 (실제로 쓰는지) 22. 좋아하는 연예인 (롤모델) 23. 고향이 대전이어서 대전예고에 간건지 24. 출연하고 싶은 유튜브 채널 25. 출연하고 싶은 티비 프로그램 26. 평소에 즐겨보는 영상, 프로그램 27. 언제 자신의 인기를 실감하는지 28. 어떤 노래 장르를 많이 듣는지 29. 자신과 잘맞는 사람 유형 (성격 등) 30. 퍼스널컬러가 무엇인지 31. 잘 쓰고 있는 화장품은 무엇인지 32. 단발 해본 적 있는지 (앞으로 할 예정인지) 33. 머리 고데기 (펌) 와 생머리 중 자신이 더 선호하는 스타일은 무엇인지 34. 시도해 보고 싶은 스타일이 있는지, 있다면 무엇인지 35. 좋아하는 가수, 배우는 어느 분인지 36. 제일 좋아하는 영화, 드라마가 무엇인지 37. 대학원 생활 궁금해요 (나중에 스터디윗미도 낋여와조요..) 38. 요즘 유행하는 음식 먹어봤는지 (젤리 얼먹, 봄동비빔밥, 두쫀쿠) 39. 곽민경 사랑해",
+          "link": "https://www.youtube.com/watch?v=JCXZnoXx6zo"
         }
       ],
       "ruliweb": [
         {
-          "comment": "???? 하 ㅋㅋㅋㅋ 종신프차 노시환 되버렸네",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203884?page=1&m=humor&t=now"
+          "comment": "요새 트위터에 한창 핫한 음식이 이 봄동비빔밥 양푼으로 비벼서 달걀후라이 3,4개도 넣고 참기름 듬뿍뿌리는 폭력적인 사진들도 돌아다님....",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203520?page=5&m=humor&t=now"
+        }
+      ],
+      "theqoo": [
+        {
+          "comment": "두릅 맛있대서 먹어봤는데 취향은 아니였슨.... 봄동비빔밥 궁금하다",
+          "link": "https://theqoo.net/hot/4102665258?page=4"
+        },
+        {
+          "comment": "봄동 유행인이유 트위터하는 내 체감으로는 두쫀쿠 유행 너무 심하니까 누가 두쫀쿠 말고 건강한 봄동비빔밥이나 유행했으면 좋겠다->이거 알티타서 강호동봄동비빔밥짤도 올라오고 맛있단 반응+먹계들이 봄동비빔밥 사진 올리고 유튜브 요리채널들이 올리고 여기저기서 유행 이렇게 두쫀쿠가 너무 심해서 다른 유행좀 만들자해서 유행탄 느낌임ㅋㅋ",
+          "link": "https://theqoo.net/hot/4102629974?page=4"
+        },
+        {
+          "comment": "트위터 인스타만 들어가도 죄다 봄동비빔밥 먹음...",
+          "link": "https://theqoo.net/hot/4102629974?page=4"
         }
       ]
     }
   },
   {
-    "Rank": 4,
+    "Rank": 5,
     "Keyword": "메시",
-    "Trend_Score": 30.11,
+    "Trend_Score": 13.28,
+    "Trend_Score_Raw": 410.0244,
     "Target_Day_Mentions": 26,
     "Prev_Day_Mentions": 5,
     "Growth_Ratio": 5.2,
     "Growth_Percentage": "+420.0%",
+    "Z_Score": 8.573,
+    "Title_Count": 1,
     "Entropy": 0.299,
     "Platforms": 3,
     "Date_Range": "20260222→20260223",
@@ -328,13 +442,188 @@
     }
   },
   {
-    "Rank": 5,
+    "Rank": 6,
+    "Keyword": "갤럭시",
+    "Trend_Score": 6.65,
+    "Trend_Score_Raw": 205.3275,
+    "Target_Day_Mentions": 18,
+    "Prev_Day_Mentions": 4,
+    "Growth_Ratio": 4.5,
+    "Growth_Percentage": "+350.0%",
+    "Z_Score": 6.261,
+    "Title_Count": 1,
+    "Entropy": 0.365,
+    "Platforms": 3,
+    "Date_Range": "20260222→20260223",
+    "Platform_List": [
+      "dcinside",
+      "ruliweb",
+      "theqoo"
+    ],
+    "Examples": {
+      "dcinside": [
+        {
+          "comment": "이거 믿고 갤럭시 사는 바보짓은 하지 말아라아이폰 사서 사람들하고 소통하면서 살아 ㅋㅋㅋㅋㅋ",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "저 숫자 갤럭시가 실제로 내려면 , 액체질소 뿜어대는 실험실에서 고압전선으로 충전해야 나옴 ㅋㅋ",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "제발 한국인이면 갤럭시 씁시다!!!",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "한국인이면 제발 갤럭시 씁시다",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        },
+        {
+          "comment": "나 갤럭시 s9스는데 벌써 26나왓나",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407380&_dcbest=1&page=1"
+        }
+      ]
+    }
+  },
+  {
+    "Rank": 7,
+    "Keyword": "한화",
+    "Trend_Score": 6.44,
+    "Trend_Score_Raw": 198.7421,
+    "Target_Day_Mentions": 20,
+    "Prev_Day_Mentions": 8,
+    "Growth_Ratio": 2.5,
+    "Growth_Percentage": "+150.0%",
+    "Z_Score": 4.0,
+    "Title_Count": 3,
+    "Entropy": 0.342,
+    "Platforms": 3,
+    "Date_Range": "20260222→20260223",
+    "Platform_List": [
+      "dcinside",
+      "fmkorea",
+      "ruliweb"
+    ],
+    "Examples": {
+      "dcinside": [
+        {
+          "comment": "도통 이해가 안가네애초에 감독이 1군 로테자원들 전부 활용하면서 팀 전력을 다지는데 특화된 감독이고 그걸로 결과도 보여줬잖아? 원식이 쓴다고 누가 수납당한것도 아닌데 그냥 한화란팀이 진짜 수베로식 리빌딩이 성공해서 2등한줄 알았음?",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407418&_dcbest=1&page=1"
+        },
+        {
+          "comment": "꼴데랑 한화는 21세기에 우승 못할듯",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407418&_dcbest=1&page=1"
+        },
+        {
+          "comment": "한화는 크보에서도 우승한적 없지 않냐? 뭔 지바롯데랑 연습이 되나 ㅋㅋ",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407372&_dcbest=1&page=2"
+        },
+        {
+          "comment": "한국 대표팀은 크보 1.5군에 지고 한화는 일본구단 1.5군에 지노 ㅋㅋㅋㅋㅋㅋㅋㅋ",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407372&_dcbest=1&page=2"
+        },
+        {
+          "comment": "비겁하게 프로랑 비교를하냐 한화같은 아마팀이랑",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407372&_dcbest=1&page=2"
+        },
+        {
+          "comment": "너거는 전역자 교육인가 뭔가 안했음?본인 교육사 소속인데 말년에 동기들 싹 끌고 창원에 한화였나 두산이었나 단체로 견학가고 정훈교육 비슷한거 봤는디글고 교육사 있을땐 당직설때 읽으라고 도서관에서 책들을 구비해놨는데 판타지소설이랑 신의물방울같은 만화도 있었음 저녁에 문화의 날인가 뭔가 해서 창원 중앙홀인가 거기서 하는 클래식 공연 같은것도 보여주는데 선임들은 사지방에서 드러눕는게 나으니까 짬 애매한 일말 상초애들 보냄 너무 짬찌는 또 점호청소 같은거 열외하면 안되니 안보내고 이런걸 주말에도 가끔 한걸로 기억하는데 공연중에 튀어나가서 피방도 가고 그랬었지",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407271&_dcbest=1&page=2"
+        }
+      ],
+      "fmkorea": [
+        {
+          "comment": "한화가 장기계약 리스크도 감당하겠다는 자세라 대단해보이네. 물가상승률도 감안해야하지만 노시환 입장에선 안받을 이유가 없는 제안이었을듯.",
+          "link": "https://www.fmkorea.com/best/9401964676"
+        },
+        {
+          "comment": "한화는 국대를 고려할 이유가 전혀 없는데",
+          "link": "https://www.fmkorea.com/best/9519794788"
+        }
+      ],
+      "ruliweb": [
+        {
+          "comment": "한화 요즘 전력 좋으니까 야구 할맛 날거야",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203884?page=1&m=humor&t=now"
+        }
+      ]
+    }
+  },
+  {
+    "Rank": 8,
+    "Keyword": "네이버",
+    "Trend_Score": 4.98,
+    "Trend_Score_Raw": 153.8723,
+    "Target_Day_Mentions": 26,
+    "Prev_Day_Mentions": 17,
+    "Growth_Ratio": 1.53,
+    "Growth_Percentage": "+52.9%",
+    "Z_Score": 2.121,
+    "Title_Count": 6,
+    "Entropy": 0.838,
+    "Platforms": 5,
+    "Date_Range": "20260222→20260223",
+    "Platform_List": [
+      "dcinside",
+      "fmkorea",
+      "ruliweb",
+      "theqoo",
+      "youtube"
+    ],
+    "Examples": {
+      "dcinside": [
+        {
+          "comment": "네이버 짱깨고닉 '참붕어빵(toas****)'1만2,089개에 달하는 댓글공작\"반중(反中)종자들은 전부 친일매국노\"\"경복궁도 중화문명의 한 자산\"\"반크(사이버외교사절단) 단체는 나치 같은 국수주의 집단\"\"제주인들은 이제 서울말 쓰고 개화돼서 나아졌는데 전라도는 아직 이상한 말 쓰고 미개하다\"",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407509&_dcbest=1&page=1"
+        },
+        {
+          "comment": "9👍1국민알권리가있다인터넷 다음 네이버 구글 유튜브 검색창에서 아래 내용 검색해서 필독하자1 종교개판이다 2 이순신장군을 사탄이라는 개독3 이순신장군을 사탄이라는 개독사기 속지말자 4 성범죄 1위 목사 5 성경 짜집기 6 시대 정신 (유튜브 검색)7 암환자 검색해서 필독하세요(인터넷 다음 네이버 구글 유튜브 검색창에서 검색창에서 -버진스키- 검색바랍니다 )(유튜브 검색창에서 -암에 걸린 의사들은 항암제를 거부한다-검색하자8 외계인 기술 (마이클 울프 검색하자)9 종교자유정책연구원10 개독 목사 장경동 망언은 사기다 검색 필독하자 초딩도아는 사기치지말자 -모두건행소원성취-대한민국파이팅ㅍ",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407182&_dcbest=1&page=3"
+        }
+      ],
+      "fmkorea": [
+        {
+          "comment": "감사합니다! İsmine bayıldım, Türk müsün yoksa :D 제 계정이 2022년에 만들어졌다고 누군가 제가 사칭이라고 생각하네요 ㅋㅋㅋㅋ. 2022년에 당시 어떤 글에 댓글 달려고 계정을 만들었는데(뭐였는지 기억 안 나요), 지금까지 방치해뒀거든요. 오늘 로그인하려니 네이버 계정으로 인증번호를 보내달라고 하더라고요. 사실 네이버 메일에도 비밀번호를 까먹어서 접속하기 힘들었어요. 그래도 결국 알아내서 계정을 되살릴 수 있었답니다.",
+          "link": "https://www.fmkorea.com/best/9519593657"
+        },
+        {
+          "comment": "터키인 가입 빡셀텐데네이버부터 만들어와야하지않나",
+          "link": "https://www.fmkorea.com/best/9519593657"
+        }
+      ],
+      "ruliweb": [
+        {
+          "comment": "네이버에선 더 못보네..",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203523?page=3&m=humor&t=now"
+        }
+      ],
+      "theqoo": [
+        {
+          "comment": "저거 토토로 따까리네 쿠빈이라는 비제이?가 쟤 이름 몰라서 쟤를 토토로 따까리 치니까 네이버에 사진 나왔었음ㅋㅋㅋ",
+          "link": "https://theqoo.net/hot/4102894223?page=3"
+        },
+        {
+          "comment": "네이버 ai 저거는 걍 네이버 블로그든 뭐든 네이버 안에 있는 내용 짜집기임 저렇게 검색하면 거의 블로그 내용으로 뜨더라",
+          "link": "https://theqoo.net/hot/4102461501?page=5"
+        },
+        {
+          "comment": "무슨 기사가 네이버블로그 보는거같네 a 얘기 보려고 검색해서 들어갔더니 문단마다 다른 얘기하는 그런..",
+          "link": "https://theqoo.net/hot/4102248943?page=6"
+        }
+      ]
+    }
+  },
+  {
+    "Rank": 9,
     "Keyword": "스팸",
-    "Trend_Score": 10.21,
+    "Trend_Score": 4.47,
+    "Trend_Score_Raw": 138.0349,
     "Target_Day_Mentions": 24,
     "Prev_Day_Mentions": 9,
     "Growth_Ratio": 2.67,
     "Growth_Percentage": "+166.7%",
+    "Z_Score": 4.743,
+    "Title_Count": 1,
     "Entropy": 0.463,
     "Platforms": 3,
     "Date_Range": "20260222→20260223",
@@ -421,14 +710,17 @@
     }
   },
   {
-    "Rank": 6,
-    "Keyword": "한화",
-    "Trend_Score": 7.72,
-    "Target_Day_Mentions": 20,
-    "Prev_Day_Mentions": 8,
-    "Growth_Ratio": 2.5,
-    "Growth_Percentage": "+150.0%",
-    "Entropy": 0.342,
+    "Rank": 10,
+    "Keyword": "닌텐도",
+    "Trend_Score": 4.28,
+    "Trend_Score_Raw": 132.1248,
+    "Target_Day_Mentions": 11,
+    "Prev_Day_Mentions": 2,
+    "Growth_Ratio": 5.5,
+    "Growth_Percentage": "+450.0%",
+    "Z_Score": 5.196,
+    "Title_Count": 1,
+    "Entropy": 0.511,
     "Platforms": 3,
     "Date_Range": "20260222→20260223",
     "Platform_List": [
@@ -439,97 +731,113 @@
     "Examples": {
       "dcinside": [
         {
-          "comment": "도통 이해가 안가네애초에 감독이 1군 로테자원들 전부 활용하면서 팀 전력을 다지는데 특화된 감독이고 그걸로 결과도 보여줬잖아? 원식이 쓴다고 누가 수납당한것도 아닌데 그냥 한화란팀이 진짜 수베로식 리빌딩이 성공해서 2등한줄 알았음?",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407418&_dcbest=1&page=1"
-        },
-        {
-          "comment": "꼴데랑 한화는 21세기에 우승 못할듯",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407418&_dcbest=1&page=1"
-        },
-        {
-          "comment": "한화는 크보에서도 우승한적 없지 않냐? 뭔 지바롯데랑 연습이 되나 ㅋㅋ",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407372&_dcbest=1&page=2"
-        },
-        {
-          "comment": "한국 대표팀은 크보 1.5군에 지고 한화는 일본구단 1.5군에 지노 ㅋㅋㅋㅋㅋㅋㅋㅋ",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407372&_dcbest=1&page=2"
-        },
-        {
-          "comment": "비겁하게 프로랑 비교를하냐 한화같은 아마팀이랑",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407372&_dcbest=1&page=2"
-        },
-        {
-          "comment": "너거는 전역자 교육인가 뭔가 안했음?본인 교육사 소속인데 말년에 동기들 싹 끌고 창원에 한화였나 두산이었나 단체로 견학가고 정훈교육 비슷한거 봤는디글고 교육사 있을땐 당직설때 읽으라고 도서관에서 책들을 구비해놨는데 판타지소설이랑 신의물방울같은 만화도 있었음 저녁에 문화의 날인가 뭔가 해서 창원 중앙홀인가 거기서 하는 클래식 공연 같은것도 보여주는데 선임들은 사지방에서 드러눕는게 나으니까 짬 애매한 일말 상초애들 보냄 너무 짬찌는 또 점호청소 같은거 열외하면 안되니 안보내고 이런걸 주말에도 가끔 한걸로 기억하는데 공연중에 튀어나가서 피방도 가고 그랬었지",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407271&_dcbest=1&page=2"
+          "comment": "디즈니란도 킷토캇토 마쿠도나루도 사쿠라 하루카 포케몽 나루토 닌텐도 스쿠에 캬푸콤 반다이",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407314&_dcbest=1&page=2"
         }
       ],
       "fmkorea": [
         {
-          "comment": "한화가 장기계약 리스크도 감당하겠다는 자세라 대단해보이네. 물가상승률도 감안해야하지만 노시환 입장에선 안받을 이유가 없는 제안이었을듯.",
-          "link": "https://www.fmkorea.com/best/9401964676"
+          "comment": "이거 그 닌텐도 스위치에 있는거 현실로 옮겨온거네 ㅋㅋㅋㅋ",
+          "link": "https://www.fmkorea.com/best/9518764942"
         },
         {
-          "comment": "한화는 국대를 고려할 이유가 전혀 없는데",
-          "link": "https://www.fmkorea.com/best/9519794788"
+          "comment": "닌텐도 야구자나 이거",
+          "link": "https://www.fmkorea.com/best/9518764942"
+        },
+        {
+          "comment": "친구들끼리 닌텐도로 했을땐 꿀잼이었는데 ㅋㅋ",
+          "link": "https://www.fmkorea.com/best/9518764942"
+        },
+        {
+          "comment": "이거 닌텐도에 있잖아 ㅋㅋ 51가지 게임 안에 야구",
+          "link": "https://www.fmkorea.com/best/9518764942"
+        },
+        {
+          "comment": "이거 닌텐도 51게임에 그거 아니냐 ㅋㅋㅋ",
+          "link": "https://www.fmkorea.com/best/9518764942"
+        },
+        {
+          "comment": "닌텐도 세계게임전집에 있는 야구 겜이랑 비슷하네",
+          "link": "https://www.fmkorea.com/best/9518764942"
         }
       ],
       "ruliweb": [
         {
-          "comment": "한화 요즘 전력 좋으니까 야구 할맛 날거야",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203884?page=1&m=humor&t=now"
+          "comment": "내가 닌텐도를 화나게 했다. 매우 자랑스럽다. 생각하겠지?",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74184096?page=4&m=humor&t=now"
+        },
+        {
+          "comment": "내가 닌텐도의 움직임을 통제할 수 있다!",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74184096?page=4&m=humor&t=now"
         }
       ]
     }
   },
   {
-    "Rank": 7,
-    "Keyword": "청나라",
-    "Trend_Score": 7.34,
-    "Target_Day_Mentions": 25,
-    "Prev_Day_Mentions": 12,
-    "Growth_Ratio": 2.08,
-    "Growth_Percentage": "+108.3%",
-    "Entropy": 0.247,
+    "Rank": 11,
+    "Keyword": "동계올림픽",
+    "Trend_Score": 3.69,
+    "Trend_Score_Raw": 113.803,
+    "Target_Day_Mentions": 17,
+    "Prev_Day_Mentions": 9,
+    "Growth_Ratio": 1.89,
+    "Growth_Percentage": "+88.9%",
+    "Z_Score": 2.53,
+    "Title_Count": 4,
+    "Entropy": 0.574,
     "Platforms": 3,
     "Date_Range": "20260222→20260223",
     "Platform_List": [
       "dcinside",
-      "theqoo",
-      "youtube"
+      "fmkorea",
+      "theqoo"
     ],
     "Examples": {
       "dcinside": [
         {
-          "comment": "일본 없으면 한국 사학자들 백수 되 것네. 여진족은 담비가죽이랑 만주산삼 팔아서 청나라 세운 것은 아냐?",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407490&_dcbest=1&page=1"
-        }
-      ],
-      "youtube": [
+          "comment": "민정, 준환이는 아무리봐도 대체할수있는 사람이 없다. 다음 동계올림픽도 꼭 출전할것.",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407451&_dcbest=1&page=1"
+        },
         {
-          "comment": "유럽이 식민지 삼은곳:아프리카,중동,인도,동남아,필리핀은 미국식민지전에 스페인,대만은 일본 청나라 이전에 네덜란드. 식민지배 당한 수많은 국가중에 유럽식민지배 안당한곳은 조선이 유일 인간동물원을 운영한국가:only유럽. 20세기 인종학살 실행한 국가:독일,세르비아,크로아티아.",
-          "link": "https://www.youtube.com/watch?v=BfWLzuDR_d4"
+          "comment": "하계 동계올림픽 특혜 없애고 월드컵에 몰아줘야 함",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407451&_dcbest=1&page=1"
+        },
+        {
+          "comment": "박탈감이나 열등감은 인정하는데 우리나라는 부자를 너무 싫어함 유학보내고 동계올림픽 스포츠 교육시킬 정도면 당연히 부잣집일 확률이 높은게 당연한대 에효",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407412&_dcbest=1&page=1"
+        },
+        {
+          "comment": "동계올림픽 피겨 중국계 미국인 금메달 논란",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407158&_dcbest=1&page=3"
         }
       ],
       "theqoo": [
         {
-          "comment": "진짜 선조가 죽인 국민 수가 더 많지 않을까...전쟁 나서 당시 조선 국민 전체 인구수 약 1천~1200만 사이로 추정하는데 인구 10%에 해당하는 100만명이 죽었을 거라 추정됨. 일본으로 끌려간 국민은 10만명정도로 예상하고 이게 더 큰일 아닌가. 당시 전쟁 이후 세수 1/3로 줄어들었다는 건...거의 경제도 1/3토막 나서 70%가 날아갔다고 봐야하고, 전국토가 황폐화 됬음. 광해군은 이미 제정이 망한 나라를 인수인계받은 상태인거지...멀쩡한 경제를 망친게 아니라 그마저도 선조랑 대비가 트롤짓해서 자기 왕권 위협받으니 그거 방어하느라 저런 거고 병자호란은 끌려간 사람이 많다고 하는데 50~60만명이 포로로 끌려갔을 거라 추정됨. 죽은 사람도 포함하면 전체 국민의 5~10%가 또 사라진.... 광해군은 청나라 명나라 사이에서 최대한 본인이 외교적으로도 나름 잘했는데, 내부 세력이 약해서 정치적으로 일을 못했다라면(그 것도 이미 망한 경제적인 상황인수받은 상황) 선조 인조는 나라가 멸망할 뻔했다라고 보면 됨. 특히 선조는 나라 버리고 튀려고 했는데 그 때 조선 끝날 수 있던 거 그나마 광해군이 남아서 싸워서 백성들이 봐준거라 봐야되는 거고",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
+          "comment": "동계올림픽 돈많이드는거 모르는사람이 어딨어 저걸또 배아프게 볼일인가?",
+          "link": "https://theqoo.net/hot/4102701724?page=4"
         },
         {
-          "comment": "선조는 광해가 전쟁 중에 민심 다 얻고 백성아이돌화되고 조정대신들도 세자는 전란통에서 싸우는데 임금은 뭐하시냐 소리나오니까 전쟁 중에 17번 선위쇼함 광해 기 죽이려고(+ 앞에 댓글보니 20번이라네 ) 그때마다 광해 전란 중 전선에서 싸우다가도 선조 있는 의주까지 가서 석고대죄해야 했음 평상시에도 석고대죄하면 사람 몸 탈나는데 전란통에 읶던 사람을 불러대서 석고대죄시키는데 멘탈과 몸이 안 갈리겠냐고 심지어 세자된지 14년이나 된데다 전쟁도 승리로 이끈 장성한 세자가 있는데 억지로 대군 낳음 선조 미친거지 광해 폐위됐을 때 명나라 청나라 둘다 조선왕 좋았는데 왜 폐위시켰냐고 해서 인조가 인정받는데 힘들었다고 함 양쪽에 외교를 엄청 잘한 거지",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
+          "comment": "뭔가. 동계올림픽 개막식 행사 같아. 좀 웃김 ㅎ",
+          "link": "https://theqoo.net/hot/4102429345?page=5"
+        },
+        {
+          "comment": "이래서 피겨를 동계올림픽의 꽃이라고 하는구나",
+          "link": "https://theqoo.net/hot/4101983418?page=7"
         }
       ]
     }
   },
   {
-    "Rank": 8,
+    "Rank": 12,
     "Keyword": "마라탕",
-    "Trend_Score": 6.41,
+    "Trend_Score": 2.45,
+    "Trend_Score_Raw": 75.6701,
     "Target_Day_Mentions": 14,
     "Prev_Day_Mentions": 5,
     "Growth_Ratio": 2.8,
     "Growth_Percentage": "+180.0%",
+    "Z_Score": 3.674,
+    "Title_Count": 1,
     "Entropy": 0.589,
     "Platforms": 4,
     "Date_Range": "20260222→20260223",
@@ -575,79 +883,16 @@
     }
   },
   {
-    "Rank": 9,
-    "Keyword": "그레이",
-    "Trend_Score": 5.94,
-    "Target_Day_Mentions": 10,
-    "Prev_Day_Mentions": 3,
-    "Growth_Ratio": 3.33,
-    "Growth_Percentage": "+233.3%",
-    "Entropy": 0.681,
-    "Platforms": 4,
-    "Date_Range": "20260222→20260223",
-    "Platform_List": [
-      "dcinside",
-      "fmkorea",
-      "ruliweb",
-      "youtube"
-    ],
-    "Examples": {
-      "youtube": [
-        {
-          "comment": "그레이스 센세는 업보라고 봐야돼긴해 ㅋㅋ",
-          "link": "https://www.youtube.com/watch?v=qsqfpuKRyss"
-        },
-        {
-          "comment": "이번 챕터에서 허기 워기 추격씬 다음으로 무서운 파트 꼽자면 그레이스 선생님 파트로 꼽고 싶네요 공장에서 아이들에게 했던 그 추악한 모습이 적나라하게 표현한 덕에 역겨움과 분노가 끌어오르더라고요",
-          "link": "https://www.youtube.com/watch?v=qsqfpuKRyss"
-        }
-      ],
-      "fmkorea": [
-        {
-          "comment": "FM24 리즈로 하면서 얘를 거의 아들로 키웠는데, 그레이 만큼은 잘됐으면 좋겠다.",
-          "link": "https://www.fmkorea.com/best/9519571553"
-        },
-        {
-          "comment": "그레이 오늘 너무 못해서 욕했지만 그나마 가장 정확하게 보는 분이랑 대화해서 조금 미안하긴 하다아직 어린선수인데",
-          "link": "https://www.fmkorea.com/best/9519571553"
-        },
-        {
-          "comment": "자세한 사가는 안 찾아봤지만리즈는 서머빌 판매할거였으면그레이는 남겼어야지 ㅠㅠ",
-          "link": "https://www.fmkorea.com/best/9519571553"
-        },
-        {
-          "comment": "상대가 아치그레이면 저 덩치로 당연히 몸싸움 이겨야하는데 ㅋㅋㅋㅋ초반엔 그것도 못한거보면 적응 좀 되긴한듯",
-          "link": "https://www.fmkorea.com/best/9519558365"
-        },
-        {
-          "comment": "그레이 경합이 아예 안되더라ㅋㅋ뺏었다 생각했는데 슈팅까지 가져가네...",
-          "link": "https://www.fmkorea.com/best/9519558365"
-        },
-        {
-          "comment": "아치그레이가 걍 힘으로 찢김 ㅋㅋ 둘 체급차가 심하네저상황이 안나오게 하는거말고는 없는듯",
-          "link": "https://www.fmkorea.com/best/9519558365"
-        },
-        {
-          "comment": "MC랑 패널 다운그레이드하면 ai아예 안 쓰고 시즌1급으로 할 수 있을텐데 왜 김구라 김숙 데리고 가는지 모르겠음걍 서프라이즈 보는 느낌으로 보는건데 거기에 힘주는지 이해 안 됨",
-          "link": "https://www.fmkorea.com/best/9517964110"
-        }
-      ],
-      "ruliweb": [
-        {
-          "comment": "인터그레이드 버전이니 아직 만으로 5년은 안됐네요.",
-          "link": "https://bbs.ruliweb.com/market/board/1020/read/101875"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 10,
+    "Rank": 13,
     "Keyword": "호날두",
-    "Trend_Score": 5.26,
+    "Trend_Score": 2.38,
+    "Trend_Score_Raw": 73.4012,
     "Target_Day_Mentions": 26,
     "Prev_Day_Mentions": 16,
     "Growth_Ratio": 1.62,
     "Growth_Percentage": "+62.5%",
+    "Z_Score": 2.425,
+    "Title_Count": 2,
     "Entropy": 0.744,
     "Platforms": 4,
     "Date_Range": "20260222→20260223",
@@ -737,149 +982,180 @@
     }
   },
   {
-    "Rank": 11,
-    "Keyword": "동계올림픽",
-    "Trend_Score": 4.31,
-    "Target_Day_Mentions": 17,
-    "Prev_Day_Mentions": 9,
-    "Growth_Ratio": 1.89,
-    "Growth_Percentage": "+88.9%",
-    "Entropy": 0.574,
-    "Platforms": 3,
+    "Rank": 14,
+    "Keyword": "그레이",
+    "Trend_Score": 2.08,
+    "Trend_Score_Raw": 64.3428,
+    "Target_Day_Mentions": 10,
+    "Prev_Day_Mentions": 3,
+    "Growth_Ratio": 3.33,
+    "Growth_Percentage": "+233.3%",
+    "Z_Score": 3.5,
+    "Title_Count": 1,
+    "Entropy": 0.681,
+    "Platforms": 4,
     "Date_Range": "20260222→20260223",
     "Platform_List": [
       "dcinside",
       "fmkorea",
-      "theqoo"
-    ],
-    "Examples": {
-      "dcinside": [
-        {
-          "comment": "민정, 준환이는 아무리봐도 대체할수있는 사람이 없다. 다음 동계올림픽도 꼭 출전할것.",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407451&_dcbest=1&page=1"
-        },
-        {
-          "comment": "하계 동계올림픽 특혜 없애고 월드컵에 몰아줘야 함",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407451&_dcbest=1&page=1"
-        },
-        {
-          "comment": "박탈감이나 열등감은 인정하는데 우리나라는 부자를 너무 싫어함 유학보내고 동계올림픽 스포츠 교육시킬 정도면 당연히 부잣집일 확률이 높은게 당연한대 에효",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407412&_dcbest=1&page=1"
-        },
-        {
-          "comment": "동계올림픽 피겨 중국계 미국인 금메달 논란",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407158&_dcbest=1&page=3"
-        }
-      ],
-      "theqoo": [
-        {
-          "comment": "동계올림픽 돈많이드는거 모르는사람이 어딨어 저걸또 배아프게 볼일인가?",
-          "link": "https://theqoo.net/hot/4102701724?page=4"
-        },
-        {
-          "comment": "뭔가. 동계올림픽 개막식 행사 같아. 좀 웃김 ㅎ",
-          "link": "https://theqoo.net/hot/4102429345?page=5"
-        },
-        {
-          "comment": "이래서 피겨를 동계올림픽의 꽃이라고 하는구나",
-          "link": "https://theqoo.net/hot/4101983418?page=7"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 12,
-    "Keyword": "강호동",
-    "Trend_Score": 3.87,
-    "Target_Day_Mentions": 23,
-    "Prev_Day_Mentions": 16,
-    "Growth_Ratio": 1.44,
-    "Growth_Percentage": "+43.8%",
-    "Entropy": 0.513,
-    "Platforms": 3,
-    "Date_Range": "20260222→20260223",
-    "Platform_List": [
       "ruliweb",
-      "theqoo",
       "youtube"
     ],
     "Examples": {
       "youtube": [
         {
-          "comment": "강호동 노련하다😂 나피디 물에서 나오자마자 감독님 1박 외쳐 주세요 빨리 ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ",
-          "link": "https://www.youtube.com/watch?v=kFu13Zc1-rM"
+          "comment": "그레이스 센세는 업보라고 봐야돼긴해 ㅋㅋ",
+          "link": "https://www.youtube.com/watch?v=qsqfpuKRyss"
         },
         {
-          "comment": "강호동이 온 순간부터 아차 싶었겠넼ㅋㅋㅋㅋㅋ",
-          "link": "https://www.youtube.com/watch?v=kFu13Zc1-rM"
+          "comment": "이번 챕터에서 허기 워기 추격씬 다음으로 무서운 파트 꼽자면 그레이스 선생님 파트로 꼽고 싶네요 공장에서 아이들에게 했던 그 추악한 모습이 적나라하게 표현한 덕에 역겨움과 분노가 끌어오르더라고요",
+          "link": "https://www.youtube.com/watch?v=qsqfpuKRyss"
+        }
+      ],
+      "fmkorea": [
+        {
+          "comment": "FM24 리즈로 하면서 얘를 거의 아들로 키웠는데, 그레이 만큼은 잘됐으면 좋겠다.",
+          "link": "https://www.fmkorea.com/best/9519571553"
         },
         {
-          "comment": "강호동의 \"자~\" 한마디에 바로 자신의 운명을 직감한 나PD",
-          "link": "https://www.youtube.com/watch?v=kFu13Zc1-rM"
+          "comment": "그레이 오늘 너무 못해서 욕했지만 그나마 가장 정확하게 보는 분이랑 대화해서 조금 미안하긴 하다아직 어린선수인데",
+          "link": "https://www.fmkorea.com/best/9519571553"
         },
         {
-          "comment": "강호동이 맨날 말하는 낭떠러지에서 밀어서 떨어뜨렸을때 자기가 날개가 있다는걸 깨우치는 전형적인 인물 ㅋㅋ",
-          "link": "https://www.youtube.com/watch?v=Cz_FlEzARHM"
+          "comment": "자세한 사가는 안 찾아봤지만리즈는 서머빌 판매할거였으면그레이는 남겼어야지 ㅠㅠ",
+          "link": "https://www.fmkorea.com/best/9519571553"
         },
         {
-          "comment": "어린봄동 찾아보니까 강호동씨가 드셨던 봄동이 보이네요.",
-          "link": "https://www.youtube.com/watch?v=YdBYVJqy4jU"
+          "comment": "상대가 아치그레이면 저 덩치로 당연히 몸싸움 이겨야하는데 ㅋㅋㅋㅋ초반엔 그것도 못한거보면 적응 좀 되긴한듯",
+          "link": "https://www.fmkorea.com/best/9519558365"
         },
         {
-          "comment": "봄동이라는게 겨울에 제배해서 봄에 갓 수확한 꽉찬 배추를 말하는 거에요. 당시 강호동씨가 먹은 봄동 비빔밥 촬영된 시기가 겨울이라 아마 봄동 어린잎을 먹어서 그럴겁니다 ㅋㅋ",
-          "link": "https://www.youtube.com/watch?v=YdBYVJqy4jU"
+          "comment": "그레이 경합이 아예 안되더라ㅋㅋ뺏었다 생각했는데 슈팅까지 가져가네...",
+          "link": "https://www.fmkorea.com/best/9519558365"
+        },
+        {
+          "comment": "아치그레이가 걍 힘으로 찢김 ㅋㅋ 둘 체급차가 심하네저상황이 안나오게 하는거말고는 없는듯",
+          "link": "https://www.fmkorea.com/best/9519558365"
+        },
+        {
+          "comment": "MC랑 패널 다운그레이드하면 ai아예 안 쓰고 시즌1급으로 할 수 있을텐데 왜 김구라 김숙 데리고 가는지 모르겠음걍 서프라이즈 보는 느낌으로 보는건데 거기에 힘주는지 이해 안 됨",
+          "link": "https://www.fmkorea.com/best/9517964110"
         }
       ],
       "ruliweb": [
         {
-          "comment": "강호동이 보면 눈돌아간다",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203520?page=5&m=humor&t=now"
-        },
-        {
-          "comment": "강호동 : 배추가 고기보다 맛있네요!",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203520?page=5&m=humor&t=now"
-        },
-        {
-          "comment": "요즘 강호동 영상 알고리즘으로 다시떠서 봄동이 유행이더라 ㅋㅋ",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203520?page=5&m=humor&t=now"
-        }
-      ],
-      "theqoo": [
-        {
-          "comment": "봄동 유행인이유 트위터하는 내 체감으로는 두쫀쿠 유행 너무 심하니까 누가 두쫀쿠 말고 건강한 봄동비빔밥이나 유행했으면 좋겠다->이거 알티타서 강호동봄동비빔밥짤도 올라오고 맛있단 반응+먹계들이 봄동비빔밥 사진 올리고 유튜브 요리채널들이 올리고 여기저기서 유행 이렇게 두쫀쿠가 너무 심해서 다른 유행좀 만들자해서 유행탄 느낌임ㅋㅋ",
-          "link": "https://theqoo.net/hot/4102629974?page=4"
-        },
-        {
-          "comment": "올해 유독 더 유행하는지는 진짜 모르겠음 강호동 봄동영상은 종종 뜨던건데",
-          "link": "https://theqoo.net/hot/4102629974?page=4"
-        },
-        {
-          "comment": "팩트: 강호동이 먹은 비빔밥은 봄동이 아니라 얼가리 배추다.",
-          "link": "https://theqoo.net/hot/4102629974?page=4"
-        },
-        {
-          "comment": "봄동 악플러 ㅋㅋㅋㅋㅋㅋ 강호동 덕에 봄동 알고 찾아먹는 음식인데 진짜 이젠 모르나보다ㅠㅋㅋㅋㅋㅋㅋㅋㅋ",
-          "link": "https://theqoo.net/hot/4102629974?page=4"
-        },
-        {
-          "comment": "봄동이 바이럴 탈 정도인가?.. ㅋㅋㅋ 예전에 피식대학 논란으로 강호동 먹방 재조명 받아서 더 알려지긴 했었지만",
-          "link": "https://theqoo.net/hot/4102629974?page=4"
-        },
-        {
-          "comment": "뭔 개소리야 봄동은 원래 스테디라니까 근데 요즘따라 먹는 영상이 많이 올라올 뿐 그 강호동 비빔밥 때문에.....봄동은 바이럴이 필요가 없으세요",
-          "link": "https://theqoo.net/hot/4102629974?page=4"
+          "comment": "인터그레이드 버전이니 아직 만으로 5년은 안됐네요.",
+          "link": "https://bbs.ruliweb.com/market/board/1020/read/101875"
         }
       ]
     }
   },
   {
-    "Rank": 13,
+    "Rank": 15,
+    "Keyword": "메이플",
+    "Trend_Score": 1.65,
+    "Trend_Score_Raw": 50.8563,
+    "Target_Day_Mentions": 15,
+    "Prev_Day_Mentions": 8,
+    "Growth_Ratio": 1.88,
+    "Growth_Percentage": "+87.5%",
+    "Z_Score": 2.333,
+    "Title_Count": 2,
+    "Entropy": 0.551,
+    "Platforms": 4,
+    "Date_Range": "20260222→20260223",
+    "Platform_List": [
+      "dcinside",
+      "fmkorea",
+      "ruliweb",
+      "youtube"
+    ],
+    "Examples": {
+      "dcinside": [
+        {
+          "comment": "메이플 ㅇㄷ슴",
+          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407284&_dcbest=1&page=2"
+        }
+      ],
+      "fmkorea": [
+        {
+          "comment": "메이플진호",
+          "link": "https://www.fmkorea.com/best/9519140502"
+        },
+        {
+          "comment": "보약 (메이플 시럽 맛)",
+          "link": "https://www.fmkorea.com/best/9519140502"
+        }
+      ],
+      "ruliweb": [
+        {
+          "comment": "저 쌀숭이한텐 메이플이 더이상 게임이 아니네",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203910?page=1&m=humor&t=now"
+        },
+        {
+          "comment": "인방조차 메이플이네 ㅋㅋㅋㅋㅋ",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203910?page=1&m=humor&t=now"
+        },
+        {
+          "comment": "메이플은 싸대기를 때릴정도로 쌀먹에 최적화 되어있거든. 특히 리니지 스트리머가 몰린 서버는 시세도 비싸.",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203314?m=humor"
+        },
+        {
+          "comment": "심심풀이로 리니지 유튜브 보면 몇천만은 우습게 날라감. 보면 컬쳐쇼크가 올거임. 메이플은 범부야.",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203314?m=humor"
+        },
+        {
+          "comment": "메이플도 첨 나와서 초딩때 전직 한번 해보고 해본적이 없는데.... 리니지는 진짜 엄두도 안나네",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203314?m=humor"
+        }
+      ]
+    }
+  },
+  {
+    "Rank": 16,
+    "Keyword": "스타크래프트",
+    "Trend_Score": 0.84,
+    "Trend_Score_Raw": 25.9319,
+    "Target_Day_Mentions": 11,
+    "Prev_Day_Mentions": 5,
+    "Growth_Ratio": 2.2,
+    "Growth_Percentage": "+120.0%",
+    "Z_Score": 2.449,
+    "Title_Count": 1,
+    "Entropy": 0.335,
+    "Platforms": 3,
+    "Date_Range": "20260222→20260223",
+    "Platform_List": [
+      "fmkorea",
+      "ruliweb",
+      "youtube"
+    ],
+    "Examples": {
+      "fmkorea": [
+        {
+          "comment": "얘넨 빙상이 우리나라 스타크래프트 같은거임 ㅋㅋ",
+          "link": "https://www.fmkorea.com/best/9519209356"
+        }
+      ],
+      "ruliweb": [
+        {
+          "comment": "1995년에 펜티엄 133을 쓸정도면 초갑부급이었음. 현실은 스타크래프트가 나온 1998년에도 펜티엄 133 쓸정도면 중간은 갔다.",
+          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203410?page=5&m=humor&t=now"
+        }
+      ]
+    }
+  },
+  {
+    "Rank": 17,
     "Keyword": "핑크",
-    "Trend_Score": 3.73,
+    "Trend_Score": 0.74,
+    "Trend_Score_Raw": 22.9088,
     "Target_Day_Mentions": 20,
     "Prev_Day_Mentions": 13,
     "Growth_Ratio": 1.54,
     "Growth_Percentage": "+53.8%",
+    "Z_Score": 1.871,
+    "Title_Count": 1,
     "Entropy": 0.65,
     "Platforms": 4,
     "Date_Range": "20260222→20260223",
@@ -942,508 +1218,6 @@
         {
           "comment": "페베여라라 이거보다 잘어울리는 색 없는 사람인데 이게 유행이네...정확하게는 모브톤 페일말고 채도 약간 있는 베이비핑크가 예쁘긴함 4번째 5번째 니트처럼",
           "link": "https://theqoo.net/hot/4102995391?page=3"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 14,
-    "Keyword": "니들",
-    "Trend_Score": 3.31,
-    "Target_Day_Mentions": 12,
-    "Prev_Day_Mentions": 6,
-    "Growth_Ratio": 2.0,
-    "Growth_Percentage": "+100.0%",
-    "Entropy": 0.574,
-    "Platforms": 3,
-    "Date_Range": "20260222→20260223",
-    "Platform_List": [
-      "dcinside",
-      "fmkorea",
-      "theqoo"
-    ],
-    "Examples": {
-      "dcinside": [
-        {
-          "comment": "개호로들 관심도 없다..니들 돈으로 하는거 아니면, 정유라랑 머가 다르노?정유라도 애미가 비리 저지른거지, 부모 잘 만나서 기업 후원받고 메달 딴건데..",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407451&_dcbest=1&page=1"
-        },
-        {
-          "comment": "니들같은 생산성없는 벌레들한테 쓸돈으로 공부잘하는애들이나 기업에 지원금 들어가야되는데",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407451&_dcbest=1&page=1"
-        },
-        {
-          "comment": "니들같은 영포티들은 인구소멸로 나라망하는꼴보고싶제?",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407396&_dcbest=1&page=1"
-        },
-        {
-          "comment": "거기다 개센징 니들 교회에 헌금도 내자나? 개독 청교도 제정일치 신정체제니...그러니 더 가난하지..중국보다도 훨 가난한게 니들 개센징임..헬밖에선 안싸도 될 돈을 써야하니..바쳐야 하니..또 있네..상속세..상속세 양도소득세도 세계 최고 수준이지..개센징 니들은 여전히 그지임..일본 추월? 꿈이려노..한남 자살!!!!!!!!!",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407263&_dcbest=1&page=3"
-        },
-        {
-          "comment": "오히려 기본소득없이 자본주의가 굴러가면 니들이 두려워하는 공산주의 디스토피아보다 더 심각한 무언가가 도래할 수 있음기본 소득 없이 ai만 발전한다면 결국 자본주의의 원리에 의해서 제일 효율적인 의사결정을 내리고 노동이 가능한 ai가 인간의 자리를 점점 대체할것임CEO같은 경영인들도 그것을 피할 수 없음 ai가 24시간 모니터링 하면서 굴리는 회사를 인간따위가 운영하는 회사가 이길 수 있겠음?그리고 그게 심해지면 이제 인간은 경제주체에서 완전히 추방되고 ai끼리 모든 경제활동을 하게 될것이고 인간은 그 부산물을 주워먹으며 살게될것임어쩌면 그것조차 비효율이라 생각해 ai가 인간을 치워버릴 수도 있겠내",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407263&_dcbest=1&page=3"
-        },
-        {
-          "comment": "그러니까 니들이 황금세대라는 사실 항상 잊지 말고 20대 ㅈ만하던 시절 선동당한 기억과 그런거 다 잊고 50~60대를 준비해 그때가 니네가 이 나라 구하는 시점이 된다",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407258&_dcbest=1&page=3"
-        },
-        {
-          "comment": "항상 기억해 황금세대는 황금세대만의 역할이 있어 그 밑에 알파세대부터는 장담을 못해 니들이 다 해줘야돼 불편했던거 억울했던거 슬펐던거 다 잊어 니들은 405060에 전성기를 시작해서 이 나라 잘못된 길로 간거 다 바로잡아줘야돼 그게 니들 역할이야 뭐가 옳았고 뭐가 잘못됐었고를 계속 판단하고 기억해 그리고 405060에 마음껏 펼쳐 그걸 해주는게 니들 황금세대 역할이야 잊지마 나라를 구하는건 항상 그 나라 역사상 가장 뛰어난 세대가 해주는거야",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407258&_dcbest=1&page=3"
-        },
-        {
-          "comment": "90년생이나 99년생이나 90년대생들 다 똑같은 피해자들이지 미친놈아 ㅋㅋㅋㅋ 거기서도 갈라치기하면서 컷 하고 싶냐 현 20대가 이 악물고 30대들이랑 같은 선상 되기 싫어서 발악하는걸로 보임 00대들이 보면 같은 틀니들이 쉰내 싸움하는걸로 보지",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407258&_dcbest=1&page=3"
-        }
-      ],
-      "fmkorea": [
-        {
-          "comment": "니들은 태극기 어디서구했냐 ㅋㅋㅋ",
-          "link": "https://www.fmkorea.com/best/9519613537"
-        },
-        {
-          "comment": "미국이 지상군 투입 한다기보단멕시코 니들 ㅈ되든 말든 걍 불 지를거니까 마약 관리 해라에 가까움뒤처리는 멕시코 군경 담당",
-          "link": "https://www.fmkorea.com/best/9519673393"
-        },
-        {
-          "comment": "보면 알아 ㅇㅈㄹ니들은 뭔 개집 팬도 아니구만니들이야말로 할 말이 보면 알아 밖에 없냐 ㅋㅋ실제로 안 분 장면을 가져오던가",
-          "link": "https://www.fmkorea.com/best/9519468881"
-        },
-        {
-          "comment": "지금 심판 성향을 보셈 ㅋㅋ 니들 요케레스 ㅈㄴ 구르는데 안보이노?",
-          "link": "https://www.fmkorea.com/best/9519468881"
-        }
-      ],
-      "theqoo": [
-        {
-          "comment": "얘네 왜이러냐? 530. 무명의 더쿠 20:52 남성 암도 무섭고 아프게 검사한다 남성 질환이엇으면 벌써 안아프게 블라블라 이런 류의 말들 너무 저능통와서 그만좀보고싶다 539. 무명의 더쿠 21:18 22 + 그럼 직접 의사 돼서 안아픈 방법 찾으면 되잖아? 여자가 의사 못하는 시대도 아니고 니들이 제일 저능통 와🤦‍♂️ 지금 암 검사만 얘기하는게 아니잖아 맥락맹인가 지금 여의사가 없단얘기가 아니잖아 현대의학이 발전해온 시기 전체 동안의 얘기를 하는거잖아 맥락맹인가 ??? 이 틀린말 한거 없어 왜그래 동현아 기부니 나빳쪄?",
-          "link": "https://theqoo.net/hot/4103085114?page=3"
-        },
-        {
-          "comment": "?? 갑자기 성별 바꿔주셨네. 헛소리좀 그만 하자 제약회사나 의료기기 회사나 시장성 있고 돈 되면 비용 투입해서 연구함. 난자채취나 유방암 검사가 아픈 방식으로 시술 /검사가 이루어졌다는 것이 과학과 의학의 한계가 아니라 여자의 불편을 개선할 필요성을 못느껴서라는 니들 주장을 뒷받침할 제대로 된 근거나 좀 가져와봐라",
-          "link": "https://theqoo.net/hot/4103085114?page=3"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 15,
-    "Keyword": "팬덤",
-    "Trend_Score": 3.31,
-    "Target_Day_Mentions": 12,
-    "Prev_Day_Mentions": 6,
-    "Growth_Ratio": 2.0,
-    "Growth_Percentage": "+100.0%",
-    "Entropy": 0.467,
-    "Platforms": 4,
-    "Date_Range": "20260222→20260223",
-    "Platform_List": [
-      "dcinside",
-      "fmkorea",
-      "nate",
-      "youtube"
-    ],
-    "Examples": {
-      "dcinside": [
-        {
-          "comment": "놀랍게도 페미년들이 쟤네깐다는 것도 qwer팬덤이 만들어낸 선동임",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407362&_dcbest=1&page=2"
-        },
-        {
-          "comment": "sns 테러한것도 사실 qwer 팬덤이 페미인척 테러한거라고? 삐슝빠슝",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407362&_dcbest=1&page=2"
-        },
-        {
-          "comment": "락메탈씬을 손딸딸이 서커스판으로 전락시킨 원흉들아닌가 ㅌㅌ 우월의식 오지는 롹빠들 사이에서도 선민의식 개쩔기로 악명높은밴드와 악성팬덤의 끔찍한 콜라보아으",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407318&_dcbest=1&page=2"
-        },
-        {
-          "comment": "원조 아스퍼거 팬덤",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407280&_dcbest=1&page=2"
-        },
-        {
-          "comment": "야구동호회 사회인야구 하는 놈들은 학벌 좋은 대기업 전문직 애들이 많은 반면축구동호회 조기축구 하는 놈들은 앰생이 많은 건 ㄹㅇ 팩트지사실 두 스포츠 팬덤만 봐도 개축은 저학력 노가다들의 스포츠라",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407240&_dcbest=1&page=3"
-        }
-      ],
-      "youtube": [
-        {
-          "comment": "티원은 별 생각없는데, 그 팬덤들이 너무 짜쳐. 그 동안 조롱멸시했던거 업보라고 생각하고 돌 날아오는거 잘 맞아라. 퍼텐은 대신해서 잘 나가줄게.",
-          "link": "https://www.youtube.com/watch?v=27ZLeIJvSqo"
-        }
-      ],
-      "nate": [
-        {
-          "comment": "엥 아이들 한번 침체기 오기 전에도 꾸준히 2군은 했었고 톰보이 잘된 후엔 4연속?히튼가 치지 않았나 그정도면 딱봐도 돈 ㅈㄴ벌거라는거 보이지않음? 애초에 여돌 중에선 대중형보단 팬덤형인 팀이었으니까 더더욱 돈벌이가 잘되겠지 뭐",
-          "link": "https://pann.nate.com/talk/375255657"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 16,
-    "Keyword": "초코",
-    "Trend_Score": 3.21,
-    "Target_Day_Mentions": 13,
-    "Prev_Day_Mentions": 7,
-    "Growth_Ratio": 1.86,
-    "Growth_Percentage": "+85.7%",
-    "Entropy": 0.523,
-    "Platforms": 4,
-    "Date_Range": "20260222→20260223",
-    "Platform_List": [
-      "dcinside",
-      "fmkorea",
-      "nate",
-      "youtube"
-    ],
-    "Examples": {
-      "dcinside": [
-        {
-          "comment": "벽 이 면 다행이지 어떤곳은 변기커버에 초코범벅 해놓은곳도 있다",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407364&_dcbest=1&page=2"
-        },
-        {
-          "comment": "천우의 초코...",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407304&_dcbest=1&page=2"
-        }
-      ],
-      "youtube": [
-        {
-          "comment": "갑자기 죄송하지만 님들, 편의점 두쫀쿠 먹지 마세요.. 그 중에서도 초코테크 껀 절대 안됌요 카다이프 색이 초록 색소로 발광하고 카다이프 겁나 적음.. 그리고 마시멜로우 피가 아니라 준초콜렛 덩어리로 감싸짐... 그리고 초코테크 제품 다 맛 없으니 제발 사먹지 마세요",
-          "link": "https://www.youtube.com/watch?v=8E-X4_TVv2A"
-        },
-        {
-          "comment": "초코테크 두바이 쫀득 초코볼이라고 적혀있어요... 두쫀쿠가 아님 애초에😅 두바이초코찹쌀떡사고 마시멜로아니라고 머라하겠네 그리고 난 마시멜로피랑 카다이프식감 개구리고 이 초코볼이 더 조합이 좋아서 그것만 5개 구매했는데",
-          "link": "https://www.youtube.com/watch?v=8E-X4_TVv2A"
-        },
-        {
-          "comment": "혹시 지에스 두바이초코 만든곳인가 두바이초코 구하기 귀찮아서 지에스서 사먹었다가 첨이자 마지막 두바이초콜렛됨 너어무 맛없어서 다른걸 먹고 싶은생각도 싹 사라짐.",
-          "link": "https://www.youtube.com/watch?v=8E-X4_TVv2A"
-        },
-        {
-          "comment": "엥 나도 내 주변 지인들도 세돌까진 입에 뽀뽀 절대 안하고 후후 불어주는거 금지 식기 분리하기 이거 하나 유난떨었더니 충치 고생 안함 다른 또래 친구들 다 치과가서 치료받을때 우리애는 깨끗 유전이 아닌게 나랑 남편 둘 다 치아 약함 +초코 젤리 사탕도 멀리했음 후회하지말고 하는게 아니라 밑져야 본전이니까 저거라도 내가 참고 조심해주는게 맞는듯",
-          "link": "https://www.youtube.com/watch?v=5kDhQbJasAQ"
-        }
-      ],
-      "fmkorea": [
-        {
-          "comment": "초코칩 GOAT",
-          "link": "https://www.fmkorea.com/best/9519712663"
-        }
-      ],
-      "nate": [
-        {
-          "comment": "당분도 어느정도는 필요한게 또 사람 몸인데 정제된 탄수화물은 많이 먹어서 좋을거 하나 없어. 빵이랑 커피 마실거면 커피는 unsweetened 로 마셔. 빵도 가급적 뭐 초코 이런거 많이 들어간거보다는 베이글같은 좀 플레인한거 먹거나.",
-          "link": "https://pann.nate.com/talk/375256152"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 17,
-    "Keyword": "다이아",
-    "Trend_Score": 3.21,
-    "Target_Day_Mentions": 13,
-    "Prev_Day_Mentions": 7,
-    "Growth_Ratio": 1.86,
-    "Growth_Percentage": "+85.7%",
-    "Entropy": 0.383,
-    "Platforms": 3,
-    "Date_Range": "20260222→20260223",
-    "Platform_List": [
-      "ruliweb",
-      "theqoo",
-      "youtube"
-    ],
-    "Examples": {
-      "youtube": [
-        {
-          "comment": "자르반 스끼르는 다이아 미만이긴하다",
-          "link": "https://www.youtube.com/watch?v=Yl88itC-xCc"
-        },
-        {
-          "comment": "앞으로 다이아 찾을때 동굴만 찾겠습니다",
-          "link": "https://www.youtube.com/watch?v=6Ro_QH2F8w4"
-        }
-      ],
-      "ruliweb": [
-        {
-          "comment": "10년전 플레면 그냥 재능 없어도 그냥 하기만해도 찍던데.. 나도 시즌4때 다이아 5까진 찍어보기도 했고",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203514?page=4&m=humor&t=now"
-        },
-        {
-          "comment": "10년전 롤판은 나도 플레라 가끔 다이아랑 놀았던 시절임.. 접은게 3년전인데 그때 내 티어는 골딱이었고..",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203514?page=4&m=humor&t=now"
-        },
-        {
-          "comment": "10년전이면 2016년인데 이때 챌린저도 있던시절이라 프로 하고싶으면 챌린저는 기본이지 초딩기준 다이아면 가능성 있겠다 중딩이면 글렀음",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203514?page=4&m=humor&t=now"
-        },
-        {
-          "comment": "다이아도 아니고 플레티넘이면 10년전 기준으로도 그냥 동네에서 좀 하는 수준 아닌가 그때도 다이아 예티거리던 시절이었는데",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203514?page=4&m=humor&t=now"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 18,
-    "Keyword": "한반도",
-    "Trend_Score": 2.77,
-    "Target_Day_Mentions": 25,
-    "Prev_Day_Mentions": 23,
-    "Growth_Ratio": 1.09,
-    "Growth_Percentage": "+8.7%",
-    "Entropy": 0.335,
-    "Platforms": 3,
-    "Date_Range": "20260222→20260223",
-    "Platform_List": [
-      "dcinside",
-      "ruliweb",
-      "theqoo"
-    ],
-    "Examples": {
-      "dcinside": [
-        {
-          "comment": "한반도에 트롤짓 원인 찾아보면 항상 나오는 조선 ㄷㄷ",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407490&_dcbest=1&page=1"
-        },
-        {
-          "comment": "신라=한반도 여포 ㅋㅋㅋㅋㅋㅋㅋ",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407490&_dcbest=1&page=1"
-        },
-        {
-          "comment": "무식한 슬라브는 기초훈련소의 기원이 한반도라는것도 모르는건가?",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407454&_dcbest=1&page=1"
-        },
-        {
-          "comment": "우리 민족혼을 말살코자 일제는 한반도에 카캡사를 보급시켯다",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407421&_dcbest=1&page=1"
-        },
-        {
-          "comment": "저건 안타까운거고. 여러분들은 나라가 제발 죽으라고 하소연을 하는 중인데 언제 돌아가실거에요.... 나라 세금 그만 축내고 한반도를 정화시켜 주세요ㅠㅠ",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407396&_dcbest=1&page=1"
-        },
-        {
-          "comment": "팩트) 2020년대가 한반도 역사상 최전성기",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407378&_dcbest=1&page=1"
-        },
-        {
-          "comment": "한반도사 최고의 놀이 같은데 왜",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407352&_dcbest=1&page=2"
-        },
-        {
-          "comment": "한반도의 ‘벤테타’ 였음. 마을단위로 시비가 붙어서 말로 해결안되면 석전으로 쇼부봤음.",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407352&_dcbest=1&page=2"
-        },
-        {
-          "comment": "조선은 진짜 한반도 최암흑기임",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407259&_dcbest=1&page=3"
-        },
-        {
-          "comment": "재들이 바치지 않는이상 한반도 힘으론 안되니깐 영원히 저기 있을거야",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407253&_dcbest=1&page=3"
-        },
-        {
-          "comment": "우리 민족혼을 말살코자 일제는 한반도에 축구를 보급시켰다",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407240&_dcbest=1&page=3"
-        },
-        {
-          "comment": "우리 민족혼을 말살코자 일제는 한반도에 음주운전을 보급시켰다",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407222&_dcbest=1&page=3"
-        },
-        {
-          "comment": "우리 민족혼을 말살코자 일제는 한반도에 카메라와 필름을 보급시켰다",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407218&_dcbest=1&page=3"
-        },
-        {
-          "comment": "뭘하든 한반도는 작고 그나마도 반토막인거 팩트임",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407208&_dcbest=1&page=3"
-        },
-        {
-          "comment": "우리 민족혼을 말살코자 일제는 한반도에 사회주의를 보급시켰다",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407198&_dcbest=1&page=3"
-        },
-        {
-          "comment": "우리 민족혼을 말살코자 일제는 한반도에 도시철도를 보급시켰다",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407167&_dcbest=1&page=3"
-        },
-        {
-          "comment": "우리 민족혼을 말살코자 조선총독부는 한반도에 피겨스케이팅을 보급시켰다",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407158&_dcbest=1&page=3"
-        }
-      ],
-      "ruliweb": [
-        {
-          "comment": "'한반도 가는데 여권이 왜 필요해'",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74203768?m=humor"
-        }
-      ],
-      "theqoo": [
-        {
-          "comment": "왕으로서의 광해 결과물 -> 반정 선조 결과물 -> 임진왜란 인조 결과물 -> 병자호란 자 누가 더 왕으로서 최악이지? 선조 때는 백성들이 선조 런에 빡쳐서 궁궐에 불까지 질렀음 그만큼 백성들이 분노했다는 뜻임 광해군과 이순신 그리고 의병들이 없었으면 선조는 나라 재정 무너지는 걸 넘어 일본에게 한반도를 내줬을거임 지 목숨 하나 살리고 전쟁 났다고 냅다 망명신청하는 왕이라니 명도 얼마나 어이가 없었으면 의심하고 거부했겠어 인조는 더 말할 것도 없고 이런 걸 왜 다 빼고 말하냐고 도 지금 선조 인조 왕으로서의 업적 얘기할 때 왜란 호란은 최대한 빼고 말하잖아 왜? 그때 왕으로서 보여준 능력이 1도 없으니까 그렇지 근데 그 둘 재위기간 중 가장 큰 사건이자 조선역사 통틀어서도 가장 큰 사건들을 평가에서 왜 빼? 그 전쟁으로 백성들이 얼마나 고통을 받았는데 광해에 대해 말할 땐 최악인 것만 끌고 오고 선조 인조에 대해 말할 땐 최상인 것만 끌고 와서 비교하는게 말이 안된다는 거임 광해가 명군이 아닐 수 있지 암군일 수 있지 근데 선조랑 인조가 광해보다 낫다? 왜란과 호란이 있는 한 절대 그럴 수는 없음",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 19,
-    "Keyword": "올림픽금메달",
-    "Trend_Score": 2.67,
-    "Target_Day_Mentions": 11,
-    "Prev_Day_Mentions": 6,
-    "Growth_Ratio": 1.83,
-    "Growth_Percentage": "+83.3%",
-    "Entropy": 0.424,
-    "Platforms": 3,
-    "Date_Range": "20260222→20260223",
-    "Platform_List": [
-      "dcinside",
-      "fmkorea",
-      "theqoo"
-    ],
-    "Examples": {
-      "dcinside": [
-        {
-          "comment": "쇼트트랙 올림픽금메달 최다 안현수 맞냐?",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407214&_dcbest=1&page=3"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 20,
-    "Keyword": "임진왜란",
-    "Trend_Score": 2.22,
-    "Target_Day_Mentions": 17,
-    "Prev_Day_Mentions": 14,
-    "Growth_Ratio": 1.21,
-    "Growth_Percentage": "+21.4%",
-    "Entropy": 0.451,
-    "Platforms": 3,
-    "Date_Range": "20260222→20260223",
-    "Platform_List": [
-      "dcinside",
-      "ruliweb",
-      "theqoo"
-    ],
-    "Examples": {
-      "dcinside": [
-        {
-          "comment": "일본은 은이 많은 나라로 서양에 알려져서 계속 교역 중이었는데 ㅎㅎ 임진왜란 이전부터 네덜란드 포르투갈과 은 무역 했던 나라가 일본",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407490&_dcbest=1&page=1"
-        },
-        {
-          "comment": "11v 🎁 5월5일 어린이날 축하합니다 5월8일 어버이날 축하합니다 모두 건행 소원성취하세요 파이팅 🎁🎁🎁🎁🎁 5월 8일 어버이날 +히틀러가 항복한날이다 알고살자 💟💟💟👍🍀🍀히틀러 기독교인 한글과 영어로 검색확인하자 🌷🌷🌷4월 28일 구국영웅 이순신장군 탄신일 축하합니다 🎁 임진왜란 배후 예수회 검색확인하자 🎁💟기독교 불교 이슬람교 힌두교 세계4대종교 모두 천국가는것도 있고 신도 있다 모르면 공부좀해라 🎁🌻천국 가는것은 다른종교도 있는것이다 하나만 알고 사기치지마라 ⭐종교 믿는다고 천국가는게 아니다 좋은 사람이 천국간다 인과법칙 우주 법칙이다 좋은 사람이 되자🌷🌷🌷단군의 후손 홍익인간 파이팅 🍀⭐🌈💟",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407182&_dcbest=1&page=3"
-        }
-      ],
-      "theqoo": [
-        {
-          "comment": "선조 인조가 보통 정병이었어야지... 정병걸린 애비때문에 멀쩡한 사람이 정병걸린 케이스 같음 그리고 백성버리고 런한 선조 뒷수습한다고 임진왜란때 개같이 구른 공이 있잖아",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
-        },
-        {
-          "comment": "선조와 인조 사이에 끼어서+임진왜란때 고생해서",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
-        },
-        {
-          "comment": "인조랑 비교하면 저건 병크도 아님 선조대신 임진왜란 수습한 사람인데",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
-        },
-        {
-          "comment": "임진왜란 때 앞장 써서 싸운것도 크지 그때 민심이 그렇게 좋았다며",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
-        },
-        {
-          "comment": "임진왜란 수습이 제일 컸을거같아 내가 그시대 백성이었대도",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
-        },
-        {
-          "comment": "광해군이 시행한 사실은 내려치고 선조대 논의하고 인조때 다시 시행한 건 올려치고 그게 아이러니란 거임 그리고 왕으로서 공과 따질 때 선조가 임진왜란 때 명으로 튀려고 한거는 왜 반영이 안되며 인조가 병자호란 때 보여준 꼴은 왜 반영이 안되냐 이거임 그게 가장 큰 일이었고 군주의 능력이 가장 필요할 때 가장 무능력했던 두명인데",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
-        },
-        {
-          "comment": "임진왜란때 잘했고 영창은 여러모로 위협인게 사실이니까",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
-        },
-        {
-          "comment": "왕으로서의 광해 결과물 -> 반정 선조 결과물 -> 임진왜란 인조 결과물 -> 병자호란 자 누가 더 왕으로서 최악이지? 선조 때는 백성들이 선조 런에 빡쳐서 궁궐에 불까지 질렀음 그만큼 백성들이 분노했다는 뜻임 광해군과 이순신 그리고 의병들이 없었으면 선조는 나라 재정 무너지는 걸 넘어 일본에게 한반도를 내줬을거임 지 목숨 하나 살리고 전쟁 났다고 냅다 망명신청하는 왕이라니 명도 얼마나 어이가 없었으면 의심하고 거부했겠어 인조는 더 말할 것도 없고 이런 걸 왜 다 빼고 말하냐고 도 지금 선조 인조 왕으로서의 업적 얘기할 때 왜란 호란은 최대한 빼고 말하잖아 왜? 그때 왕으로서 보여준 능력이 1도 없으니까 그렇지 근데 그 둘 재위기간 중 가장 큰 사건이자 조선역사 통틀어서도 가장 큰 사건들을 평가에서 왜 빼? 그 전쟁으로 백성들이 얼마나 고통을 받았는데 광해에 대해 말할 땐 최악인 것만 끌고 오고 선조 인조에 대해 말할 땐 최상인 것만 끌고 와서 비교하는게 말이 안된다는 거임 광해가 명군이 아닐 수 있지 암군일 수 있지 근데 선조랑 인조가 광해보다 낫다? 왜란과 호란이 있는 한 절대 그럴 수는 없음",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
-        },
-        {
-          "comment": "일단 앞뒤 왕이 최악으로 맨날 이름 거론되는 인물들이라...임진왜란때 일이 참작되는것도 있는듯...",
-          "link": "https://theqoo.net/hot/4102886387?page=3"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 21,
-    "Keyword": "여자친구",
-    "Trend_Score": 1.63,
-    "Target_Day_Mentions": 13,
-    "Prev_Day_Mentions": 11,
-    "Growth_Ratio": 1.18,
-    "Growth_Percentage": "+18.2%",
-    "Entropy": 0.732,
-    "Platforms": 5,
-    "Date_Range": "20260222→20260223",
-    "Platform_List": [
-      "dcinside",
-      "fmkorea",
-      "nate",
-      "theqoo",
-      "youtube"
-    ],
-    "Examples": {
-      "dcinside": [
-        {
-          "comment": "헤어진 여자친구한테 칼침 37방씩 놓고 얼굴을 형체도 못알아보게 만들고 시신 토막내는 한남들아 저게 무서워??? 여자들은 거절 한마디 할 때도 혹시라도 해코지 당할까봐 조심스럽게 돌려말하며 살아야 해.",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407400&_dcbest=1&page=1"
-        }
-      ],
-      "youtube": [
-        {
-          "comment": "여자친구가 뭐죠?",
-          "link": "https://www.youtube.com/watch?v=BZsg4TvwsLI"
-        },
-        {
-          "comment": "여자친구 안무는 유명한데 왜저렇게 무례햇지",
-          "link": "https://www.youtube.com/watch?v=LIRDU4gqSZE"
-        },
-        {
-          "comment": "여자친구 데뷔초부터 좋아했던 사람인데 솔직히 춤 모르는 사람 입장에서 보면 ㄹㅇ쉬워보임 카이는 평소에 추는 춤 난이도 디폴트값이 저거라서 그런듯",
-          "link": "https://www.youtube.com/watch?v=LIRDU4gqSZE"
-        }
-      ],
-      "fmkorea": [
-        {
-          "comment": "김도영 여자친구 있나",
-          "link": "https://www.fmkorea.com/best/9517691871"
-        },
-        {
-          "comment": "시이발 여자친구 집 데려따줘야대는데... ㅈ됫노 회사도 난리네 만사니요 항구폐쇄되서",
-          "link": "https://www.fmkorea.com/best/9519673393"
-        },
-        {
-          "comment": "여자친구 버릴만 했던 남자 ㄷㄷ",
-          "link": "https://www.fmkorea.com/best/9519550007"
-        }
-      ],
-      "nate": [
-        {
-          "comment": "대학때 과에서 고백 젤많이 받았음 이건 졸업후 친구들이 애기해준거고!!! 초중고대 여자친구들 엄청많았음 시기질투없었음",
-          "link": "https://pann.nate.com/talk/375255983"
-        }
-      ],
-      "theqoo": [
-        {
-          "comment": "와 나 저런 말 입으로 뱉는 사람 너무 처음 봄 ㅋㅋㅋㅋㅋㅋㅋ 우와 그러고ㅠ여자친구도 있다니.. 개쪽팔리겠다",
-          "link": "https://theqoo.net/hot/4102775573?page=4"
         }
       ]
     }

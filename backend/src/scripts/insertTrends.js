@@ -41,6 +41,7 @@ async function main() {
   const keywordsData  = JSON.parse(fs.readFileSync(KEYWORDS_FILE, 'utf-8'));
   const timelineData  = JSON.parse(fs.readFileSync(TIMELINE_FILE, 'utf-8'));
   const collectedDate = toSqlDate(TARGET_DATE);
+  const targetSqlDate = toSqlDate(TARGET_DATE);
 
   console.log(`✅ 키워드 ${keywordsData.length}개 로드`);
   console.log(`✅ 타임라인 ${Object.keys(timelineData).length}개 키워드 로드`);
@@ -54,7 +55,6 @@ async function main() {
     ])
   ];
 
-  // bulk insert (중복 무시)
   const keywordValues = allKeywords.map(kw => [kw]);
   await db.query(
     `INSERT IGNORE INTO TREND_KEYWORD (keyword_name) VALUES ?`,
@@ -68,6 +68,12 @@ async function main() {
   );
   const keywordIdMap = {};
   kwRows.forEach(row => { keywordIdMap[row.keyword_name] = row.keyword_id; });
+
+  // trend_score 맵 생성 (keyword → Trend_Score)
+  const trendScoreMap = {};
+  keywordsData.forEach(item => {
+    trendScoreMap[item.Keyword] = item.Trend_Score || 0;
+  });
 
   console.log(`  ✅ TREND_KEYWORD: ${allKeywords.length}개 처리`);
 
@@ -94,17 +100,14 @@ async function main() {
 
     if (exampleValues.length === 0) continue;
 
-    // USAGE_EXAMPLE bulk insert
     const [result] = await db.query(
       `INSERT INTO USAGE_EXAMPLE (platform, url, content, collected_date) VALUES ?`,
       [exampleValues]
     );
 
-    // insertId ~ insertId + affectedRows - 1 범위가 방금 들어간 example_id들
     const firstId      = result.insertId;
     const affectedRows = result.affectedRows;
 
-    // KEYWORD_EXAMPLE 매핑 bulk insert
     const mappingValues = [];
     for (let i = 0; i < affectedRows; i++) {
       mappingValues.push([keywordId, firstId + i]);
@@ -120,23 +123,30 @@ async function main() {
   console.log(`  ✅ USAGE_EXAMPLE: ${exampleCount}개 INSERT`);
 
   // ── 3. KEYWORD_STATS bulk upsert ──────────────────
+  // timeline 데이터: mention_count만, trend_score는 NULL
+  // TARGET_DATE 행: trend_score도 같이 저장
   console.log('\n📌 KEYWORD_STATS INSERT 중...');
 
   const statsValues = [];
 
   for (const [keyword, dateCounts] of Object.entries(timelineData)) {
-    const keywordId = keywordIdMap[keyword];
+    const keywordId  = keywordIdMap[keyword];
     if (!keywordId) continue;
 
     for (const [dateStr, mentions] of Object.entries(dateCounts)) {
-      statsValues.push([keywordId, toSqlDate(dateStr), mentions]);
+      const statDate   = toSqlDate(dateStr);
+      // TARGET_DATE 날짜면 trend_score 포함, 나머지는 NULL
+      const trendScore = statDate === targetSqlDate ? (trendScoreMap[keyword] ?? null) : null;
+      statsValues.push([keywordId, statDate, mentions, trendScore]);
     }
   }
 
   if (statsValues.length > 0) {
     await db.query(
-      `INSERT INTO KEYWORD_STATS (keyword_id, stat_date, mention_count) VALUES ?
-       ON DUPLICATE KEY UPDATE mention_count = VALUES(mention_count)`,
+      `INSERT INTO KEYWORD_STATS (keyword_id, stat_date, mention_count, trend_score) VALUES ?
+       ON DUPLICATE KEY UPDATE
+         mention_count = VALUES(mention_count),
+         trend_score   = VALUES(trend_score)`,
       [statsValues]
     );
   }
