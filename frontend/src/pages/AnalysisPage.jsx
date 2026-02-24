@@ -436,10 +436,13 @@ const AnalysisPage = () => {
     const youtubeComments = (allComments || []).filter((c) => (c?.source || '').includes('youtube'));
     const otherComments = (allComments || []).filter((c) => !(c?.source || '').includes('youtube'));
     
+    const chartDataKey = selectedPlatform === 'all' ? 'mentions' : selectedPlatform;
+
     return {
       ...data,
       history: historyFiltered,
       comments: allComments,
+      chartDataKey,
       youtubeComments: youtubeComments.slice(0, 4),
       otherComments: otherComments.slice(0, 6),
       wordCloud: data.wordCloud || data.word_cloud || [], // word_cloud 호환성 추가
@@ -448,6 +451,8 @@ const AnalysisPage = () => {
   }, [data, startDate, endDate, selectedPlatform]);
 
   // 메인 차트용 데이터 가공 (최근 7일만 자르기)
+  const { chartDataKey = 'mentions' } = filteredData || {};
+
   const mainChartData = useMemo(() => {
     const history = filteredData?.history || [];
     // 데이터가 7개보다 많으면 뒤에서 7개만 자름, 아니면 그대로 사용
@@ -702,7 +707,7 @@ const AnalysisPage = () => {
                   />
                   <Line
                     type="monotone"
-                    dataKey="mentions"
+                    dataKey={chartDataKey}
                     stroke="#4F46E5"
                     strokeWidth={3}
                     dot={{ r: 4, fill: '#4F46E5', strokeWidth: 2, stroke: '#fff' }}
@@ -991,7 +996,7 @@ const AnalysisPage = () => {
                     />
                     <Line
                       type="monotone"
-                      dataKey="mentions"
+                      dataKey={chartDataKey}
                       stroke="#4F46E5"
                       strokeWidth={3}
                       dot={false}
