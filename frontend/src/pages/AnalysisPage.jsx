@@ -13,6 +13,8 @@ import {
   Newspaper,
   Star,
   Copy,
+  X, 
+  ArrowsOutSimple,
 } from '@phosphor-icons/react';
 import {
   LineChart,
@@ -221,6 +223,7 @@ const AnalysisPage = () => {
   const keyword = searchParams.get('keyword');
   const navigate = useNavigate();
 
+  // 기존 State
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -230,16 +233,17 @@ const AnalysisPage = () => {
   const [news, setNews] = useState([]);
   const [aiSummary, setAiSummary] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
-  
-  // [NEW] 스크랩 상태 추가
   const [isScrapped, setIsScrapped] = useState(false);
 
-  // 페이지네이션(7개 고정)
+  // [NEW] ★ 차트 확대 모달 상태 추가
+  const [isChartModalOpen, setIsChartModalOpen] = useState(false);
+
+  // 페이지네이션
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
-
   const commentsTopRef = useRef(null);
 
+  // 데이터 불러오기
   const fetchData = (currentStart, currentEnd) => {
     if (!keyword) return;
 
@@ -250,10 +254,12 @@ const AnalysisPage = () => {
     if (currentEnd) query += `&endDate=${currentEnd}`;
 
     Promise.all([
-      fetch(toApiUrl(`/analysis?${query}`)).then((res) => res.json()),
-      fetch(toApiUrl(`/news?${query}`)).then((res) => res.json()),
+      fetch(`http://localhost:5000/api/analysis?${query}`).then((res) => res.json()),
+      fetch(`http://localhost:5000/api/news?${query}`).then((res) => res.json()),
     ])
       .then(([analysisData, newsData]) => {
+        console.log("🔥 백엔드 응답 데이터:", analysisData); 
+        
         if (analysisData.found) {
           setData(analysisData);
           if (!currentStart && analysisData.history?.length > 0) {
@@ -275,11 +281,11 @@ const AnalysisPage = () => {
 
   useEffect(() => {
     setAiSummary(null);
-    setIsAiLoading(true)
+    setIsAiLoading(true);
     setStartDate('');
     setEndDate('');
     setCurrentPage(1);
-    setIsScrapped(false); // 키워드 변경 시 스크랩 상태 초기화
+    setIsScrapped(false);
     fetchData('', '');
     fetchAiSummary(keyword, '', '');
   }, [keyword]);
@@ -291,7 +297,7 @@ const AnalysisPage = () => {
       if (start) query += `&startDate=${start}`;
       if (end) query += `&endDate=${end}`;
 
-      const res = await fetch(toApiUrl(`/summary?${query}`));
+      const res = await fetch(`http://localhost:5000/api/summary?${query}`);
       const data = await res.json();
       setAiSummary(data.summary);
     } catch (err) {
@@ -303,18 +309,15 @@ const AnalysisPage = () => {
   };
 
   const handleSearch = (e) => {
-    navigateToAnalysisOnEnter({
-      event: e,
-      keyword: searchTerm,
-      navigate,
-      preserveRawKeyword: true,
-    });
+    if (e.key === 'Enter' && searchTerm.trim()) {
+      navigate(`/analysis?keyword=${searchTerm}`);
+    }
   };
 
   const handleDateApply = () => {
     fetchData(startDate, endDate);
     setCurrentPage(1);
-    fetchAiSummary(keyword, startDate, endDate)
+    fetchAiSummary(keyword, startDate, endDate);
   };
 
   const handleDateReset = () => {
@@ -325,19 +328,15 @@ const AnalysisPage = () => {
     fetchAiSummary(keyword, '', '');
   };
 
-  // [NEW] 스크랩 기능 (임시 구현)
   const handleScrapToggle = () => {
     setIsScrapped(!isScrapped);
-    // TODO: backend api 호출 (components/mypage/ScrapPage.jsx 연동)
   };
 
-  // [NEW] 콘텐츠 생성 페이지 이동
   const handleGoToCreation = () => {
-    navigate('/creation'); // 실제 라우터 경로에 맞게 수정
+    navigate('/creation');
   };
 
-
-  // 데이터 필터링
+  // 데이터 필터링 (useMemo)
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
     if (!data) {
@@ -361,17 +360,30 @@ const AnalysisPage = () => {
     }
     const youtubeComments = (allComments || []).filter((c) => (c?.source || '').includes('youtube'));
     const otherComments = (allComments || []).filter((c) => !(c?.source || '').includes('youtube'));
+    
     return {
       ...data,
       history: historyFiltered,
       comments: allComments,
       youtubeComments: youtubeComments.slice(0, 4),
       otherComments: otherComments.slice(0, 6),
-      wordCloud: data.wordCloud || [],
+      wordCloud: data.wordCloud || data.word_cloud || [], // word_cloud 호환성 추가
       videos: data.videos || [],
     };
   }, [data, startDate, endDate, selectedPlatform]);
 
+  // [NEW] ★ 메인 차트용 데이터 가공 (최근 7일만 자르기)
+  const mainChartData = useMemo(() => {
+    const history = filteredData?.history || [];
+    // 데이터가 7개보다 많으면 뒤에서 7개만 자름, 아니면 그대로 사용
+    return history.length > 7 ? history.slice(-7) : history;
+  }, [filteredData]);
+
+  // [NEW] ★ 더보기 버튼 표시 여부
+  const showMoreChartBtn = (filteredData?.history?.length || 0) > 7;
+
+
+  // 페이지네이션 로직
   const usageExamples = useMemo(() => {
     if (!filteredData?.comments) return [];
     return filteredData.comments;
@@ -412,7 +424,8 @@ const AnalysisPage = () => {
   const filteredPlatforms = PLATFORM_OPTIONS.filter(opt => 
     opt.value === 'all' || availablePlatforms.includes(opt.value)
   );
-    
+
+  // ---------------- Render ----------------
   return (
     <div className="page space-y-6">
       {/* 상단 헤더 */}
@@ -431,50 +444,49 @@ const AnalysisPage = () => {
         </div>
       </header>
 
-      {/* 메인 콘텐츠 - [변경] w-full로 넓게 사용 */}
+      {/* 메인 콘텐츠 */}
       <div
         className={`w-full transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
           !keyword ? 'blur-disabled' : 'blur-enabled'
         }`}
       >
-        {/* [변경] 타이틀 섹션 재구성 */}
+        {/* 타이틀 및 상단 정보 */}
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 mb-2">
           
-          {/* 왼쪽: 스크랩+키워드+순위+스코어텍스트 */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              {/* 스크랩 아이콘 */}
-              <button 
-                onClick={handleScrapToggle}
-                className="p-1 hover:scale-110 transition-transform focus:outline-none"
-                title="스크랩"
-              >
-                <Star 
-                  size={32} 
-                  weight={isScrapped ? "fill" : "regular"} 
-                  className={isScrapped ? "text-yellow-400" : "text-gray-300 hover:text-yellow-400"}
-                />
-              </button>
+          {/* 왼쪽: 스크랩 + 키워드 + 스코어 (한줄 처리) */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleScrapToggle}
+              className="p-1 hover:scale-110 transition-transform focus:outline-none"
+              title="스크랩"
+            >
+              <Star
+                size={32}
+                weight={isScrapped ? 'fill' : 'regular'}
+                className={isScrapped ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}
+              />
+            </button>
 
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-none">
                 {keyword || '검색 키워드 예시'}
               </h1>
-              
-              <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 font-bold text-sm">
-                #{filteredData.rank || '-'}위
-              </span>
+              <div className="flex items-baseline gap-1 text-gray-600">
+                <span className="text-xs sm:text-sm font-medium">트렌드 스코어</span>
+                <span className="text-sm sm:text-base font-bold text-indigo-600">
+                  {filteredData.score?.toFixed(1) || 0}점
+                </span>
+                {/* 상승률 표시는 필요시 주석 해제하여 사용 */}
+                {/* <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded">전일 대비 12% 상승 ▲</span> */}
+              </div>
             </div>
-
-            {/* 트렌드 스코어 (텍스트화) */}
-            <div className="flex items-center gap-2 text-gray-600 ml-11">
-              <span className="text-sm font-medium">트렌드 스코어</span>
-              <span className="text-lg font-bold text-indigo-600">
-                {filteredData.score?.toFixed(1) || 0}점
-              </span>
-              <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
-                전일 대비 12% 상승 ▲
-              </span>
-            </div>
+            
+            {/* 순위 표시가 필요하다면 여기에 추가 */}
+            {filteredData.rank && (
+               <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 font-bold text-sm">
+                 #{filteredData.rank}위
+               </span>
+            )}
           </div>
           
           {/* 오른쪽: 콘텐츠 생성 버튼 */}
@@ -489,11 +501,8 @@ const AnalysisPage = () => {
           </div>
         </div>
 
-        {/* [변경] 카드 섹션: 3개->2개, w-full */}
+        {/* 설정 카드 섹션 (2개) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full">
-          {/* InfoCard (Trend Score) 제거됨 */}
-
-          {/* 기간 설정 카드 (너비 확장) */}
           <div className="card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
               <h3 className="text-gray-500 font-medium text-sm flex items-center gap-2">
@@ -533,7 +542,6 @@ const AnalysisPage = () => {
             </div>
           </div>
 
-          {/* 플랫폼 선택 카드 (너비 확장) */}
           <div className="card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
               <h3 className="text-gray-500 font-medium text-sm flex items-center gap-2">
@@ -557,17 +565,29 @@ const AnalysisPage = () => {
           </div>
         </div>
 
-        {/* 차트 영역 (기존 유지) */}
+        {/* 차트 영역 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:h-80 w-full">
-          <div className="card lg:col-span-1 flex flex-col min-h-[280px] lg:min-h-0">
+          
+          {/* [NEW] ★ 언급량 추이 차트 (최근 7일 + 더보기 버튼) */}
+          <div className="card lg:col-span-1 flex flex-col min-h-[280px] lg:min-h-0 relative">
             <div className="card-header flex justify-between items-center">
               <h3 className="section-title">
                 <ChartLineUp className="text-indigo-500" /> 언급량 추이
               </h3>
+              {/* 데이터가 7일 넘을 때만 버튼 표시 */}
+              {showMoreChartBtn && (
+                <button
+                  onClick={() => setIsChartModalOpen(true)}
+                  className="text-xs flex items-center gap-1 text-gray-400 hover:text-indigo-600 font-medium transition-colors bg-gray-50 px-2 py-1 rounded hover:bg-indigo-50"
+                >
+                  더보기 <ArrowsOutSimple size={12} />
+                </button>
+              )}
             </div>
             <div className="flex-1 w-full min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={filteredData?.history}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                {/* 7일치 데이터 사용 */}
+                <LineChart data={mainChartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis
                     dataKey="date"
@@ -576,6 +596,7 @@ const AnalysisPage = () => {
                     tickLine={false}
                     tick={{ fill: '#9CA3AF', fontSize: 12 }}
                     dy={10}
+                    interval={0} 
                   />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
                   <Tooltip
@@ -612,7 +633,7 @@ const AnalysisPage = () => {
               <BookmarkSimple className="text-yellow-500" /> 여론 분석
             </h3>
             <div className="flex-1">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
                   <Pie data={SENTIMENT_DATA} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
                     {SENTIMENT_DATA.map((entry, index) => (
@@ -627,9 +648,9 @@ const AnalysisPage = () => {
           </div>
         </div>
 
-        {/* 하단 (AI요약, 뉴스, 댓글) */}
+        {/* 하단 영역 (AI, 뉴스, 유튜브, 댓글) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start w-full">
-          {/* 왼쪽 */}
+          {/* 왼쪽 컬럼 */}
           <div className="card">
             <h3 className="section-title mb-4 pb-2 border-b flex justify-between">
               <span>AI 트렌드 요약</span>
@@ -652,7 +673,7 @@ const AnalysisPage = () => {
                       {aiSummary.split('\n').map((line, i) => {
                           if (!line.trim()) return null;
                           return (
-                              <p key={i} className="mb-2 pl-2 border-l-2 border-indigo-200" dangerouslySetInnerHTML={{ __html: line }}></p>
+                              <div key={i} className="mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: line }}></div>
                           );
                       })}
                   </div>
@@ -733,7 +754,7 @@ const AnalysisPage = () => {
             </div>
           </div>
 
-          {/* 오른쪽: 실제 사용 사례 (커뮤니티) */}
+          {/* 오른쪽 컬럼 (댓글 리스트) */}
           <div className="card h-fit flex flex-col">
             <div className="flex justify-between items-center mb-4 pb-2 border-b">
               <h3 className="section-title">관련 댓글 반응</h3>
@@ -746,7 +767,6 @@ const AnalysisPage = () => {
               {currentUsageExamples?.length > 0 ? (
                 currentUsageExamples.map((comment, i) => {
                   const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
-                  
                   return (
                     <CommentItem 
                       key={i} 
@@ -761,7 +781,7 @@ const AnalysisPage = () => {
               )}
             </div>
 
-            {/* Ellipsis Pagination */}
+            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
                 <button
@@ -781,10 +801,8 @@ const AnalysisPage = () => {
                       </span>
                     );
                   }
-
                   const pageNum = it;
                   const isActive = pageNum === currentPage;
-
                   return (
                     <button
                       key={pageNum}
@@ -830,6 +848,70 @@ const AnalysisPage = () => {
           </div>
         </div>
       )}
+
+      {/* [NEW] ★ 차트 확대 모달 */}
+      {isChartModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden">
+            {/* 모달 헤더 */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <ChartLineUp className="text-indigo-600" /> 전체 기간 언급량 추이
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {filteredData?.history?.[0]?.date && formatDateForInput(filteredData.history[0].date)} ~ {filteredData?.history?.at(-1)?.date && formatDateForInput(filteredData.history.at(-1).date)} ({filteredData?.history?.length}일간 데이터)
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsChartModalOpen(false)}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* 모달 차트 바디 (전체 데이터) */}
+            <div className="flex-1 p-6 bg-gray-50/50">
+              <div className="w-full h-full bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={filteredData?.history}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={formatDateLabel}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#6B7280', fontSize: 12 }}
+                      dy={10}
+                      minTickGap={30}
+                    />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: 'none',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                      }}
+                      itemStyle={{ color: '#4F46E5', fontWeight: 'bold' }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="mentions"
+                      stroke="#4F46E5"
+                      strokeWidth={3}
+                      dot={false}
+                      activeDot={{ r: 6, fill: '#4F46E5' }}
+                      animationDuration={1000}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
