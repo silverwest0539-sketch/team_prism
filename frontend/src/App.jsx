@@ -36,6 +36,8 @@ function App() {
 
           <Route path="/home" element={withLayout(<HomePage />)} />
           <Route path="/analysis" element={withLayout(<AnalysisPage />)} />
+          {/* [추가] 키워드를 파라미터로 받는 경로 */}
+          <Route path="/analysis/:keyword" element={withLayout(<AnalysisPage />)} />
           <Route path="/creation" element={withLayout(<CreationPage />)} />
           <Route path="/scrap" element={withLayout(<ScrapPage />)} />
           <Route path="/mypage" element={withLayout(<MyPage />)} />
