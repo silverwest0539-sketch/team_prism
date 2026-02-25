@@ -161,70 +161,6 @@
   },
   {
     "Rank": 2,
-    "Keyword": "성우",
-    "Trend_Score": 23.28,
-    "Trend_Score_Raw": 229.2482,
-    "Target_Day_Mentions": 26,
-    "Prev_Day_Mentions": 8,
-    "Growth_Ratio": 3.25,
-    "Growth_Percentage": "+225.0%",
-    "Z_Score": 6.0,
-    "Title_Count": 1,
-    "Entropy": 0.483,
-    "Platforms": 3,
-    "Date_Range": "20260221→20260222",
-    "Platform_List": [
-      "dcinside",
-      "ruliweb",
-      "youtube"
-    ],
-    "Examples": {
-      "dcinside": [
-        {
-          "comment": "짱구아빠 성우 뒤지고 안본듯",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407202&_dcbest=1&page=1"
-        },
-        {
-          "comment": "식모역할만 했다며 자학개그식으로 많이 말씀하셔서 그렇지, 동아방송 성우 시절에 탑티어였고, 성우들이 80년대 배우로 전향할 때 대부분 못된 시어머니나 식모 역할 전담이었지. 김용림이나 김영옥도 그래서 못된 시어머니 전문배우였지만, 성우 시절에 탑티어였음",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407136&_dcbest=1&page=2"
-        },
-        {
-          "comment": "도라에몽 한국 성우 최근에 바꼈냐? 목소리 다 이상해짐",
-          "link": "https://gall.dcinside.com/board/view/?id=dcbest&no=407094&_dcbest=1&page=2"
-        }
-      ],
-      "youtube": [
-        {
-          "comment": "선택임 녹음시에 많이받을거냐 순수익에서 받을거냐 하츠네미쿠 성우가 녹음시에 조금 받는걸로 끝나서 후회했죠 ㅋㅋ",
-          "link": "https://www.youtube.com/watch?v=1Jy8JBiCft0"
-        },
-        {
-          "comment": "@disser1뭔 성우랑 비교하냐ㅋㅋㅋ동네장사하는 계란노점상을ㅋㅋㅋㅋ 그냥 10만원쥐어주면 끝인건데. 너무 드라마틱한 각색이다. 어차피 수익 다 현금이라 수익의 10% ㅇㅈㄹㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ",
-          "link": "https://www.youtube.com/watch?v=1Jy8JBiCft0"
-        },
-        {
-          "comment": "대한민국 성우분들 굶어 뒤지는 소리 하지 마쇼",
-          "link": "https://www.youtube.com/watch?v=1Jy8JBiCft0"
-        }
-      ],
-      "ruliweb": [
-        {
-          "comment": "안노 : 끼에에엥~ 미사토 성우도 레이 성우도 아스카 성우도 다 나를 찼다고! 내 페르소나인 신지는 마누라를 모티브한 마리 캐릭터랑 이어줄거야!!",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74191161?m=humor"
-        },
-        {
-          "comment": "스즈카 성우가 아코 성우 였구나",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74192004?page=1&m=humor&t=now"
-        },
-        {
-          "comment": "그리고 이건 스즈카 성우가 그린 스즈카",
-          "link": "https://bbs.ruliweb.com/best/board/300143/read/74192004?page=1&m=humor&t=now"
-        }
-      ]
-    }
-  },
-  {
-    "Rank": 3,
     "Keyword": "호날두",
     "Trend_Score": 18.44,
     "Trend_Score_Raw": 181.5798,
@@ -292,7 +228,7 @@
     }
   },
   {
-    "Rank": 4,
+    "Rank": 3,
     "Keyword": "오뚜기",
     "Trend_Score": 18.3,
     "Trend_Score_Raw": 180.1647,
@@ -360,7 +296,7 @@
     }
   },
   {
-    "Rank": 5,
+    "Rank": 4,
     "Keyword": "리즈",
     "Trend_Score": 17.88,
     "Trend_Score_Raw": 176.0342,
@@ -410,7 +346,7 @@
     }
   },
   {
-    "Rank": 6,
+    "Rank": 5,
     "Keyword": "포켓몬",
     "Trend_Score": 10.41,
     "Trend_Score_Raw": 102.5188,
@@ -506,7 +442,7 @@
     }
   },
   {
-    "Rank": 7,
+    "Rank": 6,
     "Keyword": "제임스",
     "Trend_Score": 5.98,
     "Trend_Score_Raw": 58.9034,
@@ -562,7 +498,7 @@
     }
   },
   {
-    "Rank": 8,
+    "Rank": 7,
     "Keyword": "상남자",
     "Trend_Score": 5.27,
     "Trend_Score_Raw": 51.9206,

@@ -15,15 +15,15 @@ const db   = require('../database');
 // ===========================
 // 설정
 // ===========================
-const TARGET_DATE = '20260224';
-const PREV_DATE   = '20260223';
+const TARGET_DATE = '20260222';
+const PREV_DATE   = '20260221';
 
 const KEYWORDS_DIR          = path.join(__dirname, '../../data/keywords');
-const KEYWORDS_TIMELINE_DIR = path.join(__dirname, '../../data/keywords_mention_timeline');
+const KEYWORDS_TIMELINE_DIR = path.join(__dirname, '../../data/keywords_mention_timeline/past_mention_timeline');
 const POOL_TIMELINE_DIR     = path.join(__dirname, '../../data/pool_mention_timeline');
 
 const KEYWORDS_FILE      = path.join(KEYWORDS_DIR,          `trending_keywords_${PREV_DATE}_${TARGET_DATE}.json`);
-const KEYWORD_STATS_FILE = path.join(KEYWORDS_TIMELINE_DIR, `keyword_timeline_${PREV_DATE}.json`);
+const KEYWORD_STATS_FILE = path.join(KEYWORDS_TIMELINE_DIR, `past_keyword_timeline_${TARGET_DATE}.json`);
 const POOL_TIMELINE_FILE = path.join(POOL_TIMELINE_DIR,     `keyword_timeline_${TARGET_DATE}.json`);
 
 // '20260224' → '2026-02-24'
