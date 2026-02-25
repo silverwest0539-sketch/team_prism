@@ -58,7 +58,6 @@ const HomePage = () => {
     { label: '루리웹', value: 'ruliweb' },
     { label: '네이트판', value: 'natepan' },
     { label: 'FM코리아', value: 'fmkorea' },
-    { label: 'X (트위터)', value: 'x' },
   ];
 
   const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '브이로그'];
