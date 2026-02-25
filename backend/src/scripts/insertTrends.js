@@ -5,9 +5,10 @@
 //
 // 실행 전 data/ 폴더에 아래 파일들을 넣어주세요:
 //   - trending_keywords_{PREV_DATE}_{TARGET_DATE}.json
-//   - keyword_stats_{TARGET_DATE}.json               ← 통합 키워드 날짜별 언급량
+//   - keyword_timeline_{PREV_DATE}.json               ← 통합 키워드 어제까지 언급량
+//   - keyword_timeline_{TARGET_DATE}.json             ← pool 키워드 오늘 언급량
 //   - trending_by_platform_{PREV_DATE}_{TARGET_DATE}.json
-//   - platform_keyword_timeline_{TARGET_DATE}.json   ← 플랫폼 신규 키워드 날짜별 언급량
+//   - platform_keyword_timeline_{TARGET_DATE}.json    ← 플랫폼 신규 키워드 날짜별 언급량
 
 const fs   = require('fs');
 const path = require('path');
@@ -16,17 +17,20 @@ const db   = require('../database');
 // ===========================
 // 설정
 // ===========================
-const TARGET_DATE = '20260224';
-const PREV_DATE   = '20260223';
+const TARGET_DATE = '20260225';
+const PREV_DATE   = '20260224';
 
 const KEYWORDS_DIR           = path.join(__dirname, '../../data/keywords');
 const KEYWORDS_TIMELINE_DIR  = path.join(__dirname, '../../data/keywords_mention_timeline');
 const PLATFORM_DIR           = path.join(__dirname, '../../data/platform_keywords');
 const PLATFORM_TIMELINE_DIR  = path.join(__dirname, '../../data/platform_mention_timeline');
+const POOL_TIMELINE_DIR  = path.join(__dirname, '../../data/pool_mention_timeline');
+
 const KEYWORDS_FILE          = path.join(KEYWORDS_DIR,          `trending_keywords_${PREV_DATE}_${TARGET_DATE}.json`);
-const KEYWORD_STATS_FILE     = path.join(KEYWORDS_TIMELINE_DIR, `keyword_timeline_${TARGET_DATE}.json`);
+const KEYWORD_STATS_FILE     = path.join(KEYWORDS_TIMELINE_DIR, `keyword_timeline_${PREV_DATE}.json`);
+const POOL_TIMELINE_FILE     = path.join(POOL_TIMELINE_DIR, `keyword_timeline_${TARGET_DATE}.json`);
 const PLATFORM_FILE          = path.join(PLATFORM_DIR,          `trending_by_platform_${PREV_DATE}_${TARGET_DATE}.json`);
-const PLATFORM_TIMELINE_FILE = path.join(PLATFORM_TIMELINE_DIR, `platform_keyword_timeline_${TARGET_DATE}.json`);
+const PLATFORM_TIMELINE_FILE = path.join(PLATFORM_TIMELINE_DIR, `platform_keyword_timeline_${PREV_DATE}.json`);
 
 // 플랫폼명 → score 컬럼명 매핑
 const PLATFORM_SCORE_COL = {
@@ -75,7 +79,7 @@ async function insertExamples(exampleRows) {
 
 async function main() {
   // ── 파일 로드 ─────────────────────────────────────
-  for (const f of [KEYWORDS_FILE, KEYWORD_STATS_FILE, PLATFORM_FILE, PLATFORM_TIMELINE_FILE]) {
+  for (const f of [KEYWORDS_FILE, KEYWORD_STATS_FILE, POOL_TIMELINE_FILE, PLATFORM_FILE, PLATFORM_TIMELINE_FILE]) {
     if (!fs.existsSync(f)) {
       console.error(`❌ 파일 없음: ${f}`);
       process.exit(1);
@@ -84,13 +88,15 @@ async function main() {
 
   const keywordsData      = JSON.parse(fs.readFileSync(KEYWORDS_FILE, 'utf-8'));
   const keywordStatsData  = JSON.parse(fs.readFileSync(KEYWORD_STATS_FILE, 'utf-8'));
+  const poolTimelineData  = JSON.parse(fs.readFileSync(POOL_TIMELINE_FILE, 'utf-8'));
   const platformData      = JSON.parse(fs.readFileSync(PLATFORM_FILE, 'utf-8'));
   const platformTimeline  = JSON.parse(fs.readFileSync(PLATFORM_TIMELINE_FILE, 'utf-8'));
   const collectedDate     = toSqlDate(TARGET_DATE);
   const targetSqlDate     = toSqlDate(TARGET_DATE);
 
   console.log(`✅ 통합 키워드 ${keywordsData.length}개 로드`);
-  console.log(`✅ keyword_stats ${Object.keys(keywordStatsData).length}개 키워드 로드`);
+  console.log(`✅ keyword_stats(어제까지) ${Object.keys(keywordStatsData).length}개 키워드 로드`);
+  console.log(`✅ pool_timeline(오늘) ${Object.keys(poolTimelineData).length}개 키워드 로드`);
   console.log(`✅ platform_keyword_timeline ${Object.keys(platformTimeline).length}개 키워드 로드`);
 
   // 통합에서 뽑힌 키워드 Set
@@ -111,6 +117,7 @@ async function main() {
     ...new Set([
       ...keywordsData.map(item => item.Keyword),
       ...Object.keys(keywordStatsData),
+      ...Object.keys(poolTimelineData),
       ...allPlatformKwNames,
       ...Object.keys(platformTimeline),
     ])
@@ -166,7 +173,7 @@ async function main() {
   console.log(`  ✅ 플랫폼별 USAGE_EXAMPLE: ${platformExampleCount}개 INSERT`);
 
   // ── 4. KEYWORD_STATS: 통합 키워드 날짜별 언급량 bulk INSERT ──
-  // keyword_stats_{TARGET_DATE}.json 기준
+  // keyword_timeline_{PREV_DATE}.json 기준 (어제까지 히스토리)
   // 이미 DB에 있는 키워드는 스킵
   console.log('\n📌 통합 KEYWORD_STATS INSERT 중...');
 
@@ -317,6 +324,49 @@ async function main() {
     platformScoreCount += scoreValues.length;
   }
   console.log(`  ✅ 플랫폼별 SCORE: ${platformScoreCount}개 UPDATE`);
+
+  // ── 8. pool 키워드 오늘 날짜 언급량 INSERT/UPDATE ──
+  console.log('\n📌 pool 키워드 오늘 날짜 KEYWORD_STATS INSERT/UPDATE 중...');
+
+  const poolStatsValues = [];
+  for (const [keyword, dateCounts] of Object.entries(poolTimelineData)) {
+    const keywordId = keywordIdMap[keyword];
+    if (!keywordId) continue;
+
+    for (const [dateStr, counts] of Object.entries(dateCounts)) {
+      poolStatsValues.push([
+        keywordId,
+        toSqlDate(dateStr),
+        toCount(counts.mention_count),
+        toCount(counts.youtube_count),
+        toCount(counts.fmkorea_count),
+        toCount(counts.ruliweb_count),
+        toCount(counts.nate_count),
+        toCount(counts.theqoo_count),
+        toCount(counts.dcinside_count),
+      ]);
+    }
+  }
+
+  if (poolStatsValues.length > 0) {
+    await db.query(
+      `INSERT INTO KEYWORD_STATS
+         (keyword_id, stat_date, mention_count,
+          youtube_count, fmkorea_count, ruliweb_count,
+          nate_count, theqoo_count, dcinside_count)
+       VALUES ?
+       ON DUPLICATE KEY UPDATE
+         mention_count  = VALUES(mention_count),
+         youtube_count  = VALUES(youtube_count),
+         fmkorea_count  = VALUES(fmkorea_count),
+         ruliweb_count  = VALUES(ruliweb_count),
+         nate_count     = VALUES(nate_count),
+         theqoo_count   = VALUES(theqoo_count),
+         dcinside_count = VALUES(dcinside_count)`,
+      [poolStatsValues]
+    );
+  }
+  console.log(`  ✅ pool 키워드 오늘 언급량: ${poolStatsValues.length}개 INSERT/UPDATE`);
 
   console.log('\n✅ 전체 완료');
   process.exit(0);
