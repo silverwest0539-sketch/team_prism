@@ -138,7 +138,6 @@ const AnalysisPage = () => {
   useEffect(() => {
     if (!keyword) return;
 
-    setSearchTerm(keyword);
     setAiSummary(null);
     setIsAiLoading(true);
     const todayDate = getFormattedDate(new Date());
@@ -175,7 +174,7 @@ const AnalysisPage = () => {
   const handleDateApply = () => {
     fetchData(startDate, endDate);
     setCurrentPage(1);
-    fetchAiSummary(keyword, startDate, endDate);
+    // fetchAiSummary(keyword, startDate, endDate);
   };
 
   const handleDateReset = () => {
@@ -231,12 +230,20 @@ const AnalysisPage = () => {
   };
 
   const handleGoToCreation = () => {
-    navigate('/creation');
+    if (keyword) {
+      // 1. 키워드가 있을 경우: URL 쿼리 스트링으로 키워드를 붙여서 이동
+      // encodeURIComponent는 한글이나 특수문자가 깨지지 않게 해줍니다.
+      navigate(`/creation?keyword=${encodeURIComponent(keyword)}`);
+    } else {
+      // 2. 키워드가 없을 경우: 그냥 이동
+      navigate('/creation');
+    }
   };
 
   // 데이터 필터링 (useMemo)
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
+    const chartDataKey = selectedPlatform === 'all' ? 'mentions' : selectedPlatform;
     if (!data) {
       return {
         ...sourceData,
@@ -246,20 +253,55 @@ const AnalysisPage = () => {
         otherComments: [],
         wordCloud: [],
         videos: [],
+        chartDataKey
       };
     }
-    const historyFiltered = data.history.filter((h) => {
-      const d = formatDateForInput(h.date);
-      return (!startDate || d >= startDate) && (!endDate || d <= endDate);
-    });
+
+    let historyFiltered = [];
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const historyMap = {};
+      
+      // 1. 기존 DB에서 가져온 날짜 데이터를 Map 형태로 변환하여 검색 최적화
+      (sourceData.history || []).forEach((h) => {
+        historyMap[h.date] = h;
+      });
+
+      // 2. startDate부터 endDate까지 하루씩 증가하며 모든 날짜 확인
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}${mm}${dd}`; // 예: "20260225"
+
+        if (historyMap[dateStr]) {
+          // 데이터가 존재하면 그대로 넣기 (undefined 방지를 위해 데이터가 없으면 0 세팅)
+          historyFiltered.push({
+            ...historyMap[dateStr],
+            [chartDataKey]: historyMap[dateStr][chartDataKey] || 0
+          });
+        } else {
+          // 💡 데이터가 아예 없는 날짜는 언급량을 0으로 설정한 가짜 객체를 삽입
+          historyFiltered.push({
+            date: dateStr,
+            mentions: 0,
+            score: 0,
+            [chartDataKey]: 0 
+          });
+        }
+      }
+    } else {
+      historyFiltered = sourceData.history || [];
+    }
+
+    // 기존 댓글 필터링 로직 유지
     let allComments = sourceData.comments || [];
     if (selectedPlatform !== 'all') {
       allComments = allComments.filter((c) => (c?.source || '').includes(selectedPlatform));
     }
     const youtubeComments = (allComments || []).filter((c) => (c?.source || '').includes('youtube'));
     const otherComments = (allComments || []).filter((c) => !(c?.source || '').includes('youtube'));
-    
-    const chartDataKey = selectedPlatform === 'all' ? 'mentions' : selectedPlatform;
 
     return {
       ...data,
@@ -268,7 +310,7 @@ const AnalysisPage = () => {
       chartDataKey,
       youtubeComments: youtubeComments.slice(0, 4),
       otherComments: otherComments.slice(0, 6),
-      wordCloud: data.wordCloud || data.word_cloud || [], // word_cloud 호환성 추가
+      wordCloud: data.wordCloud || data.word_cloud || [], 
       videos: data.videos || [],
     };
   }, [data, startDate, endDate, selectedPlatform]);
@@ -301,7 +343,6 @@ const AnalysisPage = () => {
       { name: '중립', value: neu, color: '#9CA3AF' }, // 회색
     ];
   }, [filteredData]);
-
 
   // 페이지네이션 로직
   const usageExamples = useMemo(() => {
@@ -610,12 +651,10 @@ const AnalysisPage = () => {
               ) : (
                 aiSummary ? (
                   <div className="animate-fade-in-up">
-                      {aiSummary.split('\n').map((line, i) => {
-                          if (!line.trim()) return null;
-                          return (
-                              <div key={i} className="mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed">{line}</div>
-                          );
-                      })}
+                      <div 
+                        className="mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: aiSummary }} 
+                      />
                   </div>
                 ) : (
                   <p className="text-gray-400 text-center text-xs">키워드를 분석할 준비가 되었습니다.</p>
@@ -840,7 +879,7 @@ const AnalysisPage = () => {
                       dataKey={chartDataKey}
                       stroke="#4F46E5"
                       strokeWidth={3}
-                      dot={false}
+                      dot={{r: 4, fill: '#4F46E5', strokeWidth: 2, stroke: '#fff'}}
                       activeDot={{ r: 6, fill: '#4F46E5' }}
                       animationDuration={1000}
                     />

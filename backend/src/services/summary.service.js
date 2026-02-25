@@ -1,43 +1,60 @@
 const axios = require('axios');
 const Parser = require('rss-parser');
-const { findKeywordOverAll, getHistoryData } = require('../dataLoader');
 const db = require('../database');
 
 const parser = new Parser();
-let summaryCache = {};
+// let summaryCache = {};
 let summaryLocks = {};
 
+const getKstDateString = (offsetDays = 0) => {
+  const curr = new Date();
+  const utc = curr.getTime() + (curr.getTimezoneOffset() * 60 * 1000);
+  const kst = new Date(utc + (9 * 60 * 60 * 1000)); // UTC+9
+  kst.setDate(kst.getDate() + offsetDays);
+  
+  const yyyy = kst.getFullYear();
+  const mm = String(kst.getMonth() + 1).padStart(2, '0');
+  const dd = String(kst.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 exports.generateSummary = async (keyword, startDate, endDate) => {
-  const now = Date.now();
+  const todayKst = getKstDateString(0);
+  const yesterdayKst = getKstDateString(-1);
 
-  // 1. 캐시 확인
-  if (!startDate && !endDate && summaryCache[keyword] && (now - summaryCache[keyword].timestamp < 60 * 60 * 1000)) {
-    console.log(`📦 [Summary Cache] 캐시된 요약 데이터 반환: ${keyword}`);
-    return { status: 200, summary: summaryCache[keyword].data };
+  // 1. Lock 확인 (중복 요청 방지) - 날짜 상관없이 키워드 단위로 락
+  if (summaryLocks[keyword]) {
+    console.log(`🛑 [Lock] 이미 분석 중인 키워드입니다. 중복 요청 차단: ${keyword}`);
+    return { status: 429, summary: "잠시 후 다시 시도해주세요." };
   }
-
-  // 2. Lock 확인 (중복 요청 방지)
-  if (!startDate && !endDate) {
-    if (summaryLocks[keyword]) {
-      console.log(`🛑 [Lock] 이미 분석 중인 키워드입니다. 중복 요청 차단: ${keyword}`);
-      return { status: 429, summary: "잠시 후 다시 시도해주세요." };
-    }
-    summaryLocks[keyword] = true;
-  }
+  summaryLocks[keyword] = true;
 
   try {
-    // 3. DB 데이터 수집 (기존 로컬 데이터 로직 대체)
+    // 2. 키워드 ID 획득
     const [kwRows] = await db.execute(
       `SELECT keyword_id FROM TREND_KEYWORD WHERE keyword_name = ?`,
       [keyword]
     );
 
-    // 키워드가 DB에 없으면 종료
     if (kwRows.length === 0) {
-      if (!startDate && !endDate) delete summaryLocks[keyword];
       return { status: 200, summary: "데이터가 부족하여 분석할 수 없습니다." };
     }
     const keywordId = kwRows[0].keyword_id;
+
+    let targetStatDate = todayKst; 
+    const [statRows] = await db.execute(
+      `SELECT stat_date, keyword_summary 
+       FROM KEYWORD_STATS 
+       WHERE keyword_id = ? AND stat_date = ?`,
+      [keywordId, todayKst]
+    );
+
+    if (statRows.length > 0) {
+      if (statRows[0].keyword_summary) {
+        console.log(`📦 [DB Cache] 오늘자(${todayKst}) 요약 반환: ${keyword}`);
+        return { status: 200, summary: statRows[0].keyword_summary };
+      }
+    }
 
     // 대중 반응(댓글) 및 플랫폼 통계 수집
     const [exampleRows] = await db.execute(
@@ -45,9 +62,10 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
        FROM USAGE_EXAMPLE u
        JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
        WHERE ke.keyword_id = ?
+         AND DATE(u.collected_date) BETWEEN ? AND ?
        ORDER BY u.collected_date DESC 
        LIMIT 200`,
-      [keywordId]
+      [keywordId, yesterdayKst, todayKst]
     );
 
     let collectedComments = [];
@@ -58,11 +76,13 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
       // DB에 플랫폼 정보가 없으면 '기타'로 처리
       const platformName = row.platform || '기타';
 
-      if (commentText) {
-         collectedComments.push(commentText);
-      }
+      if (commentText) collectedComments.push(commentText);
       platformStats[platformName] = (platformStats[platformName] || 0) + 1;
     });
+
+    if (collectedComments.length === 0) {
+      return { status: 200, summary: "최근 2일(어제~오늘)간 수집된 대중 반응 데이터가 부족하여 분석할 수 없습니다." };
+    }
 
     // 🏆 확산처(Top Platform) 계산
     let topPlatform = "알 수 없음";
@@ -103,19 +123,16 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
     // 5. 뉴스 데이터 수집
     let newsContext = "관련된 최신 뉴스가 없습니다.";
     try {
-      let newsQuery = `${keyword}`;
-      if (startDate) newsQuery += ` after:${startDate}`;
-      if (endDate) newsQuery += ` before:${endDate}`;
-
+      // 구글 뉴스 검색어에 after(어제)와 before(오늘) 적용
+      const newsQuery = `${keyword} after:${yesterdayKst} before:${todayKst}`;
       const feedUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(newsQuery)}&hl=ko&gl=KR&ceid=KR:ko`;
       const feed = await parser.parseURL(feedUrl);
 
       if (feed.items && feed.items.length > 0) {
         newsContext = feed.items.slice(0, 5).map(item => {
-          const title = item.title || "";
           let snippet = item.contentSnippet || item.content || "";
           snippet = snippet.length > 200 ? snippet.substring(0, 200) + "..." : snippet;
-          return `- [기사 제목] ${title}\n  [기사 내용] ${snippet}`;
+          return `- [기사 제목] ${item.title}\n  [기사 내용] ${snippet}`;
         }).join('\n\n');
       }
     } catch (newsErr) {
@@ -186,19 +203,20 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
 
     console.log("✅ AI 요약 완료!");
 
-    // 9. 캐시 저장 및 Lock 해제
-    if (!startDate && !endDate) {
-      summaryCache[keyword] = { data: finalSummary, timestamp: now };
-      delete summaryLocks[keyword];
-    }
+    // 생성된 요약본을 DB에 저장 (UPDATE) 및 Lock 해제
+    await db.execute(
+      `UPDATE KEYWORD_STATS SET keyword_summary = ? WHERE keyword_id = ? AND stat_date = ?`,
+      [finalSummary, keywordId, targetStatDate]
+    );
+    console.log(`💾 [DB Cache] 저장 완료: ${keyword} (${targetStatDate})`);
 
     return { status: 200, summary: finalSummary };
 
   } catch (error) {
-    if (!startDate && !endDate) delete summaryLocks[keyword];
-    if (error.response) console.error("❌ AI API 에러 응답:", error.response.status, error.response.data);
-    else console.error("❌ 서버 내부 에러:", error.message);
-    
+    if (error.response) console.error("❌ AI API 에러:", error.response.status, error.response.data);
+    else console.error("❌ 서버 에러:", error.message);
     throw new Error("AI_ERROR");
+  } finally {
+    delete summaryLocks[keyword];
   }
 };

@@ -451,8 +451,7 @@ const HomePage = () => {
                       key={item.rank}
                       onClick={() => {
                         setIsTrendModalOpen(false); // 모달 닫고
-                        // 기존 모달 열기 로직 호출 (필요시)
-                        /* openModal({ ... }) */
+                        navigate(`/analysis/${encodeURIComponent(item.keyword)}`);
                       }}
                       className="group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer"
                     >
