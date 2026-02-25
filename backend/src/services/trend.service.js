@@ -140,13 +140,21 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
 
   // 가장 최근 날짜의 언급량 + 트렌드 스코어
   const [latestStats] = await db.execute(
-    `SELECT mention_count, COALESCE(trend_score, 0) AS trend_score
+    `SELECT 
+       mention_count, 
+       COALESCE(trend_score, 0) AS trend_score,
+       COALESCE(positive_score, 0) AS positive_score,
+       COALESCE(neutral_score, 0) AS neutral_score,
+       COALESCE(negative_score, 0) AS negative_score
      FROM KEYWORD_STATS
      WHERE keyword_id = ? ORDER BY stat_date DESC LIMIT 1`,
     [keywordId]
   );
   const totalMentions = latestStats.length > 0 ? latestStats[0].mention_count  : 0;
   const trendScore    = latestStats.length > 0 ? latestStats[0].trend_score    : 0;
+  const positiveScore = latestStats.length > 0 ? latestStats[0].positive_score : 0;
+  const neutralScore  = latestStats.length > 0 ? latestStats[0].neutral_score  : 0;
+  const negativeScore = latestStats.length > 0 ? latestStats[0].negative_score : 0;
 
   // ── 2. 히스토리 (날짜별 언급량) ──────────────────────
   let statsSql = `
@@ -311,6 +319,9 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
       found:         true,
       keyword:       keywordName,
       totalMentions,
+      positive_score: positiveScore, 
+      neutral_score:  neutralScore, 
+      negative_score: negativeScore,
       history,
       comments:      parsedComments,
       wordCloud:     wordCloudData,

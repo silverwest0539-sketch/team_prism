@@ -121,6 +121,21 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
     }
   };
 
+  const posScore = detailData?.positive_score || 0;
+  const neuScore = detailData?.neutral_score || 0;
+  const negScore = detailData?.negative_score || 0;
+
+  const maxScore = Math.max(posScore, neuScore, negScore);
+  
+  let topSentiment = 'none'; // 데이터가 없거나 모두 0일 때
+  if (maxScore > 0) {
+    if (maxScore === posScore) topSentiment = 'positive';
+    else if (maxScore === negScore) topSentiment = 'negative';
+    else topSentiment = 'neutral';
+  } else if (detailData) {
+    topSentiment = 'neutral'; // 데이터는 있지만 점수가 모두 0이면 기본값으로 중립 표시
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 animate-[fadeIn_0.2s_ease-out]">
       <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
@@ -164,18 +179,34 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
               <Smiley size={18} className="text-gray-500" /> 여론 신호등
             </h3>
             <div className="flex gap-2">
-              <div className="flex-1 bg-white border border-green-100 p-3 rounded-xl flex flex-col items-center justify-center shadow-sm ring-2 ring-green-500 ring-offset-2">
-                <div className="w-3 h-3 rounded-full bg-green-500 mb-2 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-                <span className="text-xs font-bold text-green-700">긍정적</span>
-                <span className="text-[10px] text-gray-400">65%</span>
+              {/* 긍정적 */}
+              <div className={`flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
+                topSentiment === 'positive'
+                  ? 'border-green-100 shadow-sm ring-2 ring-green-500 ring-offset-2'
+                  : 'border-gray-100 opacity-50 grayscale'
+              }`}>
+                <div className={`w-3 h-3 rounded-full mb-2 ${topSentiment === 'positive' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-400'}`}></div>
+                <span className={`text-xs font-bold ${topSentiment === 'positive' ? 'text-green-700' : 'text-gray-600'}`}>긍정적</span>
               </div>
-              <div className="flex-1 bg-white border border-gray-100 p-3 rounded-xl flex flex-col items-center justify-center opacity-50 grayscale">
-                <div className="w-3 h-3 rounded-full bg-gray-400 mb-2"></div>
-                <span className="text-xs font-bold text-gray-600">중립</span>
+
+              {/* 중립 */}
+              <div className={`flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
+                topSentiment === 'neutral'
+                  ? 'border-yellow-100 shadow-sm ring-2 ring-yellow-500 ring-offset-2' // 중립은 노란색 계열로 강조
+                  : 'border-gray-100 opacity-50 grayscale'
+              }`}>
+                <div className={`w-3 h-3 rounded-full mb-2 ${topSentiment === 'neutral' ? 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]' : 'bg-gray-400'}`}></div>
+                <span className={`text-xs font-bold ${topSentiment === 'neutral' ? 'text-yellow-700' : 'text-gray-600'}`}>중립</span>
               </div>
-              <div className="flex-1 bg-white border border-gray-100 p-3 rounded-xl flex flex-col items-center justify-center opacity-50 grayscale">
-                <div className="w-3 h-3 rounded-full bg-red-400 mb-2"></div>
-                <span className="text-xs font-bold text-gray-600">부정적</span>
+
+              {/* 부정적 */}
+              <div className={`flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
+                topSentiment === 'negative'
+                  ? 'border-red-100 shadow-sm ring-2 ring-red-500 ring-offset-2'
+                  : 'border-gray-100 opacity-50 grayscale'
+              }`}>
+                <div className={`w-3 h-3 rounded-full mb-2 ${topSentiment === 'negative' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-gray-400'}`}></div>
+                <span className={`text-xs font-bold ${topSentiment === 'negative' ? 'text-red-700' : 'text-gray-600'}`}>부정적</span>
               </div>
             </div>
           </div>
