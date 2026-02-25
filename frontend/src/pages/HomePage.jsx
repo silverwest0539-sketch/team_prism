@@ -424,10 +424,10 @@ const HomePage = () => {
             <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  실시간 트렌드 
+                  오늘의 트렌드 키워드 
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  현재 가장 화제가 되고 있는 키워드 전체 순위입니다.
+                  오늘의 트렌드 키워드 전체 순위입니다.
                 </p>
               </div>
               <button 
