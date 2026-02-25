@@ -174,7 +174,7 @@ const AnalysisPage = () => {
   const handleDateApply = () => {
     fetchData(startDate, endDate);
     setCurrentPage(1);
-    fetchAiSummary(keyword, startDate, endDate);
+    // fetchAiSummary(keyword, startDate, endDate);
   };
 
   const handleDateReset = () => {
@@ -243,6 +243,7 @@ const AnalysisPage = () => {
   // 데이터 필터링 (useMemo)
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
+    const chartDataKey = selectedPlatform === 'all' ? 'mentions' : selectedPlatform;
     if (!data) {
       return {
         ...sourceData,
@@ -252,20 +253,55 @@ const AnalysisPage = () => {
         otherComments: [],
         wordCloud: [],
         videos: [],
+        chartDataKey
       };
     }
-    const historyFiltered = data.history.filter((h) => {
-      const d = formatDateForInput(h.date);
-      return (!startDate || d >= startDate) && (!endDate || d <= endDate);
-    });
+
+    let historyFiltered = [];
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const historyMap = {};
+      
+      // 1. 기존 DB에서 가져온 날짜 데이터를 Map 형태로 변환하여 검색 최적화
+      (sourceData.history || []).forEach((h) => {
+        historyMap[h.date] = h;
+      });
+
+      // 2. startDate부터 endDate까지 하루씩 증가하며 모든 날짜 확인
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}${mm}${dd}`; // 예: "20260225"
+
+        if (historyMap[dateStr]) {
+          // 데이터가 존재하면 그대로 넣기 (undefined 방지를 위해 데이터가 없으면 0 세팅)
+          historyFiltered.push({
+            ...historyMap[dateStr],
+            [chartDataKey]: historyMap[dateStr][chartDataKey] || 0
+          });
+        } else {
+          // 💡 데이터가 아예 없는 날짜는 언급량을 0으로 설정한 가짜 객체를 삽입
+          historyFiltered.push({
+            date: dateStr,
+            mentions: 0,
+            score: 0,
+            [chartDataKey]: 0 
+          });
+        }
+      }
+    } else {
+      historyFiltered = sourceData.history || [];
+    }
+
+    // 기존 댓글 필터링 로직 유지
     let allComments = sourceData.comments || [];
     if (selectedPlatform !== 'all') {
       allComments = allComments.filter((c) => (c?.source || '').includes(selectedPlatform));
     }
     const youtubeComments = (allComments || []).filter((c) => (c?.source || '').includes('youtube'));
     const otherComments = (allComments || []).filter((c) => !(c?.source || '').includes('youtube'));
-    
-    const chartDataKey = selectedPlatform === 'all' ? 'mentions' : selectedPlatform;
 
     return {
       ...data,
@@ -274,7 +310,7 @@ const AnalysisPage = () => {
       chartDataKey,
       youtubeComments: youtubeComments.slice(0, 4),
       otherComments: otherComments.slice(0, 6),
-      wordCloud: data.wordCloud || data.word_cloud || [], // word_cloud 호환성 추가
+      wordCloud: data.wordCloud || data.word_cloud || [], 
       videos: data.videos || [],
     };
   }, [data, startDate, endDate, selectedPlatform]);
@@ -291,6 +327,22 @@ const AnalysisPage = () => {
   // 더보기 버튼 표시 여부
   const showMoreChartBtn = (filteredData?.history?.length || 0) > 7;
 
+  const sentimentChartData = useMemo(() => {
+    const comments = filteredData?.comments || [];
+    let pos = 0, neg = 0, neu = 0;
+
+    comments.forEach(c => {
+      if (c.sentiment === 'positive') pos++;
+      else if (c.sentiment === 'negative') neg++;
+      else neu++; // 라벨이 없거나 neutral인 경우
+    });
+
+    return [
+      { name: '긍정', value: pos, color: '#3B82F6' }, // 파란색
+      { name: '부정', value: neg, color: '#EF4444' }, // 빨간색
+      { name: '중립', value: neu, color: '#9CA3AF' }, // 회색
+    ];
+  }, [filteredData]);
 
   // 페이지네이션 로직
   const usageExamples = useMemo(() => {
@@ -563,12 +615,13 @@ const AnalysisPage = () => {
             <div className="flex-1">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
-                  <Pie data={SENTIMENT_DATA} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
-                    {SENTIMENT_DATA.map((entry, index) => (
+                  <Pie data={sentimentChartData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
+                    {sentimentChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  {/* Tooltip에 건수를 명시적으로 보여주도록 포맷 변경 */}
+                  <Tooltip formatter={(value, name) => [`${value}건`, name]} />
                   <Legend verticalAlign="bottom" height={24} iconSize={8} />
                 </PieChart>
               </ResponsiveContainer>
@@ -598,12 +651,10 @@ const AnalysisPage = () => {
               ) : (
                 aiSummary ? (
                   <div className="animate-fade-in-up">
-                      {aiSummary.split('\n').map((line, i) => {
-                          if (!line.trim()) return null;
-                          return (
-                              <div key={i} className="mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed">{line}</div>
-                          );
-                      })}
+                      <div 
+                        className="mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: aiSummary }} 
+                      />
                   </div>
                 ) : (
                   <p className="text-gray-400 text-center text-xs">키워드를 분석할 준비가 되었습니다.</p>
@@ -828,7 +879,7 @@ const AnalysisPage = () => {
                       dataKey={chartDataKey}
                       stroke="#4F46E5"
                       strokeWidth={3}
-                      dot={false}
+                      dot={{r: 4, fill: '#4F46E5', strokeWidth: 2, stroke: '#fff'}}
                       activeDot={{ r: 6, fill: '#4F46E5' }}
                       animationDuration={1000}
                     />
