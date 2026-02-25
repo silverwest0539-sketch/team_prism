@@ -185,17 +185,38 @@ exports.getCommunityPosts = (platform) => {
 exports.getNews = async (keyword, startDate, endDate) => {
   if (!keyword) return [];
 
-  let query = `${keyword}`;
-  if (startDate) query += ` after:${startDate}`;
-  if (endDate) query += ` before:${endDate}`;
+  // 한국 시간(KST) 기준 YYYY-MM-DD 형식을 반환하는 헬퍼 함수
+  const getKSTDateString = (daysOffset = 0) => {
+    const date = new Date(); // 프론트엔드 파라미터 무시하고 무조건 현재 실제 시간 기준
+    date.setDate(date.getDate() + daysOffset);
+    
+    return new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'Asia/Seoul', 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit' 
+    }).format(date);
+  };
 
+  // 무조건 실제 날짜 기준 어제와 내일(오늘 데이터를 포함하기 위해 before는 내일로 설정)로 고정
+  const searchStart = getKSTDateString(-1); // 어제
+  const searchEnd = getKSTDateString(1);    // 내일
+
+  // startDate, endDate 파라미터를 사용하지 않고 고정된 날짜로 쿼리 생성
+  const query = `${keyword} after:${searchStart} before:${searchEnd}`;
   console.log(`📰 뉴스 검색 쿼리: ${query}`);
 
   try {
     const feedUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
     const feed = await parser.parseURL(feedUrl);
     
-    return feed.items.slice(0, 5).map(item => {
+    // 1. 최신글이 최상단에 오도록 pubDate 기준으로 내림차순 정렬
+    const sortedItems = feed.items.sort((a, b) => {
+      return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
+    });
+
+    // 2. 정렬된 데이터에서 상위 5개 추출
+    return sortedItems.slice(0, 5).map(item => {
       let publisher = 'Google News';
       if (item.newsSource) {
         if (typeof item.newsSource === 'string') publisher = item.newsSource;
