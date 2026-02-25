@@ -153,7 +153,7 @@ const HomePage = () => {
           {/* [수정됨] 헤더를 flex로 감싸서 제목과 더보기 버튼 배치 */}
           <div className="flex justify-between items-end mb-4 border-b pb-2 border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">
-              트렌드 일일 키워드 Top 5
+              오늘의 트렌드 키워드 Top 5
             </h2>
             <button 
               onClick={() => setIsTrendModalOpen(true)}
@@ -193,7 +193,7 @@ const HomePage = () => {
         <div className="card-soft relative">
           <div className="flex justify-between items-center mb-4">
             <h2 className="section-title-lg">
-              플랫폼별 일일 키워드 Top 5
+              오늘의 플랫폼별 키워드 Top 5
             </h2>
             <div
               className="tab-wrap"
