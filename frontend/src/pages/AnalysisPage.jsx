@@ -138,7 +138,6 @@ const AnalysisPage = () => {
   useEffect(() => {
     if (!keyword) return;
 
-    setSearchTerm(keyword);
     setAiSummary(null);
     setIsAiLoading(true);
     const todayDate = getFormattedDate(new Date());
@@ -231,7 +230,14 @@ const AnalysisPage = () => {
   };
 
   const handleGoToCreation = () => {
-    navigate('/creation');
+    if (keyword) {
+      // 1. 키워드가 있을 경우: URL 쿼리 스트링으로 키워드를 붙여서 이동
+      // encodeURIComponent는 한글이나 특수문자가 깨지지 않게 해줍니다.
+      navigate(`/creation?keyword=${encodeURIComponent(keyword)}`);
+    } else {
+      // 2. 키워드가 없을 경우: 그냥 이동
+      navigate('/creation');
+    }
   };
 
   // 데이터 필터링 (useMemo)
@@ -284,23 +290,6 @@ const AnalysisPage = () => {
 
   // 더보기 버튼 표시 여부
   const showMoreChartBtn = (filteredData?.history?.length || 0) > 7;
-
-  const sentimentChartData = useMemo(() => {
-    const comments = filteredData?.comments || [];
-    let pos = 0, neg = 0, neu = 0;
-
-    comments.forEach(c => {
-      if (c.sentiment === 'positive') pos++;
-      else if (c.sentiment === 'negative') neg++;
-      else neu++; // 라벨이 없거나 neutral인 경우
-    });
-
-    return [
-      { name: '긍정', value: pos, color: '#3B82F6' }, // 파란색
-      { name: '부정', value: neg, color: '#EF4444' }, // 빨간색
-      { name: '중립', value: neu, color: '#9CA3AF' }, // 회색
-    ];
-  }, [filteredData]);
 
 
   // 페이지네이션 로직
@@ -574,13 +563,12 @@ const AnalysisPage = () => {
             <div className="flex-1">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
-                  <Pie data={sentimentChartData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
-                    {sentimentChartData.map((entry, index) => (
+                  <Pie data={SENTIMENT_DATA} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
+                    {SENTIMENT_DATA.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  {/* Tooltip에 건수를 명시적으로 보여주도록 포맷 변경 */}
-                  <Tooltip formatter={(value, name) => [`${value}건`, name]} />
+                  <Tooltip />
                   <Legend verticalAlign="bottom" height={24} iconSize={8} />
                 </PieChart>
               </ResponsiveContainer>
