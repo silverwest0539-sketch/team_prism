@@ -1,31 +1,19 @@
-// 즐겨찾기 페이지 (검색, 정렬, 태그, 비교, 다중삭제, 뷰전환, 드래그, 뱃지, 내보내기, 메모, 애니메이션)
+// 즐겨찾기 페이지 (검색, 정렬, 다중삭제, 뷰전환, 드래그, 뱃지, 내보내기, 애니메이션)
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Trash, ArrowRight, BookmarkSimple,
-    Tag, Plus, X, ChartLineUp,
-    DotsSixVertical, NotePencil, Fire, Sparkle,
+    Tag, X,
+    DotsSixVertical, Fire, Sparkle,
     MagnifyingGlass, SortAscending, SquaresFour, List,
-    Export, CheckSquare, Checks
+    Export, Checks
 } from '@phosphor-icons/react';
 import { reorderScraps } from '../../utils/storage';
 import { formatDate } from '../../utils/formatters';
 import SummaryModal from '../home/SummaryModal';
-import CompareModal from '../scrap/CompareModal';
 import apiClient from '../../utils/apiClient';
 import { getStoredUserEmail } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
-
-// // ─── 태그 프리셋 색상 ───
-// const TAG_COLORS = {
-//     '마케팅': 'bg-purple-100 text-purple-700 border-purple-200',
-//     '경쟁사': 'bg-red-100 text-red-700 border-red-200',
-//     '트렌드': 'bg-blue-100 text-blue-700 border-blue-200',
-//     '아이디어': 'bg-amber-100 text-amber-700 border-amber-200',
-//     '리서치': 'bg-green-100 text-green-700 border-green-200',
-// };
-// const DEFAULT_TAG_COLOR = 'bg-gray-100 text-gray-600 border-gray-200';
-// const getTagColor = (tag) => TAG_COLORS[tag] || DEFAULT_TAG_COLOR;
 
 // ─── 변동 뱃지 (더미: 해시 기반 할당, 실제론 API 연동) ───
 const BADGE_TYPES = [
@@ -62,17 +50,6 @@ const ScrapPage = () => {
 
     // 뷰 모드 (grid / list)
     const [viewMode, setViewMode] = useState('grid');
-
-    // // 태그 관련
-    // const [activeTag, setActiveTag] = useState('전체');
-    // const [tagInput, setTagInput] = useState('');
-    // const [editingTagFor, setEditingTagFor] = useState(null);
-    // const tagInputRef = useRef(null);
-
-    // 비교 모드
-    const [isCompareMode, setIsCompareMode] = useState(false);
-    const [compareSelection, setCompareSelection] = useState(new Set());
-    const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
     // 다중 선택 삭제
     const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -118,9 +95,6 @@ const ScrapPage = () => {
         }
         prevCountRef.current = scraps.length;
     }, [scraps.length]);
-
-    // 전체 태그 목록
-    // const allTags = useMemo(() => ['전체', ...getAllTags()], [scraps]);
 
     // ─── 필터 + 검색 + 정렬 파이프라인 ───
     const processedScraps = useMemo(() => {
@@ -235,10 +209,6 @@ const ScrapPage = () => {
 
     // 카드 클릭 → 모달 또는 선택
     const handleCardClick = (item) => {
-        if (isCompareMode) {
-            toggleCompareSelect(item.keyword);
-            return;
-        }
         if (isDeleteMode) {
             toggleDeleteSelect(item.keyword);
             return;
@@ -260,48 +230,6 @@ const ScrapPage = () => {
     };
 
     const handleScrapChange = () => refreshScraps();
-
-    // ─── 태그 관리 ───
-    // const handleAddTag = (keyword) => {
-    //     const tag = tagInput.trim();
-    //     if (!tag) return;
-    //     const item = scraps.find(s => s.keyword === keyword);
-    //     const currentTags = item?.tags || [];
-    //     if (!currentTags.includes(tag)) {
-    //         updateScrap(keyword, { tags: [...currentTags, tag] });
-    //         refreshScraps();
-    //     }
-    //     setTagInput('');
-    //     setEditingTagFor(null);
-    // };
-
-    // const handleRemoveTag = (e, keyword, tag) => {
-    //     e.stopPropagation();
-    //     const item = scraps.find(s => s.keyword === keyword);
-    //     const newTags = (item?.tags || []).filter(t => t !== tag);
-    //     updateScrap(keyword, { tags: newTags });
-    //     refreshScraps();
-    // };
-
-    // ─── 비교 모드 ───
-    const toggleCompareSelect = (keyword) => {
-        setCompareSelection(prev => {
-            const next = new Set(prev);
-            if (next.has(keyword)) next.delete(keyword);
-            else if (next.size < 4) next.add(keyword);
-            return next;
-        });
-    };
-
-    const openCompare = () => {
-        if (compareSelection.size < 2) return;
-        setIsCompareModalOpen(true);
-    };
-
-    const compareKeywords = useMemo(
-        () => scraps.filter(s => compareSelection.has(s.keyword)),
-        [scraps, compareSelection]
-    );
 
     // ─── 드래그 앤 드롭 ───
     const handleDragStart = (e, index) => {
@@ -350,32 +278,18 @@ const ScrapPage = () => {
         URL.revokeObjectURL(url);
     };
 
-    // ─── 모드 진입 시 다른 모드 해제 ───
-    const enterCompareMode = () => {
-        setIsDeleteMode(false);
-        setDeleteSelection(new Set());
-        setIsCompareMode(true);
-        setCompareSelection(new Set());
-    };
+    // ─── 모드 진입/해제 ───
     const enterDeleteMode = () => {
-        setIsCompareMode(false);
-        setCompareSelection(new Set());
         setIsDeleteMode(true);
         setDeleteSelection(new Set());
     };
     const exitAllModes = () => {
-        setIsCompareMode(false);
-        setCompareSelection(new Set());
         setIsDeleteMode(false);
         setDeleteSelection(new Set());
     };
 
-    // 현재 활성 모드 여부
-    const isAnyMode = isCompareMode || isDeleteMode;
-
     // ─── 카드 체크 상태 ───
     const getCheckState = (keyword) => {
-        if (isCompareMode) return compareSelection.has(keyword);
         if (isDeleteMode) return deleteSelection.has(keyword);
         return false;
     };
@@ -392,7 +306,7 @@ const ScrapPage = () => {
         return (
             <div
                 key={item.keyword}
-                draggable={!isAnyMode && sortBy === 'custom'}
+                draggable={!isDeleteMode && sortBy === 'custom'}
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={(e) => handleDrop(e, index)}
@@ -402,7 +316,7 @@ const ScrapPage = () => {
                     ${viewMode === 'grid' ? 'card-soft' : 'card-soft flex items-start gap-4 p-4'}
                     ${isRemoving ? 'opacity-0 scale-95 -translate-y-2' : 'opacity-100 scale-100'}
                     ${isSelected
-                        ? (isDeleteMode ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30' : 'border-indigo-400 ring-2 ring-indigo-200 bg-indigo-50/30')
+                        ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
                         : 'border-gray-100 hover:border-blue-200'
                     }
                     ${isDragOver ? 'border-indigo-400 border-dashed bg-indigo-50/20' : ''}
@@ -410,18 +324,18 @@ const ScrapPage = () => {
                 `}
             >
                 {/* 드래그 핸들 (커스텀 정렬 + 모드 비활성 시만) */}
-                {!isAnyMode && sortBy === 'custom' && (
+                {!isDeleteMode && sortBy === 'custom' && (
                     <div className={`absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500`}>
                         <DotsSixVertical size={16} weight="bold" />
                     </div>
                 )}
 
-                {/* 체크박스 (비교/삭제 모드) */}
-                {isAnyMode && (
+                {/* 체크박스 (삭제 모드) */}
+                {isDeleteMode && (
                     <div className={`absolute top-3 left-3 ${viewMode === 'list' ? 'relative top-0 left-0 flex-shrink-0 mt-1' : ''}`}>
                         <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
                             isSelected
-                                ? (isDeleteMode ? 'bg-red-500 border-red-500' : 'bg-indigo-600 border-indigo-600')
+                                ? 'bg-red-500 border-red-500'
                                 : 'border-gray-300 bg-white'
                         }`}>
                             {isSelected && (
@@ -433,7 +347,7 @@ const ScrapPage = () => {
                     </div>
                 )}
 
-                {/* 변동 뱃지 */}
+                {/* 변동 뱃지 (우측 상단 아이콘+텍스트) */}
                 {badge && (
                     <div className={`absolute ${viewMode === 'list' ? 'top-3 right-4' : 'top-3 right-12'} flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${badge.color}`}>
                         <badge.icon size={10} weight="fill" />
@@ -444,15 +358,13 @@ const ScrapPage = () => {
                 {/* 메인 컨텐츠 */}
                 <div className={`flex-1 ${viewMode === 'list' ? 'min-w-0' : ''}`}>
                     <div className="flex justify-between items-start mb-3">
-                        <div className={isAnyMode && viewMode === 'grid' ? 'ml-7' : ''}>
-                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                                No.{item.rank || '?'}
-                            </span>
+                        <div className={isDeleteMode && viewMode === 'grid' ? 'ml-7' : ''}>
+                            {/* No. 순위 뱃지 삭제됨 */}
                             <h3 className={`font-bold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors ${viewMode === 'list' ? 'text-base' : 'text-lg'}`}>
                                 {item.keyword}
                             </h3>
                         </div>
-                        {!isAnyMode && viewMode === 'grid' && (
+                        {!isDeleteMode && viewMode === 'grid' && (
                             <button
                                 onClick={(e) => handleDelete(e, item.keyword)}
                                 className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition"
@@ -463,15 +375,11 @@ const ScrapPage = () => {
                         )}
                     </div>
 
-                    <p className={`text-sm text-gray-500 mb-3 ${viewMode === 'list' ? 'line-clamp-1' : 'line-clamp-2 h-10'}`}>
-                        {item.desc}
-                    </p>
-
-
-
-                    <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50">
+                    {/* 설명(급상승 트렌드 텍스트) 삭제됨 */}
+                    
+                    <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3">
                         <span>{item.savedAt ? formatDate(item.savedAt) : '날짜 정보 없음'} 저장됨</span>
-                        {!isAnyMode && (
+                        {!isDeleteMode && (
                             <span className="flex items-center gap-1 text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                                 분석 보기 <ArrowRight />
                             </span>
@@ -480,7 +388,7 @@ const ScrapPage = () => {
                 </div>
 
                 {/* 리스트 뷰: 우측 삭제 버튼 */}
-                {!isAnyMode && viewMode === 'list' && (
+                {!isDeleteMode && viewMode === 'list' && (
                     <button
                         onClick={(e) => handleDelete(e, item.keyword)}
                         className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition flex-shrink-0 self-center"
@@ -549,7 +457,6 @@ const ScrapPage = () => {
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                             <span className="text-xs text-gray-400">
                                 {processedScraps.length}개 키워드
-                                {/* {searchQuery && ` (검색: "${searchQuery}")`} */}
                             </span>
 
                             {/* 정렬 드롭다운 */}
@@ -602,7 +509,7 @@ const ScrapPage = () => {
                             </div>
                         </div>
 
-                        {/* 모드 버튼들 */}
+                        {/* 모드 버튼들 (비교 모드 삭제됨) */}
                         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                             {/* 다중 삭제 모드 액션 */}
                             {isDeleteMode && (
@@ -629,38 +536,14 @@ const ScrapPage = () => {
                                 </>
                             )}
 
-                            {/* 비교 모드 액션 */}
-                            {isCompareMode && (
+                            {/* 모드 토글 버튼 */}
+                            {!isDeleteMode ? (
                                 <button
-                                    onClick={openCompare}
-                                    disabled={compareSelection.size < 2}
-                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                        compareSelection.size >= 2
-                                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
-                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    }`}
+                                    onClick={enterDeleteMode}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-white text-gray-500 border-gray-200 hover:border-red-300 hover:text-red-500"
                                 >
-                                    <ChartLineUp size={14} />
-                                    비교하기 ({compareSelection.size}/4)
+                                    선택 삭제
                                 </button>
-                            )}
-
-                            {/* 모드 토글 버튼들 */}
-                            {!isAnyMode ? (
-                                <>
-                                    <button
-                                        onClick={enterDeleteMode}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-white text-gray-500 border-gray-200 hover:border-red-300 hover:text-red-500"
-                                    >
-                                        선택 삭제
-                                    </button>
-                                    <button
-                                        onClick={enterCompareMode}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-white text-gray-500 border-gray-200 hover:border-indigo-300 hover:text-indigo-600"
-                                    >
-                                        비교 모드
-                                    </button>
-                                </>
                             ) : (
                                 <button
                                     onClick={exitAllModes}
@@ -735,13 +618,6 @@ const ScrapPage = () => {
                 onClose={closeModal}
                 data={selectedKeyword}
                 onScrapChange={handleScrapChange}
-            />
-
-            {/* 비교 모달 */}
-            <CompareModal
-                isOpen={isCompareModalOpen}
-                onClose={() => setIsCompareModalOpen(false)}
-                keywords={compareKeywords}
             />
         </div>
     );
