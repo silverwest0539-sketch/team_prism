@@ -210,7 +210,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
 
   // ── 3. 댓글 예시 ─────────────────────────────────────
   let commentsSql = `
-      SELECT u.platform, u.url, u.content, u.collected_date
+      SELECT u.platform, u.url, u.content, u.collected_date, u.sentiment_label
       FROM USAGE_EXAMPLE u
       JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
       WHERE ke.keyword_id = ?
@@ -251,6 +251,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
         text:   row.content,
         link:   row.url,
         date:   formattedDate, // 추가된 날짜 데이터
+        sentiment: row.sentiment_label || 'neutral',
       };
     });
   

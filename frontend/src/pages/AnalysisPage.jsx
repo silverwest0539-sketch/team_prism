@@ -285,6 +285,23 @@ const AnalysisPage = () => {
   // 더보기 버튼 표시 여부
   const showMoreChartBtn = (filteredData?.history?.length || 0) > 7;
 
+  const sentimentChartData = useMemo(() => {
+    const comments = filteredData?.comments || [];
+    let pos = 0, neg = 0, neu = 0;
+
+    comments.forEach(c => {
+      if (c.sentiment === 'positive') pos++;
+      else if (c.sentiment === 'negative') neg++;
+      else neu++; // 라벨이 없거나 neutral인 경우
+    });
+
+    return [
+      { name: '긍정', value: pos, color: '#3B82F6' }, // 파란색
+      { name: '부정', value: neg, color: '#EF4444' }, // 빨간색
+      { name: '중립', value: neu, color: '#9CA3AF' }, // 회색
+    ];
+  }, [filteredData]);
+
 
   // 페이지네이션 로직
   const usageExamples = useMemo(() => {
@@ -557,12 +574,13 @@ const AnalysisPage = () => {
             <div className="flex-1">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
-                  <Pie data={SENTIMENT_DATA} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
-                    {SENTIMENT_DATA.map((entry, index) => (
+                  <Pie data={sentimentChartData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
+                    {sentimentChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  {/* Tooltip에 건수를 명시적으로 보여주도록 포맷 변경 */}
+                  <Tooltip formatter={(value, name) => [`${value}건`, name]} />
                   <Legend verticalAlign="bottom" height={24} iconSize={8} />
                 </PieChart>
               </ResponsiveContainer>
