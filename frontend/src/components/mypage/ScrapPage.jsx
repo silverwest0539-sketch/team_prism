@@ -8,7 +8,7 @@ import {
     MagnifyingGlass, SortAscending, SquaresFour, List,
     Export, CheckSquare, Checks
 } from '@phosphor-icons/react';
-import { getScraps, removeScrap, updateScrap, reorderScraps, getAllTags } from '../../utils/storage';
+import { reorderScraps } from '../../utils/storage';
 import { formatDate } from '../../utils/formatters';
 import SummaryModal from '../home/SummaryModal';
 import CompareModal from '../scrap/CompareModal';
@@ -178,7 +178,7 @@ const ScrapPage = () => {
                     refreshScraps();
                     setRemovingKeywords(new Set());
                 }, 300);
-            } catch (error) {
+            } catch {
                 showToast('삭제에 실패했습니다.', { type: 'error' });
                 setRemovingKeywords(new Set());
             }
@@ -207,7 +207,7 @@ const ScrapPage = () => {
                     setDeleteSelection(new Set());
                     setIsDeleteMode(false);
                 }, 300);
-            } catch (error) {
+            } catch {
                 showToast('일부 항목 삭제에 실패했습니다.', { type: 'error' });
                 setRemovingKeywords(new Set());
             }
@@ -686,11 +686,11 @@ const ScrapPage = () => {
                     ) : (
                         <>
                             <Tag size={36} className="mb-3 opacity-50" />
-                            <p className="font-medium text-sm">'{activeTag}' 태그가 설정된 키워드가 없습니다.</p>
+                            <p className="font-medium text-sm">현재 조건에 맞는 키워드가 없습니다.</p>
                         </>
                     )}
                     <button
-                        onClick={() => { setActiveTag('전체'); setSearchQuery(''); }}
+                        onClick={() => { setSearchQuery(''); }}
                         className="mt-3 text-blue-600 hover:underline text-xs font-bold"
                     >
                         전체 보기

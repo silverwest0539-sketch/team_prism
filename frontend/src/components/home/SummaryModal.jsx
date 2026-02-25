@@ -116,7 +116,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
         setIsBookmarked(true);
       }
       onScrapChange?.();
-    } catch (error) {
+    } catch {
       showToast('스크랩 처리 중 오류가 발생했습니다.', { type: 'error' });
     }
   };

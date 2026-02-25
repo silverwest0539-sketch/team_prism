@@ -18,11 +18,16 @@ export default function CompareModal({ isOpen, onClose, keywords }) {
     setLoading(true);
     // 각 키워드별 API 호출 후 데이터 합치기
     Promise.all(
-      keywords.map(kw =>
-        fetch(toApiUrl(`/analysis?keyword=${kw.keyword}&type=${kw.type || 'trend'}`))
-          .then(res => res.json())
-          .catch(() => ({ found: false }))
-      )
+      keywords.map((kw) => {
+        const params = new URLSearchParams({
+          keyword: String(kw.keyword || ''),
+          type: String(kw.type || 'trend'),
+        });
+
+        return fetch(toApiUrl(`/analysis?${params.toString()}`))
+          .then((res) => res.json())
+          .catch(() => ({ found: false }));
+      })
     ).then(results => {
       // 날짜별 데이터 병합
       const dateMap = {};

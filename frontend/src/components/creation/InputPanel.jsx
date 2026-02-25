@@ -2,7 +2,6 @@ import React from 'react';
 import { showToast } from '../../utils/toast';
 import CreationKeywordSection from './CreationKeywordSection';
 import CreationProfileSection from './CreationProfileSection';
-import CreationPromptTemplateSection from './CreationPromptTemplateSection';
 import CreationTargetSection from './CreationTargetSection';
 import { useCreationForm } from './useCreationForm';
 
@@ -18,7 +17,6 @@ const InputPanel = ({
     purpose,
     target,
     otherRequests,
-    selectedPromptTemplate,
     isAutoProfileEnabled,
     recommendedProfile,
     contentTypes,
@@ -30,7 +28,6 @@ const InputPanel = ({
     setTarget,
     setOtherRequests,
     toggleAutoProfile,
-    handlePromptTemplateChange,
     buildSubmitPayload,
   } = useCreationForm({ initialKeyword });
 
@@ -47,47 +44,36 @@ const InputPanel = ({
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 2xl:p-4 flex flex-col">
       <div className="flex flex-col 2xl:grid 2xl:grid-cols-2 2xl:gap-3">
-        <div className="contents 2xl:flex 2xl:flex-col">
-          <div className="order-1 2xl:order-none">
-            <CreationKeywordSection
-              keyword={keyword}
-              onKeywordChange={setKeyword}
-              recommendedReason={recommendedProfile.reason}
-              isAutoProfileEnabled={isAutoProfileEnabled}
-              onToggleAutoProfile={toggleAutoProfile}
-            />
-          </div>
-
-          <div className="order-4 2xl:order-none">
-            <CreationTargetSection
-              target={target}
-              otherRequests={otherRequests}
-              onChangeTarget={setTarget}
-              onChangeOtherRequests={setOtherRequests}
-            />
-          </div>
+        <div className="order-1 2xl:h-full">
+          <CreationKeywordSection
+            keyword={keyword}
+            onKeywordChange={setKeyword}
+            recommendedReason={recommendedProfile.reason}
+            isAutoProfileEnabled={isAutoProfileEnabled}
+            onToggleAutoProfile={toggleAutoProfile}
+          />
         </div>
 
-        <div className="contents 2xl:flex 2xl:flex-col">
-          <div className="order-2 2xl:order-none">
-            <CreationProfileSection
-              contentTypes={contentTypes}
-              selectedType={selectedType}
-              onSelectType={setSelectedType}
-              industries={industries}
-              industry={industry}
-              onChangeIndustry={setIndustry}
-              purpose={purpose}
-              onChangePurpose={setPurpose}
-            />
-          </div>
+        <div className="order-2">
+          <CreationProfileSection
+            contentTypes={contentTypes}
+            selectedType={selectedType}
+            onSelectType={setSelectedType}
+            industries={industries}
+            industry={industry}
+            onChangeIndustry={setIndustry}
+            purpose={purpose}
+            onChangePurpose={setPurpose}
+          />
+        </div>
 
-          <div className="order-3 2xl:order-none">
-            <CreationPromptTemplateSection
-              selectedPromptTemplate={selectedPromptTemplate}
-              onChangePromptTemplate={handlePromptTemplateChange}
-            />
-          </div>
+        <div className="order-3 2xl:col-span-2">
+          <CreationTargetSection
+            target={target}
+            otherRequests={otherRequests}
+            onChangeTarget={setTarget}
+            onChangeOtherRequests={setOtherRequests}
+          />
         </div>
       </div>
 
@@ -106,3 +92,4 @@ const InputPanel = ({
 };
 
 export default InputPanel;
+

@@ -1,6 +1,7 @@
 // src/pages/MyPage.jsx
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, X, Shield, Trash } from 'lucide-react';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -8,12 +9,47 @@ import { showToast } from '../utils/toast';
 // 스크랩 페이지 컴포넌트 불러오기
 import ScrapPage from '../components/mypage/ScrapPage';
 
+const MODAL = Object.freeze({
+  ACCOUNT: 'account',
+  PASSWORD: 'password',
+  WITHDRAW: 'withdraw',
+  NOTIFICATION: 'notification',
+});
+
+const ROUTE = Object.freeze({
+  MYPAGE: '/mypage',
+  LOGIN: '/login',
+});
+
+const API_ENDPOINT = Object.freeze({
+  UPDATE_PROFILE: '/auth/update-profile',
+  CHANGE_PASSWORD: '/auth/change-password',
+  WITHDRAW: '/auth/withdraw',
+});
+
+const STORAGE_KEY = Object.freeze({
+  USER: 'user',
+  TOKEN: 'token',
+});
+
+const TOAST_MESSAGE = Object.freeze({
+  NOTIFICATION_UNAVAILABLE: '알림 기능은 현재 미구현 상태입니다.',
+  PROFILE_UPDATE_SUCCESS: '프로필이 저장되었습니다.',
+  PROFILE_UPDATE_ERROR: '이름 수정 중 오류가 발생했습니다.',
+  PASSWORD_MISMATCH: '새 비밀번호 확인이 일치하지 않습니다.',
+  PASSWORD_CHANGE_SUCCESS: '비밀번호가 변경되었습니다.',
+  PASSWORD_CHANGE_ERROR: '비밀번호 변경에 실패했습니다.',
+  WITHDRAW_SUCCESS: '회원 탈퇴가 완료되었습니다.',
+  WITHDRAW_ERROR: '회원 탈퇴 중 오류가 발생했습니다.',
+});
+
 const MyPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const storedUser = getStoredUser();
   const [activeModal, setActiveModal] = useState(null);
-  const [userInfo, setUserInfo] = useState({ nickname: '', email: '' });
-  const [editNickname, setEditNickname] = useState('');
+  const [userInfo, setUserInfo] = useState(() => storedUser || { nickname: '', email: '' });
+  const [editNickname, setEditNickname] = useState(() => storedUser?.nickname || '');
   
   // 비밀번호 상태
   const [passwordForm, setPasswordForm] = useState({
@@ -23,18 +59,10 @@ const MyPage = () => {
   });
 
   useEffect(() => {
-    const user = getStoredUser();
-    if (user) {
-      setUserInfo(user);
-      setEditNickname(user.nickname);
-    }
-  }, []);
-
-  useEffect(() => {
     const modal = new URLSearchParams(location.search).get('modal');
-    if (modal === 'notification') {
-      showToast('알림 기능은 현재 미구현 상태입니다.', { type: 'info' });
-      navigate('/mypage', { replace: true });
+    if (modal === MODAL.NOTIFICATION) {
+      showToast(TOAST_MESSAGE.NOTIFICATION_UNAVAILABLE, { type: 'info' });
+      navigate(ROUTE.MYPAGE, { replace: true });
     }
   }, [location.search, navigate]);
 
@@ -44,13 +72,13 @@ const MyPage = () => {
   };
 
   const handleNotificationNotice = () => {
-    showToast('알림 기능은 현재 미구현 상태입니다.', { type: 'info' });
+    showToast(TOAST_MESSAGE.NOTIFICATION_UNAVAILABLE, { type: 'info' });
   };
 
   // 닉네임 수정 함수
   const handleSaveProfile = async () => {
     try {
-      const response = await apiClient.post('/auth/update-profile', {
+      const response = await apiClient.post(API_ENDPOINT.UPDATE_PROFILE, {
         email: userInfo.email,
         newNickname: editNickname
       });
@@ -61,50 +89,50 @@ const MyPage = () => {
         setUserInfo(updatedUser);
         
         // 2. localStorage 업데이트 (사이드바 등 반영 위함)
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         
-        showToast(response.data.message || '프로필이 저장되었습니다.', { type: 'success' });
+        showToast(response.data.message || TOAST_MESSAGE.PROFILE_UPDATE_SUCCESS, { type: 'success' });
         closeModal();
         window.location.reload(); // 전체 UI 동기화를 위해 새로고침 권장
       }
-    } catch (error) {
-      showToast('이름 수정 중 오류가 발생했습니다.', { type: 'error' });
+    } catch {
+      showToast(TOAST_MESSAGE.PROFILE_UPDATE_ERROR, { type: 'error' });
     }
   };
 
   // 비밀번호 변경 함수
   const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      showToast('새 비밀번호 확인이 일치하지 않습니다.', { type: 'warning' });
+      showToast(TOAST_MESSAGE.PASSWORD_MISMATCH, { type: 'warning' });
       return;
     }
     try {
-      await apiClient.post('/auth/change-password', {
+      await apiClient.post(API_ENDPOINT.CHANGE_PASSWORD, {
         email: userInfo.email,
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
       });
-      showToast('비밀번호가 변경되었습니다.', { type: 'success' });
+      showToast(TOAST_MESSAGE.PASSWORD_CHANGE_SUCCESS, { type: 'success' });
       setActiveModal(null);
     } catch (error) {
-      showToast(error.response?.data?.message || '비밀번호 변경에 실패했습니다.', { type: 'error' });
+      showToast(error.response?.data?.message || TOAST_MESSAGE.PASSWORD_CHANGE_ERROR, { type: 'error' });
     }
   };
 
   const handleWithdraw = async () => {
     try {
-      const response = await apiClient.delete('/auth/withdraw', {
+      const response = await apiClient.delete(API_ENDPOINT.WITHDRAW, {
         data: { email: userInfo.email } // DELETE 요청 본문
       });
 
       if (response.data.success) {
-        showToast(response.data.message || '회원 탈퇴가 완료되었습니다.', { type: 'success' });
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-        window.location.href = '/login'; // 데이터 파기 후 로그인 페이지로 강제 이동
+        showToast(response.data.message || TOAST_MESSAGE.WITHDRAW_SUCCESS, { type: 'success' });
+        localStorage.removeItem(STORAGE_KEY.USER);
+        localStorage.removeItem(STORAGE_KEY.TOKEN);
+        window.location.href = ROUTE.LOGIN; // 데이터 파기 후 로그인 페이지로 강제 이동
       }
     } catch (error) {
-      showToast(error.response?.data?.message || '회원 탈퇴 중 오류가 발생했습니다.', {
+      showToast(error.response?.data?.message || TOAST_MESSAGE.WITHDRAW_ERROR, {
         type: 'error',
       });
     }
@@ -125,6 +153,11 @@ const MyPage = () => {
           - bg-white, rounded-2xl, shadow-sm, border: 카드 형태
           - flex-row: 좌우 분할
          ========================================= */}
+      <ErrorBoundary
+        variant="section"
+        title="계정 설정 섹션을 표시하지 못했습니다."
+        description="잠시 후 다시 시도해 주세요."
+      >
       <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row mb-8 sm:mb-10 min-h-[240px]">
         
         {/* 좌측: 타이틀 및 설명 (회색 배경 적용) */}
@@ -141,7 +174,7 @@ const MyPage = () => {
             
             {/* 1. 계정 정보 */}
             <div 
-              onClick={() => setActiveModal('account')}
+              onClick={() => setActiveModal(MODAL.ACCOUNT)}
               className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors"
             >
               <div>
@@ -165,7 +198,7 @@ const MyPage = () => {
 
             {/* 3. 회원 탈퇴 */}
             <div 
-              onClick={() => setActiveModal('withdraw')}
+              onClick={() => setActiveModal(MODAL.WITHDRAW)}
               className="group flex items-center justify-between p-4 cursor-pointer hover:bg-red-50 rounded-xl transition-colors"
             >
               <div>
@@ -177,15 +210,22 @@ const MyPage = () => {
 
         </div>
       </section>
+      </ErrorBoundary>
 
       {/* =========================================
           [하단 섹션] 내 스크랩 (기존 유지)
          ========================================= */}
+      <ErrorBoundary
+        variant="section"
+        title="스크랩 섹션을 표시하지 못했습니다."
+        description="잠시 후 다시 시도해 주세요."
+      >
       <section className="w-full">
         <div className="bg-white">
            <ScrapPage />
         </div>
       </section>
+      </ErrorBoundary>
 
 
       {/* =========================================
@@ -198,8 +238,8 @@ const MyPage = () => {
             {/* 모달 헤더 */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900">
-                {activeModal === 'account' && '계정 정보 설정'}
-                {activeModal === 'withdraw' && '회원 탈퇴'}
+                {activeModal === MODAL.ACCOUNT && '계정 정보 설정'}
+                {activeModal === MODAL.WITHDRAW && '회원 탈퇴'}
               </h3>
               <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full transition">
                 <X size={20} className="text-gray-500" />
@@ -210,7 +250,7 @@ const MyPage = () => {
             <div className="p-4 sm:p-6 overflow-y-auto">
               
               {/* 1. 계정 정보 */}
-              {activeModal === 'account' && (
+              {activeModal === MODAL.ACCOUNT && (
                 <div className="space-y-8">
                   <div className="flex flex-col items-center">
                     <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4 text-3xl font-bold shadow-inner">
@@ -238,7 +278,7 @@ const MyPage = () => {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm font-medium">비밀번호 변경</span>
-                        <button onClick={() => setActiveModal('password')} className="text-xs border bg-white px-3 py-1 rounded hover:bg-gray-100">변경</button>
+                        <button onClick={() => setActiveModal(MODAL.PASSWORD)} className="text-xs border bg-white px-3 py-1 rounded hover:bg-gray-100">변경</button>
                       </div>
                     </div>
                   </div>
@@ -246,7 +286,7 @@ const MyPage = () => {
               )}
 
               {/* 비밀번호 변경 모달 */}
-              {activeModal === 'password' && (
+              {activeModal === MODAL.PASSWORD && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                   <div className="bg-white rounded-2xl w-full max-w-md p-6 relative">
                     <button onClick={() => setActiveModal(null)} className="absolute top-4 right-4 text-gray-400"><X /></button>
@@ -276,7 +316,7 @@ const MyPage = () => {
               )}
 
               {/* 3. 회원 탈퇴 */}
-              {activeModal === 'withdraw' && (
+              {activeModal === MODAL.WITHDRAW && (
                 <div className="text-center">
                   <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><Trash size={32} /></div>
                   <h4 className="text-lg font-bold mb-2">정말 탈퇴하시겠습니까?</h4>
@@ -291,12 +331,12 @@ const MyPage = () => {
             </div>
 
             {/* 저장 버튼 (탈퇴 제외) */}
-            {activeModal !== 'withdraw' && activeModal !== 'password' && (
+            {activeModal !== MODAL.WITHDRAW && activeModal !== MODAL.PASSWORD && (
               <div className="p-4 border-t bg-gray-50">
                 <button 
                   onClick={() => {
                     // [수정됨] profile -> account 로 일치시킴
-                    if (activeModal === 'account') { 
+                    if (activeModal === MODAL.ACCOUNT) { 
                       handleSaveProfile(); 
                     } else {
                       closeModal(); 
@@ -305,7 +345,7 @@ const MyPage = () => {
                   className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
                 >
                   {/* 텍스트도 account 에 맞게 수정 */}
-                  {activeModal === 'account' ? '프로필 저장하기' : '저장하기'}
+                  {activeModal === MODAL.ACCOUNT ? '프로필 저장하기' : '저장하기'}
                 </button>
               </div>
             )}

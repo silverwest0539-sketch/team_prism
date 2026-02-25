@@ -1,6 +1,7 @@
 // src/pages/CreationPage.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 import InputPanel from '../components/creation/InputPanel';
 import ResultPanel from '../components/creation/ResultPanel';
 import { showToast } from '../utils/toast';
@@ -110,8 +111,8 @@ const CreationPage = () => {
   }
 
   return (
-    <div className="page space-y-4 sm:space-y-6 2xl:space-y-2 2xl:p-4">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-gray-200 pb-4 2xl:pb-2">
+    <div className="page space-y-6 sm:space-y-8 2xl:space-y-4 2xl:p-4">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-gray-200 pb-5 2xl:pb-3">
         <div>
           <h1 className="text-xl sm:text-2xl 2xl:text-xl font-bold text-gray-900">콘텐츠 생성 스튜디오</h1>
           <p className="text-sm sm:text-base 2xl:text-sm text-gray-500 mt-1 2xl:mt-0.5">
@@ -121,18 +122,32 @@ const CreationPage = () => {
       </div>
 
       <div className="creation-grid 2xl:gap-3">
-        <InputPanel
-          onGenerate={handleGenerate}
-          isLoading={isLoading}
-          initialKeyword={initialKeyword}
-        />
-        <ResultPanel
-          key={resultRevision}
-          content={generatedResult}
-          isLoading={isLoading}
-          errorMessage={generationError}
-          onRetry={handleRetry}
-        />
+        <ErrorBoundary
+          variant="section"
+          resetKey={initialKeyword}
+          title="입력 섹션을 표시하지 못했습니다."
+          description="페이지를 새로고침하거나 잠시 후 다시 시도해 주세요."
+        >
+          <InputPanel
+            onGenerate={handleGenerate}
+            isLoading={isLoading}
+            initialKeyword={initialKeyword}
+          />
+        </ErrorBoundary>
+        <ErrorBoundary
+          variant="section"
+          resetKey={resultRevision}
+          title="결과 섹션을 표시하지 못했습니다."
+          description="생성을 다시 시도하거나 잠시 후 다시 시도해 주세요."
+        >
+          <ResultPanel
+            key={resultRevision}
+            content={generatedResult}
+            isLoading={isLoading}
+            errorMessage={generationError}
+            onRetry={handleRetry}
+          />
+        </ErrorBoundary>
       </div>
     </div>
   );

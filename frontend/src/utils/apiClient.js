@@ -19,6 +19,32 @@ const apiClient = axios.create({
   },
 });
 
+// 요청 인터셉터 — localStorage에 토큰이 있으면 자동 첨부
+apiClient.interceptors.request.use((config) => {
+  const token = window.localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// 응답 인터셉터 — 401 시 토큰 제거 및 로그인 리다이렉트
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      window.localStorage.removeItem('token');
+      window.localStorage.removeItem('user');
+
+      // 이미 로그인 페이지가 아닐 때만 리다이렉트
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 export const toApiUrl = (path = '') => {
   if (typeof path !== 'string' || !path) return baseURL;
   if (/^https?:\/\//i.test(path)) return path;

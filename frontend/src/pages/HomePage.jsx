@@ -3,13 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom'
 import { PlayCircle, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import SearchBar from '../components/common/SearchBar';
-import HeaderActions from '../components/common/HeaderActions';
 import SummaryModal from '../components/home/SummaryModal';
 import { formatViews, formatDate } from '../utils/formatters';
 import { toApiUrl } from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
-import { Star } from '@phosphor-icons/react';
 
 
 const HomePage = () => {
@@ -22,7 +20,7 @@ const HomePage = () => {
   const [youtubeVideos, setYoutubeVideos] = useState([]);
   const [youtubeCategory, setYoutubeCategory] = useState('전체');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [userName, setUserName] = useState('');
+  const [userName] = useState(() => getStoredUser()?.nickname || '');
   
   // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,7 +28,7 @@ const HomePage = () => {
   const [communityPosts, setCommunityPosts] = useState([]);
   const [selectedComm, setSelectedComm] = useState('theqoo');
 
-  // 트렌드 더보기 모달 상태
+    // [추가] 트렌드 더보기 모달 상태
   const [isTrendModalOpen, setIsTrendModalOpen] = useState(false);
 
   const scrollRef = useRef(null);
@@ -60,6 +58,7 @@ const HomePage = () => {
     { label: '루리웹', value: 'ruliweb' },
     { label: '네이트판', value: 'natepan' },
     { label: 'FM코리아', value: 'fmkorea' },
+    { label: 'X (트위터)', value: 'x' },
   ];
 
   const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '브이로그'];
@@ -75,6 +74,7 @@ const HomePage = () => {
   const scroll = (direction) => {
     if (scrollRef.current) {
       const { current } = scrollRef;
+      // 한 번 클릭 시 이동할 거리 (약 카드 1~2개 너비 + gap)
       const scrollAmount = direction === 'left' ? -300 : 300;
       current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
@@ -82,45 +82,39 @@ const HomePage = () => {
 
   // API 호출
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // 1. 급상승 키워드 로드
-        const trendRes = await fetch(toApiUrl('/trends/rising'));
-        const trendData = await trendRes.json();
-        setRisingKeywords(trendData);
+      const fetchData = async () => {
+        try {
+          // 1. 급상승 키워드 로드 (기존 유지)
+          const trendRes = await fetch(toApiUrl('/trends/rising'));
+          const trendData = await trendRes.json();
+          setRisingKeywords(trendData);
 
-        // 2. 플랫폼별 트렌드 로드
-        const platformRes = await fetch(toApiUrl(`/trends/platform?platform=${selectedPlatform}`));
-        const platformData = await platformRes.json();
-        setRisingPlatforms(platformData);
+          // 2. 플랫폼별 트렌드 로드 (기존 유지)
+          const platformParams = new URLSearchParams({ platform: String(selectedPlatform || '') });
+          const platformRes = await fetch(toApiUrl(`/trends/platform?${platformParams.toString()}`));
+          const platformData = await platformRes.json();
+          setRisingPlatforms(platformData);
 
-        // 3. 유튜브 인기 동영상 로드 
-        const videoRes = await fetch(toApiUrl(`/videos?category=${encodeURIComponent(youtubeCategory)}`));
-        const videoData = await videoRes.json();
-        setYoutubeVideos(videoData);
+          // 3. 유튜브 인기 동영상 로드 
+          const videoParams = new URLSearchParams({ category: String(youtubeCategory || '') });
+          const videoRes = await fetch(toApiUrl(`/videos?${videoParams.toString()}`));
+          const videoData = await videoRes.json();
+          setYoutubeVideos(videoData);
 
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        }
+      };
 
-    fetchData();
-  }, [selectedPlatform, youtubeCategory]);
-
-  useEffect(() => {
-    // 로컬 스토리지에서 유저 정보 가져오기
-    const savedUser = getStoredUser();
-    if (savedUser?.nickname) {
-      const { nickname } = savedUser;
-      setUserName(nickname);
-    }
-  }, []);
+      fetchData();
+    }, [selectedPlatform, youtubeCategory]);
 
   useEffect(() => {
     // 커뮤니티 인기글 불러오기
     const fetchCommunityPosts = async () => {
       try {
-        const res = await fetch(toApiUrl(`/community/posts?platform=${selectedComm}`));
+        const communityParams = new URLSearchParams({ platform: String(selectedComm || '') });
+        const res = await fetch(toApiUrl(`/community/posts?${communityParams.toString()}`));
         const data = await res.json();
         setCommunityPosts(data);
       } catch (error) {
@@ -146,14 +140,17 @@ const HomePage = () => {
           onKeyDown={handleSearch}
           containerClassName="relative w-full max-w-3xl"
         />  
+
       </div>
 
       <h1 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">안녕하세요, {userName}님 </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-10">
         
+        
         {/* 카드 1: 트렌드 급상승 키워드 */}
         <div className="card-soft">
+          {/* [수정됨] 헤더를 flex로 감싸서 제목과 더보기 버튼 배치 */}
           <div className="flex justify-between items-end mb-4 border-b pb-2 border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">
               트렌드 일일 키워드 Top 5
@@ -206,12 +203,14 @@ const HomePage = () => {
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`tab-btn flex items-center gap-1 ${
+                    // [수정] 유튜브나 다른 커뮤니티 구분 없이, 드롭다운이 열려있거나 값이 선택되어 있으면 활성화 색상(초록) 적용
                     isDropdownOpen || selectedPlatform
                       ? 'tab-active text-green-600'
                       : 'text-gray-500 hover:text-gray-800'
                   }`}
                 >
                   <span className="font-medium">
+                    {/* [수정] 복잡한 삼항연산자 제거 -> 선택된 값의 Label을 그대로 표시 */}
                     {MAIN_PLATFORM_OPTIONS.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
                   </span>
                   <svg
@@ -274,7 +273,7 @@ const HomePage = () => {
       </div>
 
       {/* 유튜브 섹션 */}
-      <div className="mb-8 relative group">
+      <div className="mb-8 relative group"> {/* group 클래스 추가: 호버 시 버튼 표시용 */}
         <div className="flex justify-between items-end mb-4">
           <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">
             유튜브 일일 급상승 동영상
@@ -305,7 +304,7 @@ const HomePage = () => {
             <ChevronLeft className="w-6 h-6 text-gray-600" />
           </button>
 
-          {/* 비디오 리스트 */}
+          {/* 비디오 리스트 (Grid -> Flex & Scroll) */}
           <div 
             ref={scrollRef}
             className="flex overflow-x-auto gap-4 scrollbar-hide scroll-smooth pb-4 px-1"
@@ -313,7 +312,7 @@ const HomePage = () => {
             {youtubeVideos.slice(0, 10).map((video) => (
               <a
                 key={video.id}
-                href={`https://www.youtube.com/watch?v=${video.id}`}
+                href={`https://www.youtube.com/watch?v=${encodeURIComponent(String(video.id || ''))}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="video-card flex-none w-[240px] sm:w-[260px] md:w-[280px] lg:w-[19%] min-w-[220px] sm:min-w-[240px]"
@@ -380,7 +379,7 @@ const HomePage = () => {
           ))}
         </div>
 
-        {/* 게시글 리스트 */}
+        {/* 게시글 리스트 (그리드 2단 레이아웃) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {communityPosts.length > 0 ? (
             communityPosts.map((post) => (
@@ -410,14 +409,14 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* 기존 모달 */}
+      {/* 모달 */}
       <SummaryModal 
         isOpen={isModalOpen} 
         onClose={closeModal} 
         data={selectedKeyword} 
       />
 
-      {/* 트렌드 Top 20 모달 */}
+            {/* --- 트렌드 Top 20 모달 추가 --- */}
       {isTrendModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -451,8 +450,9 @@ const HomePage = () => {
                     <div 
                       key={item.rank}
                       onClick={() => {
-                        setIsTrendModalOpen(false);
-                        navigate(`/analysis/${encodeURIComponent(item.keyword)}`);
+                        setIsTrendModalOpen(false); // 모달 닫고
+                        // 기존 모달 열기 로직 호출 (필요시)
+                        /* openModal({ ... }) */
                       }}
                       className="group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer"
                     >
@@ -478,8 +478,8 @@ const HomePage = () => {
                     <div 
                       key={item.rank}
                       onClick={() => {
-                        setIsTrendModalOpen(false);
-                        navigate(`/analysis/${encodeURIComponent(item.keyword)}`);
+                         setIsTrendModalOpen(false);
+                         /* openModal({ ... }) */
                       }}
                       className="group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer"
                     >
@@ -504,8 +504,10 @@ const HomePage = () => {
         </div>
       )}
 
-    </div>
+    </div> // HomePage 끝나는 태그
   );
 };
 
 export default HomePage;
+
+

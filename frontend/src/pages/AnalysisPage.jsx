@@ -1,5 +1,5 @@
 // src/pages/AnalysisPage.jsx
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import {
   Bell,
@@ -35,208 +35,26 @@ import SearchBar from '../components/common/SearchBar';
 
 // 유틸리티
 import { formatDateLabel, formatDateForInput, formatViews } from '../utils/formatters';
-import apiClient, { toApiUrl } from '../utils/apiClient';
+import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { showToast } from '../utils/toast';
-import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
+import SimpleWordCloud from '../components/analysis/SimpleWordCloud';
+import CommentItem from '../components/analysis/CommentItem';
+import { DUMMY_DATA, PLATFORM_OPTIONS, SENTIMENT_DATA } from '../constants/analysisConstants';
+import { DOTS, getPaginationItems } from '../utils/analysisPagination';
 
-const DUMMY_DATA = {
-  rank: '-',
-  score: 0,
-  totalMentions: 0,
-  history: [
-    { date: '20240101', mentions: 20 },
-    { date: '20240102', mentions: 40 },
-    { date: '20240103', mentions: 30 },
-    { date: '20240104', mentions: 70 },
-    { date: '20240105', mentions: 50 },
-    { date: '20240106', mentions: 90 },
-  ],
-  comments: [],
-};
-
-const PLATFORM_OPTIONS = [
-  { label: '전체 플랫폼', value: 'all' },
-  { label: '유튜브', value: 'youtube' },
-  { label: '더쿠', value: 'theqoo' },
-  { label: '디시인사이드', value: 'dcinside' },
-  { label: '루리웹', value: 'ruliweb' },
-  { label: '네이트판', value: 'nate' },
-  { label: 'FM코리아', value: 'fmkorea' },
-];
-
-const SENTIMENT_DATA = [
-  { name: '긍정', value: 65, color: '#4F46E5' },
-  { name: '중립', value: 25, color: '#9CA3AF' },
-  { name: '부정', value: 10, color: '#EF4444' },
-];
-
-// 간단한 워드클라우드 컴포넌트
-const SimpleWordCloud = ({ words }) => {
-  if (!words || words.length === 0)
-    return <div className="flex justify-center items-center h-full text-gray-400 text-sm">데이터 부족</div>;
-
-  const maxVal = Math.max(...words.map((w) => w.value));
-  const minVal = Math.min(...words.map((w) => w.value));
-
-  const getFontSize = (val) => {
-    if (maxVal === minVal) return 16;
-    return 12 + ((val - minVal) / (maxVal - minVal)) * 14;
-  };
-
-  const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6'];
-
-  return (
-    <div className="flex flex-wrap gap-2 justify-center content-center h-full p-4 overflow-hidden">
-      {words.slice(0, 15).map((w, i) => (
-        <span
-          key={i}
-          style={{
-            fontSize: `${getFontSize(w.value)}px`,
-            color: colors[i % colors.length],
-            opacity: 0.8 + (w.value / maxVal) * 0.2,
-          }}
-          className="font-bold cursor-default hover:scale-110 transition-transform duration-200 whitespace-nowrap"
-          title={`${w.value}회 언급`}
-        >
-          {w.text}
-        </span>
-      ))}
-    </div>
-  );
-};
-
-// --- Ellipsis Pagination Helper ---
-const DOTS = 'dots';
-
-function getPaginationItems(currentPage, totalPages, siblingCount = 1) {
-  if (totalPages <= 1) return [1];
-  const maxVisible = 2 * siblingCount + 5;
-  if (totalPages <= maxVisible) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
-  }
-  const leftSibling = Math.max(currentPage - siblingCount, 2);
-  const rightSibling = Math.min(currentPage + siblingCount, totalPages - 1);
-  const showLeftDots = leftSibling > 2;
-  const showRightDots = rightSibling < totalPages - 1;
-  const items = [1];
-  if (showLeftDots) items.push(DOTS);
-  for (let p = leftSibling; p <= rightSibling; p++) items.push(p);
-  if (showRightDots) items.push(DOTS);
-  items.push(totalPages);
-  return items;
-}
-
-const CommentItem = ({ comment, globalIndex, keyword }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isOverflowing, setIsOverflowing] = useState(false);
-  const textRef = useRef(null);
-  const link = comment.link;
-
-  const highlightText = (text, targetKeyword) => {
-    if (!targetKeyword || !text) return text;
-    const parts = text.split(new RegExp(`(${targetKeyword})`, 'gi'));
-    return parts.map((part, index) => 
-      part.toLowerCase() === targetKeyword.toLowerCase() ? (
-        <span key={index} className="bg-yellow-200 text-gray-900 font-bold px-0.5 rounded">
-          {part}
-        </span>
-      ) : (
-        part
-      )
-    );
-  };
-
-  const formatComment = (text) => {
-    if (!text) return null;
-    const sentences = text.split(/(?<=[.?!])\s+|(?=@)/);
-    return sentences.map((sentence, idx) => {
-      const trimmed = sentence.trim();
-      if (!trimmed) return null;
-      return (
-        <p key={idx} className="mb-2 last:mb-0">
-          {highlightText(trimmed, keyword)}
-        </p>
-      );
-    });
-  };
-
-  useEffect(() => {
-    if (textRef.current) {
-      const { scrollHeight, clientHeight } = textRef.current;
-      setIsOverflowing(scrollHeight > clientHeight);
-    }
-  }, [comment.text]);
-
-  const formattedDate = comment.date ? new Date(comment.date).toISOString().split('T')[0] : '';
-
-  return (
-    <div className="group">
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-sm font-bold text-gray-700">
-          반응 {globalIndex}{' '}
-          <span className="text-xs font-normal text-gray-400 ml-1">({comment.source})</span>
-        </span>
-        {formattedDate && (
-            <span className="text-xs text-gray-400">
-              {formattedDate}
-            </span>
-          )}
-      </div>
-
-      <div className="relative p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent hover:border-indigo-100 hover:bg-indigo-50/30 transition-all shadow-sm">
-        <div 
-          ref={textRef} 
-          className={isExpanded ? '' : 'line-clamp-3'}
-        >
-          {formatComment(comment.text)}
-        </div>
-
-        <div className="mt-2 flex justify-between items-end">
-          <div>
-            {isOverflowing && (
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="text-xs font-bold text-gray-400 hover:text-indigo-600 transition-colors"
-              >
-                {isExpanded ? '접기 ▲' : '더보기 ▼'}
-              </button>
-            )}
-          </div>
-
-          {link && (
-            <a
-              href={link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-indigo-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-              title="클릭하여 원문 보기"
-            >
-              <span>원문 보러가기</span>
-              <Export size={12} />
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+const getFormattedDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const AnalysisPage = () => {
-  // [수정 1] URL 파라미터(:keyword)와 쿼리 스트링(?keyword=) 둘 다 처리
-  const { keyword: pathKeyword } = useParams(); // /analysis/검색어
-  const [searchParams] = useSearchParams();     // /analysis?keyword=검색어
-  const navigate = useNavigate();
-
-  // 둘 중 하나라도 값이 있으면 그것을 현재 키워드로 사용 (Path 파라미터 우선)
+  const { keyword: pathKeyword } = useParams();
+  const [searchParams] = useSearchParams();
   const keyword = pathKeyword || searchParams.get('keyword');
-
-  const getFormattedDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const navigate = useNavigate();
 
   const initialToday = new Date();
   const initialYesterday = new Date(initialToday);
@@ -244,11 +62,8 @@ const AnalysisPage = () => {
 
   // 기존 State
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  
-  // [수정 2] 초기 검색어 상태를 URL에서 가져온 keyword로 설정
-  const [searchTerm, setSearchTerm] = useState(keyword || ''); 
-  
+  const [, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState(getFormattedDate(initialYesterday));
   const [endDate, setEndDate] = useState(getFormattedDate(initialToday));
   const [selectedPlatform, setSelectedPlatform] = useState('all');
@@ -261,74 +76,69 @@ const AnalysisPage = () => {
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
 
   // 페이지네이션
-  const [currentPage, setCurrentPage] = useState(1);  
-  const ITEMS_PER_PAGE = 7; // (사용하지 않으면 주석 처리, 사용하면 유지)
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 7;
   const commentsTopRef = useRef(null);
 
-  // 데이터 불러오기 함수
-  const fetchData = (currentStart, currentEnd) => {
+  // 데이터 불러오기
+  const fetchData = useCallback(async (currentStart, currentEnd) => {
     if (!keyword) return;
 
     setLoading(true);
 
-    let query = `keyword=${keyword}`;
-    if (currentStart) query += `&startDate=${currentStart}`;
-    if (currentEnd) query += `&endDate=${currentEnd}`;
+    const params = { keyword };
+    if (currentStart) params.startDate = currentStart;
+    if (currentEnd) params.endDate = currentEnd;
 
-    Promise.all([
-      fetch(`http://localhost:5000/api/analysis?${query}`).then((res) => res.json()),
-      fetch(`http://localhost:5000/api/news?${query}`).then((res) => res.json()),
-    ])
-      .then(([analysisData, newsData]) => {
-        console.log("🔥 백엔드 응답 데이터:", analysisData); 
-        
-        if (analysisData.found) {
-          setData(analysisData);
-          if (!currentStart && analysisData.history?.length > 0) {
-            // formatDateForInput 함수가 외부에 정의되어 있다고 가정
-            // 만약 내부에 없다면 utils import 확인 필요
-             setStartDate(analysisData.history[0].date.substring(0, 10)); // 간단한 날짜 처리 예시
-             setEndDate(analysisData.history[analysisData.history.length - 1].date.substring(0, 10));
-          }
-        } else {
-          setData(null);
+    try {
+      const [analysisRes, newsRes] = await Promise.all([
+        apiClient.get('/analysis', { params }),
+        apiClient.get('/news', { params }),
+      ]);
+
+      const analysisData = analysisRes.data;
+      const newsData = newsRes.data;
+
+      if (analysisData.found) {
+        setData(analysisData);
+        if (!currentStart && analysisData.history?.length > 0) {
+          setStartDate(formatDateForInput(analysisData.history[0].date));
+          setEndDate(formatDateForInput(analysisData.history[analysisData.history.length - 1].date));
         }
+      } else {
+        setData(null);
+      }
 
-        setNews(newsData || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
-  };
+      setNews(newsData || []);
+    } catch (err) {
+      console.error('데이터 로드 실패:', err);
+      showToast('데이터를 불러오지 못했습니다.', { type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, [keyword]);
 
-  // AI 요약 가져오기 함수 (기존 로직 유지)
-  const fetchAiSummary = async (targetKeyword, start, end) => {
+  const fetchAiSummary = useCallback(async (targetKeyword, start, end) => {
     setIsAiLoading(true);
     try {
-      let query = `keyword=${targetKeyword}`;
-      if (start) query += `&startDate=${start}`;
-      if (end) query += `&endDate=${end}`;
+      const params = { keyword: targetKeyword };
+      if (start) params.startDate = start;
+      if (end) params.endDate = end;
 
-      const res = await fetch(`http://localhost:5000/api/summary?${query}`);
-      const data = await res.json();
-      setAiSummary(data.summary);
+      const res = await apiClient.get('/summary', { params });
+      setAiSummary(res.data.summary);
     } catch (err) {
-      console.error("AI Summary Error:", err);
-      setAiSummary("요약 정보를 불러오는데 실패했습니다.");
+      console.error('AI 요약 로드 실패:', err);
+      setAiSummary('요약 정보를 불러오는데 실패했습니다.');
     } finally {
       setIsAiLoading(false);
     }
-  };
+  }, []);
 
-  // [중요] 키워드가 바뀌었을 때 실행되는 Effect
   useEffect(() => {
     if (!keyword) return;
 
-    // URL이 바뀌어서 들어왔을 때, 검색창(input) 값도 맞춰줌
     setSearchTerm(keyword);
-
     setAiSummary(null);
     setIsAiLoading(true);
     const todayDate = getFormattedDate(new Date());
@@ -340,20 +150,25 @@ const AnalysisPage = () => {
     setEndDate(todayDate);
     setCurrentPage(1);
     
-    // 로컬스토리지 유저 확인 (getStoredUser, apiClient가 import 되어 있다고 가정)
-    // const savedUser = getStoredUser(); 
-    // if (savedUser?.email) { ... } 
-    // 위 로직은 기존 코드 그대로 유지하시면 됩니다. (여기서는 생략해도 됨)
+    const savedUser = getStoredUser();
+    if (savedUser?.email) {
+      apiClient
+        .get('/scraps/check', {
+          params: { email: savedUser.email, keyword: keyword },
+        })
+        .then((res) => setIsScrapped(Boolean(res.data?.isBookmarked)))
+        .catch(() => setIsScrapped(false));
+    } else {
+      setIsScrapped(false);
+    }
 
     fetchData(yesterdayDate, todayDate);
     fetchAiSummary(keyword, yesterdayDate, todayDate);
-    
-  }, [keyword]); // keyword가 변경될 때마다 실행됨
+  }, [keyword, fetchData, fetchAiSummary]);
 
-  // [수정 3] 검색 핸들러: 이제 /analysis/키워드 로 이동
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
-      navigate(`/analysis/${encodeURIComponent(searchTerm)}`);
+      navigate(`/analysis?keyword=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
 
@@ -780,7 +595,7 @@ const AnalysisPage = () => {
                       {aiSummary.split('\n').map((line, i) => {
                           if (!line.trim()) return null;
                           return (
-                              <div key={i} className="mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: line }}></div>
+                              <div key={i} className="mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed">{line}</div>
                           );
                       })}
                   </div>
@@ -830,7 +645,7 @@ const AnalysisPage = () => {
                   filteredData.videos.slice(0, 3).map((video) => (
                     <a
                       key={video.id}
-                      href={video.views === 0 ? '#' : `https://www.youtube.com/watch?v=${video.id}`}
+                      href={video.views === 0 ? '#' : `https://www.youtube.com/watch?v=${encodeURIComponent(String(video.id || ''))}`}
                       target="_blank"
                       rel="noreferrer"
                       className="flex flex-col sm:flex-row gap-3 sm:gap-4 group cursor-pointer"

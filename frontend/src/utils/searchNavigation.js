@@ -11,6 +11,6 @@ export const navigateToAnalysisOnEnter = ({
   if (!trimmedKeyword) return false;
 
   const nextKeyword = preserveRawKeyword ? rawKeyword : trimmedKeyword;
-  navigate(`/analysis?keyword=${nextKeyword}`);
+  navigate(`/analysis?keyword=${encodeURIComponent(nextKeyword)}`);
   return true;
 };
