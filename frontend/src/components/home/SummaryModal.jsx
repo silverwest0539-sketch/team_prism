@@ -126,9 +126,6 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
       <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex justify-between items-start sm:items-center gap-3 bg-white sticky top-0 z-10">
           <div className="min-w-0">
-            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full mb-1 inline-block">
-              No.{data?.rank || '-'} 급상승 키워드
-            </span>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 break-all">{data?.keyword}</h2>
           </div>
 

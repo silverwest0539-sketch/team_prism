@@ -151,7 +151,7 @@ const HomePage = () => {
 
       </div>
 
-      <h1 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">안녕하세요, {userName}님 👋</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">안녕하세요, {userName}님 </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-10">
         
@@ -161,7 +161,7 @@ const HomePage = () => {
           {/* [수정됨] 헤더를 flex로 감싸서 제목과 더보기 버튼 배치 */}
           <div className="flex justify-between items-end mb-4 border-b pb-2 border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">
-              트렌드 일일 급상승 키워드 Top 5
+              트렌드 일일 키워드 Top 5
             </h2>
             <button 
               onClick={() => setIsTrendModalOpen(true)}
@@ -201,7 +201,7 @@ const HomePage = () => {
         <div className="card-soft relative">
           <div className="flex justify-between items-center mb-4">
             <h2 className="section-title-lg">
-              플랫폼별 일일 급상승 키워드 Top 5
+              플랫폼별 일일 키워드 Top 5
             </h2>
             <div
               className="tab-wrap"
@@ -433,7 +433,7 @@ const HomePage = () => {
             <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  🔥 실시간 트렌드 급상승 Top 20
+                  실시간 트렌드 
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
                   현재 가장 화제가 되고 있는 키워드 전체 순위입니다.
