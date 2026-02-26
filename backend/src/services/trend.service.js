@@ -25,7 +25,7 @@ exports.getRisingTrends = async () => {
        ON k.keyword_id = t.keyword_id AND t.stat_date = ?
      LEFT JOIN KEYWORD_STATS y
        ON k.keyword_id = y.keyword_id AND y.stat_date = ?
-     WHERE t.trend_score IS NOT NULL
+     WHERE t.trend_score > 0
      ORDER BY t.trend_score DESC
      LIMIT 20`,
     [maxDate, prevDate]
