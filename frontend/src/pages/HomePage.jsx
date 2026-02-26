@@ -28,7 +28,7 @@ const HomePage = () => {
   const [communityPosts, setCommunityPosts] = useState([]);
   const [selectedComm, setSelectedComm] = useState('theqoo');
 
-    // [추가] 트렌드 더보기 모달 상태
+  // [추가] 트렌드 더보기 모달 상태
   const [isTrendModalOpen, setIsTrendModalOpen] = useState(false);
 
   const scrollRef = useRef(null);
@@ -149,7 +149,7 @@ const HomePage = () => {
         
         {/* 카드 1: 트렌드 급상승 키워드 */}
         <div className="card-soft">
-          {/* [수정됨] 헤더를 flex로 감싸서 제목과 더보기 버튼 배치 */}
+          {/* 헤더 */}
           <div className="flex justify-between items-end mb-4 border-b pb-2 border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">
               오늘의 트렌드 키워드 Top 5
@@ -202,14 +202,12 @@ const HomePage = () => {
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`tab-btn flex items-center gap-1 ${
-                    // [수정] 유튜브나 다른 커뮤니티 구분 없이, 드롭다운이 열려있거나 값이 선택되어 있으면 활성화 색상(초록) 적용
                     isDropdownOpen || selectedPlatform
                       ? 'tab-active text-green-600'
                       : 'text-gray-500 hover:text-gray-800'
                   }`}
                 >
                   <span className="font-medium">
-                    {/* [수정] 복잡한 삼항연산자 제거 -> 선택된 값의 Label을 그대로 표시 */}
                     {MAIN_PLATFORM_OPTIONS.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
                   </span>
                   <svg
@@ -272,7 +270,7 @@ const HomePage = () => {
       </div>
 
       {/* 유튜브 섹션 */}
-      <div className="mb-8 relative group"> {/* group 클래스 추가: 호버 시 버튼 표시용 */}
+      <div className="mb-8 relative group"> 
         <div className="flex justify-between items-end mb-4">
           <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">
             유튜브 일일 급상승 동영상
@@ -448,9 +446,17 @@ const HomePage = () => {
                   {risingKeywords.slice(0, 10).map((item) => (
                     <div 
                       key={item.rank}
+                      // [수정] 클릭 시 상세분석(navigate) 대신 요약 모달(openModal) 호출
                       onClick={() => {
-                        setIsTrendModalOpen(false); // 모달 닫고
-                        navigate(`/analysis/${encodeURIComponent(item.keyword)}`);
+                        setIsTrendModalOpen(false); // 순위 모달 닫기
+                        openModal({ 
+                          keyword: item.keyword,
+                          rank: item.rank,
+                          score: item.score,
+                          title: item.keyword,
+                          desc: `${item.keyword}에 대한 트렌드 요약입니다.`,
+                          type: 'trend'
+                        });
                       }}
                       className="group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer"
                     >
@@ -475,9 +481,17 @@ const HomePage = () => {
                   {risingKeywords.slice(10, 20).map((item) => (
                     <div 
                       key={item.rank}
+                      // [수정] 클릭 시 상세분석(navigate) 대신 요약 모달(openModal) 호출
                       onClick={() => {
-                         setIsTrendModalOpen(false);
-                         /* openModal({ ... }) */
+                        setIsTrendModalOpen(false); // 순위 모달 닫기
+                        openModal({ 
+                          keyword: item.keyword,
+                          rank: item.rank,
+                          score: item.score,
+                          title: item.keyword,
+                          desc: `${item.keyword}에 대한 트렌드 요약입니다.`,
+                          type: 'trend'
+                        });
                       }}
                       className="group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer"
                     >
@@ -507,5 +521,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-
-
