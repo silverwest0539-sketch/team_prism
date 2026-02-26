@@ -17,7 +17,6 @@
     }
   }
 
-  /* 데스크톱 이상에서 2열 */
   @media (min-width: 1280px) {
     .creation-grid {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

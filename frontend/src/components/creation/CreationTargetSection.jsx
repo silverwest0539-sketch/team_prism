@@ -7,13 +7,13 @@ const CreationTargetSection = ({
   onChangeOtherRequests,
 }) => {
   return (
-    <div className="bg-gray-50 p-4 2xl:p-3 rounded-xl border border-gray-100 mb-5 sm:mb-6 2xl:mb-3">
+    <div className="bg-gray-50 p-3 2xl:p-2.5 rounded-xl border border-gray-100 mb-3 sm:mb-4 2xl:mb-2.5">
       <label className="block text-sm font-bold text-gray-700 mb-2 2xl:mb-1.5">
         상세 타겟 설정 <span className="text-xs font-normal text-gray-500">(선택)</span>
       </label>
       <input
         type="text"
-        className="w-full border border-gray-300 rounded-lg p-3 2xl:p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4 2xl:mb-2.5"
+        className="w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3 2xl:mb-2 text-sm"
         value={target}
         onChange={(event) => onChangeTarget(event.target.value)}
         placeholder="예: 2030 직장인, 육아맘 등"
@@ -21,7 +21,7 @@ const CreationTargetSection = ({
 
       <label className="block text-sm font-bold text-gray-700 mb-2 2xl:mb-1.5">기타 요구사항</label>
       <textarea
-        className="w-full border border-gray-300 rounded-lg p-3 2xl:p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-sm"
+        className="w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-sm"
         rows={2}
         value={otherRequests}
         onChange={(event) => onChangeOtherRequests(event.target.value)}
