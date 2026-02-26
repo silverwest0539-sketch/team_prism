@@ -2,6 +2,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import ToastViewport from './components/common/ToastViewport';
+import ScrollToTop from './components/common/ScrollToTop'; // ✅ 추가
 import Layout from './components/layout/Layout';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -27,6 +28,7 @@ function App() {
   return (
     <BrowserRouter>
       <ToastViewport />
+      <ScrollToTop /> {/* ✅ 추가 */}
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
