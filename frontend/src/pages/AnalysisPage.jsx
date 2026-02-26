@@ -167,7 +167,14 @@ const AnalysisPage = () => {
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
-      navigate(`/analysis?keyword=${encodeURIComponent(searchTerm.trim())}`);
+      // 1. 페이지 이동
+      navigate(`/analysis/${encodeURIComponent(searchTerm.trim())}`);
+      
+      // 2. [추가] 검색어 입력창 비우기 (자동완성 탭 닫기 위해)
+      setSearchTerm(''); 
+
+      // 3. [추가] 입력창 포커스 해제 (커서 깜빡임 없애고 드롭다운 확실히 닫기)
+      e.target.blur();
     }
   };
 
