@@ -42,9 +42,9 @@ const InputPanel = ({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 2xl:p-4 flex flex-col">
-      <div className="flex flex-col 2xl:grid 2xl:grid-cols-2 2xl:gap-3">
-        <div className="order-1 2xl:h-full">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 sm:p-4 2xl:p-3 flex flex-col">
+      <div className="flex flex-col gap-3 sm:gap-4 2xl:gap-2.5">
+        <div className="order-1">
           <CreationKeywordSection
             keyword={keyword}
             onKeywordChange={setKeyword}
@@ -67,7 +67,7 @@ const InputPanel = ({
           />
         </div>
 
-        <div className="order-3 2xl:col-span-2">
+        <div className="order-3">
           <CreationTargetSection
             target={target}
             otherRequests={otherRequests}
@@ -81,7 +81,7 @@ const InputPanel = ({
         type="button"
         onClick={handleSubmit}
         disabled={isLoading}
-        className={`w-full text-white font-bold py-3.5 sm:py-4 2xl:py-3 rounded-xl transition flex items-center justify-center mt-2 2xl:mt-1 text-base sm:text-lg shadow-md ${
+        className={`w-full text-white font-bold py-3 sm:py-3.5 2xl:py-2.5 rounded-xl transition flex items-center justify-center mt-1.5 2xl:mt-1 text-sm sm:text-base 2xl:text-sm shadow-md ${
           isLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
         }`}
       >

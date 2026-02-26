@@ -111,8 +111,8 @@ const CreationPage = () => {
   }
 
   return (
-    <div className="page space-y-6 sm:space-y-8 2xl:space-y-4 2xl:p-4">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-gray-200 pb-5 2xl:pb-3">
+    <div className="page space-y-4 sm:space-y-5 2xl:space-y-3 2xl:p-4">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-gray-200 pb-4 2xl:pb-2.5">
         <div>
           <h1 className="text-xl sm:text-2xl 2xl:text-xl font-bold text-gray-900">콘텐츠 생성 스튜디오</h1>
           <p className="text-sm sm:text-base 2xl:text-sm text-gray-500 mt-1 2xl:mt-0.5">
@@ -121,7 +121,7 @@ const CreationPage = () => {
         </div>
       </div>
 
-      <div className="creation-grid 2xl:gap-3">
+      <div className="creation-grid 2xl:gap-2.5">
         <ErrorBoundary
           variant="section"
           resetKey={initialKeyword}

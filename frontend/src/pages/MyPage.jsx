@@ -1,5 +1,5 @@
 // src/pages/MyPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, X, Shield, Trash } from 'lucide-react';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import apiClient from '../utils/apiClient';
@@ -47,6 +47,8 @@ const MyPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const storedUser = getStoredUser();
+  const hasShownAuthToastRef = useRef(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [userInfo, setUserInfo] = useState(() => storedUser || { nickname: '', email: '' });
   const [editNickname, setEditNickname] = useState(() => storedUser?.nickname || '');
@@ -57,6 +59,23 @@ const MyPage = () => {
     newPassword: '',
     confirmPassword: ''
   });
+
+  useEffect(() => {
+    const savedUser = getStoredUser();
+
+    if (!savedUser) {
+      if (!hasShownAuthToastRef.current) {
+        hasShownAuthToastRef.current = true;
+        showToast('마이페이지 서비스는 로그인 후 이용할 수 있습니다. 로그인 페이지로 이동합니다.', {
+          type: 'warning',
+        });
+      }
+      navigate(ROUTE.LOGIN, { replace: true });
+      return;
+    }
+
+    setAuthChecked(true);
+  }, [navigate]);
 
   useEffect(() => {
     const modal = new URLSearchParams(location.search).get('modal');
@@ -137,6 +156,10 @@ const MyPage = () => {
       });
     }
   };
+
+  if (!authChecked) {
+    return null;
+  }
 
   return (
     <div className="page pb-20">
