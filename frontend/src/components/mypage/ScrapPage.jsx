@@ -9,11 +9,31 @@ import {
     Export, Checks
 } from '@phosphor-icons/react';
 import { reorderScraps } from '../../utils/storage';
-import { formatDate } from '../../utils/formatters';
+// formatDate는 아래에서 직접 구현한 로직으로 대체하므로 사용하지 않지만, import 에러 방지를 위해 유지하거나 제거해도 됩니다.
+import { formatDate } from '../../utils/formatters'; 
 import SummaryModal from '../home/SummaryModal';
 import apiClient from '../../utils/apiClient';
 import { getStoredUserEmail } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
+
+// ─── 날짜 계산 헬퍼 함수 (수정사항 3번 해결) ───
+const getRelativeDate = (dateString) => {
+    if (!dateString) return '날짜 정보 없음';
+
+    const savedDate = new Date(dateString);
+    const now = new Date();
+
+    // 시간을 제거하고 날짜(Year, Month, Day)만 비교하여 당일 여부 판단
+    const d1 = new Date(savedDate.getFullYear(), savedDate.getMonth(), savedDate.getDate());
+    const d2 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const diffTime = d2 - d1;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return '오늘';
+    // 필요하다면 '1일 전'을 '어제'로 변경 가능
+    return `${diffDays}일 전`;
+};
 
 // ─── 변동 뱃지 (더미: 해시 기반 할당, 실제론 API 연동) ───
 const BADGE_TYPES = [
@@ -28,7 +48,7 @@ const getBadge = (keyword) => {
 
 // ─── 정렬 옵션 ───
 const SORT_OPTIONS = [
-    { label: '커스텀', value: 'custom' },
+    { label: '정렬', value: 'custom' },
     { label: '최신순', value: 'newest' },
     { label: '오래된순', value: 'oldest' },
     { label: '이름순', value: 'name_asc' },
@@ -48,7 +68,7 @@ const ScrapPage = () => {
     const [sortBy, setSortBy] = useState('custom');
     const [isSortOpen, setIsSortOpen] = useState(false);
 
-    // 뷰 모드 (grid / list)
+    // 뷰 모드 (grid / list) - (수정사항 2번: 기본형식 고정을 위해 grid 유지)
     const [viewMode, setViewMode] = useState('grid');
 
     // 다중 선택 삭제
@@ -374,11 +394,10 @@ const ScrapPage = () => {
                             </button>
                         )}
                     </div>
-
-                    {/* 설명(급상승 트렌드 텍스트) 삭제됨 */}
                     
                     <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3">
-                        <span>{item.savedAt ? formatDate(item.savedAt) : '날짜 정보 없음'} 저장됨</span>
+                        {/* (수정사항 3번 반영) getRelativeDate 함수 사용 */}
+                        <span>{item.savedAt ? getRelativeDate(item.savedAt) : '날짜 정보 없음'} 저장됨</span>
                         {!isDeleteMode && (
                             <span className="flex items-center gap-1 text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                                 분석 보기 <ArrowRight />
@@ -416,7 +435,8 @@ const ScrapPage = () => {
                         </p>
                     </div>
 
-                    {/* 내보내기 버튼 */}
+                    {/* (수정사항 1번: 내보내기 버튼 주석 처리) */}
+                    {/* 
                     {scraps.length > 0 && (
                         <button
                             onClick={handleExport}
@@ -426,7 +446,8 @@ const ScrapPage = () => {
                             <Export size={14} />
                             내보내기
                         </button>
-                    )}
+                    )} 
+                    */}
                 </div>
             </div>
 
@@ -452,7 +473,7 @@ const ScrapPage = () => {
                         )}
                     </div>
 
-                    {/* ─── 툴바: 카운트 + 정렬 + 뷰전환 + 모드 토글 ─── */}
+                    {/* ─── 툴바: 카운트 + 정렬 + (뷰전환 삭제됨) + 모드 토글 ─── */}
                     <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-6">
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                             <span className="text-xs text-gray-400">
@@ -490,26 +511,10 @@ const ScrapPage = () => {
                                 )}
                             </div>
 
-                            {/* 뷰 토글 */}
-                            <div className="flex border border-gray-200 rounded-lg overflow-hidden">
-                                <button
-                                    onClick={() => setViewMode('grid')}
-                                    className={`p-1.5 transition-all ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-400 hover:text-gray-600'}`}
-                                    title="그리드 뷰"
-                                >
-                                    <SquaresFour size={14} weight="bold" />
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('list')}
-                                    className={`p-1.5 transition-all ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-400 hover:text-gray-600'}`}
-                                    title="리스트 뷰"
-                                >
-                                    <List size={14} weight="bold" />
-                                </button>
-                            </div>
+                            {/* (수정사항 2번: 뷰 토글 버튼 삭제됨) */}
                         </div>
 
-                        {/* 모드 버튼들 (비교 모드 삭제됨) */}
+                        {/* 모드 버튼들 */}
                         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                             {/* 다중 삭제 모드 액션 */}
                             {isDeleteMode && (
@@ -602,7 +607,7 @@ const ScrapPage = () => {
                     </button>
                 </div>
             ) : (
-                // 카드 그리드 or 리스트
+                // 카드 그리드 (뷰 모드 선택 메뉴가 사라졌으므로 Grid 고정)
                 <div className={
                     viewMode === 'grid'
                         ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
