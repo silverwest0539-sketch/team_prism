@@ -62,7 +62,7 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
        FROM USAGE_EXAMPLE u
        JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
        WHERE ke.keyword_id = ?
-         AND DATE(u.collected_date) BETWEEN ? AND ?
+         AND u.collected_date >= ? AND u.collected_date < ?
        ORDER BY u.collected_date DESC 
        LIMIT 200`,
       [keywordId, yesterdayKst, todayKst]

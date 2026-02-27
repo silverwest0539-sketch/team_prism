@@ -499,7 +499,7 @@ const AnalysisPage = () => {
               <button 
                   onClick={handleDateReset}
                   className="p-1.5 rounded-lg bg-gray-50 text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
-                  title="전체 기간으로 초기화"
+                  title="분석 기간 초기화"
                 >
                   <ArrowsClockwise size={16} weight="bold"/>
               </button>
