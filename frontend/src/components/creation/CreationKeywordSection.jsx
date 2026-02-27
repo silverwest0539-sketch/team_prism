@@ -1,44 +1,30 @@
 import React from 'react';
-import { MagicWand } from '@phosphor-icons/react';
 
 const CreationKeywordSection = ({
   keyword,
   onKeywordChange,
-  recommendedReason,
-  isAutoProfileEnabled,
-  onToggleAutoProfile,
+  helperMessage = '',
+  isHelperError = false,
 }) => {
   return (
-    <div className="mb-3 sm:mb-4 2xl:mb-2.5 bg-indigo-50 p-3 2xl:p-2.5 rounded-xl border border-indigo-100">
-      <label className="block text-[13px] 2xl:text-xs font-bold text-indigo-900 mb-1.5 2xl:mb-1 flex items-center gap-2">
-        <MagicWand weight="fill" /> 주제 키워드 (자동 분석됨)
+    <div className="mb-3 sm:mb-4 2xl:mb-2.5">
+      <label className="block text-[13px] 2xl:text-xs font-bold text-gray-800 mb-1.5 2xl:mb-1">
+        주제 키워드
       </label>
       <input
         type="text"
-        className="w-full border border-indigo-200 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-sm text-indigo-700"
+        className="w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-sm text-gray-800"
         value={keyword}
         onChange={(event) => onKeywordChange(event.target.value)}
         placeholder="트렌드 키워드 또는 원하는 주제 입력"
       />
-      <p className="text-[11px] text-indigo-500 mt-1.5 2xl:mt-1">
-        기본적으로 트렌드 키워드가 입력되지만, 원하는 주제로 변경 가능합니다.
+      <p
+        className={`text-[11px] mt-1.5 2xl:mt-1 ${
+          isHelperError ? 'text-red-500' : 'text-gray-500'
+        }`}
+      >
+        {helperMessage || '원하는 주제 키워드를 직접 입력해 주세요.'}
       </p>
-      <div className="mt-2 2xl:mt-1.5 flex items-center justify-between gap-2">
-        <p className="text-[11px] text-indigo-700">
-          자동 추천: <span className="font-semibold">{recommendedReason}</span>
-        </p>
-        <button
-          type="button"
-          onClick={onToggleAutoProfile}
-          className={`text-[11px] font-semibold px-2.5 py-0.5 2xl:px-2 2xl:py-0.5 rounded-md border transition-colors ${
-            isAutoProfileEnabled
-              ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-          }`}
-        >
-          {isAutoProfileEnabled ? '자동추천 ON' : '자동추천 OFF'}
-        </button>
-      </div>
     </div>
   );
 };

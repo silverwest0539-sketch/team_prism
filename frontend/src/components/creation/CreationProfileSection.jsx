@@ -54,7 +54,7 @@ const CreationProfileSection = ({
           rows={2}
           value={purpose}
           onChange={(event) => onChangePurpose(event.target.value)}
-          placeholder="콘텐츠를 만드는 목적이나 핵심 내용을 자유롭게 적어주세요."
+          placeholder="예: 신규 유입을 늘리고 예약/문의 전환을 높이고 싶어요."
         />
       </div>
     </>

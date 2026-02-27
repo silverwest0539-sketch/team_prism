@@ -2,11 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   getTemplateMeta,
   interpolatePromptTemplate,
-  recommendCreationPreset,
   recommendPromptTemplate,
 } from '../../utils/promptTemplates';
-
-const DEFAULT_KEYWORD = '저당 간식';
 
 const CONTENT_TYPES = ['카드뉴스', '포스터', '썸네일'];
 
@@ -28,24 +25,17 @@ const INDUSTRIES = [
 
 export const useCreationForm = ({ initialKeyword = '' }) => {
   const normalizedInitialKeyword = useMemo(() => initialKeyword.trim(), [initialKeyword]);
-  const initialPreset = useMemo(
-    () => recommendCreationPreset({ keyword: normalizedInitialKeyword || DEFAULT_KEYWORD }),
-    [normalizedInitialKeyword],
-  );
 
-  const [keyword, setKeyword] = useState(normalizedInitialKeyword || DEFAULT_KEYWORD);
-  const [selectedType, setSelectedType] = useState(initialPreset.type);
-  const [industry, setIndustry] = useState(initialPreset.industry);
-  const [purpose, setPurpose] = useState(initialPreset.purpose);
-  const [target, setTarget] = useState(initialPreset.target);
+  const [keyword, setKeyword] = useState(normalizedInitialKeyword);
+  const [selectedType, setSelectedType] = useState(CONTENT_TYPES[0]);
+  const [industry, setIndustry] = useState(INDUSTRIES[0]);
+  const [purpose, setPurpose] = useState('');
+  const [target, setTarget] = useState('');
   const [otherRequests, setOtherRequests] = useState('');
   const [selectedPromptTemplate, setSelectedPromptTemplate] = useState('trend_reaction');
   const [promptTemplateText, setPromptTemplateText] = useState('');
   const [isTemplateManuallyChanged, setIsTemplateManuallyChanged] = useState(false);
   const [isPromptManuallyEdited, setIsPromptManuallyEdited] = useState(false);
-  const [isAutoProfileEnabled, setIsAutoProfileEnabled] = useState(true);
-
-  const recommendedProfile = useMemo(() => recommendCreationPreset({ keyword }), [keyword]);
 
   const recommendedTemplate = useMemo(
     () =>
@@ -85,16 +75,9 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
   useEffect(() => {
     if (!normalizedInitialKeyword) return;
     setKeyword(normalizedInitialKeyword);
-    setIsAutoProfileEnabled(true);
+    setPurpose('');
+    setTarget('');
   }, [normalizedInitialKeyword]);
-
-  useEffect(() => {
-    if (!isAutoProfileEnabled) return;
-    setSelectedType(recommendedProfile.type);
-    setIndustry(recommendedProfile.industry);
-    setPurpose(recommendedProfile.purpose);
-    setTarget(recommendedProfile.target);
-  }, [recommendedProfile, isAutoProfileEnabled]);
 
   useEffect(() => {
     if (isTemplateManuallyChanged) return;
@@ -109,23 +92,6 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
     if (isPromptManuallyEdited) return;
     setPromptTemplateText(generatedTemplatePrompt);
   }, [generatedTemplatePrompt, isPromptManuallyEdited]);
-
-  const applyRecommendedProfile = () => {
-    setSelectedType(recommendedProfile.type);
-    setIndustry(recommendedProfile.industry);
-    setPurpose(recommendedProfile.purpose);
-    setTarget(recommendedProfile.target);
-  };
-
-  const toggleAutoProfile = () => {
-    if (isAutoProfileEnabled) {
-      setIsAutoProfileEnabled(false);
-      return;
-    }
-
-    setIsAutoProfileEnabled(true);
-    applyRecommendedProfile();
-  };
 
   const applyRecommendedTemplate = () => {
     setSelectedPromptTemplate(recommendedTemplate.key);
@@ -167,8 +133,6 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
     otherRequests,
     selectedPromptTemplate,
     promptTemplateText,
-    isAutoProfileEnabled,
-    recommendedProfile,
     recommendedTemplate,
     recommendedTemplateMeta,
     selectedTemplateMeta,
@@ -180,7 +144,6 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
     setPurpose,
     setTarget,
     setOtherRequests,
-    toggleAutoProfile,
     applyRecommendedTemplate,
     handlePromptTemplateChange,
     restorePromptTemplateText,
@@ -188,4 +151,3 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
     buildSubmitPayload,
   };
 };
-

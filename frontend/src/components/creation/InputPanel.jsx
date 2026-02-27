@@ -1,5 +1,4 @@
-import React from 'react';
-import { showToast } from '../../utils/toast';
+import React, { useState } from 'react';
 import CreationKeywordSection from './CreationKeywordSection';
 import CreationProfileSection from './CreationProfileSection';
 import CreationTargetSection from './CreationTargetSection';
@@ -10,6 +9,8 @@ const InputPanel = ({
   isLoading,
   initialKeyword = '',
 }) => {
+  const [keywordError, setKeywordError] = useState('');
+
   const {
     keyword,
     selectedType,
@@ -17,8 +18,6 @@ const InputPanel = ({
     purpose,
     target,
     otherRequests,
-    isAutoProfileEnabled,
-    recommendedProfile,
     contentTypes,
     industries,
     setKeyword,
@@ -27,17 +26,17 @@ const InputPanel = ({
     setPurpose,
     setTarget,
     setOtherRequests,
-    toggleAutoProfile,
     buildSubmitPayload,
   } = useCreationForm({ initialKeyword });
 
   const handleSubmit = () => {
     const payload = buildSubmitPayload();
     if (!payload.keyword) {
-      showToast('주제 키워드를 입력해 주세요.', { type: 'warning' });
+      setKeywordError('주제 키워드를 입력해 주세요.');
       return;
     }
 
+    setKeywordError('');
     onGenerate(payload);
   };
 
@@ -47,10 +46,12 @@ const InputPanel = ({
         <div className="order-1">
           <CreationKeywordSection
             keyword={keyword}
-            onKeywordChange={setKeyword}
-            recommendedReason={recommendedProfile.reason}
-            isAutoProfileEnabled={isAutoProfileEnabled}
-            onToggleAutoProfile={toggleAutoProfile}
+            onKeywordChange={(value) => {
+              setKeyword(value);
+              if (keywordError) setKeywordError('');
+            }}
+            helperMessage={keywordError}
+            isHelperError={Boolean(keywordError)}
           />
         </div>
 
