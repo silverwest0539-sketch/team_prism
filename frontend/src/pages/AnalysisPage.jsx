@@ -15,6 +15,7 @@ import {
   Copy,
   X, 
   ArrowsOutSimple,
+  Question, // [추가] 물음표 아이콘
 } from '@phosphor-icons/react';
 import {
   LineChart,
@@ -60,9 +61,10 @@ const AnalysisPage = () => {
   const initialYesterday = new Date(initialToday);
   initialYesterday.setDate(initialYesterday.getDate() - 1);
 
-  // 기존 State
+  // [수정] loading 상태를 사용하기 위해 변수명 복구
   const [data, setData] = useState(null);
-  const [, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState(getFormattedDate(initialYesterday));
   const [endDate, setEndDate] = useState(getFormattedDate(initialToday));
@@ -72,7 +74,10 @@ const AnalysisPage = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isScrapped, setIsScrapped] = useState(false);
 
-  // 차트 확대 모달 상태 추가
+  // [추가] 트렌드 스코어 툴팁 상태
+  const [showScoreTooltip, setShowScoreTooltip] = useState(false);
+
+  // 차트 확대 모달 상태
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
 
   // 페이지네이션
@@ -84,13 +89,16 @@ const AnalysisPage = () => {
   const fetchData = useCallback(async (currentStart, currentEnd) => {
     if (!keyword) return;
 
-    setLoading(true);
+    setLoading(true); // 로딩 시작
 
     const params = { keyword };
     if (currentStart) params.startDate = currentStart;
     if (currentEnd) params.endDate = currentEnd;
 
     try {
+      // 인위적인 딜레이가 필요하다면 아래 주석 해제 (테스트용)
+      // await new Promise(resolve => setTimeout(resolve, 1500)); 
+
       const [analysisRes, newsRes] = await Promise.all([
         apiClient.get('/analysis', { params }),
         apiClient.get('/news', { params }),
@@ -114,7 +122,7 @@ const AnalysisPage = () => {
       console.error('데이터 로드 실패:', err);
       showToast('데이터를 불러오지 못했습니다.', { type: 'error' });
     } finally {
-      setLoading(false);
+      setLoading(false); // 로딩 종료
     }
   }, [keyword]);
 
@@ -140,6 +148,8 @@ const AnalysisPage = () => {
 
     setAiSummary(null);
     setIsAiLoading(true);
+    setShowScoreTooltip(false); // 키워드 변경시 툴팁 닫기
+    
     const todayDate = getFormattedDate(new Date());
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -163,17 +173,13 @@ const AnalysisPage = () => {
 
     fetchData(yesterdayDate, todayDate);
     fetchAiSummary(keyword, yesterdayDate, todayDate);
-  }, [keyword, fetchData, fetchAiSummary]);
+
+  }, [keyword]); 
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
-      // 1. 페이지 이동
       navigate(`/analysis/${encodeURIComponent(searchTerm.trim())}`);
-      
-      // 2. [추가] 검색어 입력창 비우기 (자동완성 탭 닫기 위해)
       setSearchTerm(''); 
-
-      // 3. [추가] 입력창 포커스 해제 (커서 깜빡임 없애고 드롭다운 확실히 닫기)
       e.target.blur();
     }
   };
@@ -181,7 +187,6 @@ const AnalysisPage = () => {
   const handleDateApply = () => {
     fetchData(startDate, endDate);
     setCurrentPage(1);
-    // fetchAiSummary(keyword, startDate, endDate);
   };
 
   const handleDateReset = () => {
@@ -200,8 +205,6 @@ const AnalysisPage = () => {
 
   const handleScrapToggle = async () => {
     const savedUser = getStoredUser();
-
-    // 로그인이 안 되어 있을 경우 예외 처리
     if (!savedUser?.email) {
       if (
         window.confirm(
@@ -215,14 +218,12 @@ const AnalysisPage = () => {
 
     try {
       if (isScrapped) {
-        // 이미 스크랩된 상태면 삭제 요청
         await apiClient.delete('/scraps', {
           params: { email: savedUser.email, keyword: keyword },
         });
         setIsScrapped(false);
         showToast('스크랩이 취소되었습니다.', { type: 'info' });
       } else {
-        // 스크랩 안 된 상태면 추가 요청
         await apiClient.post('/scraps', {
           email: savedUser.email,
           keyword: keyword,
@@ -238,11 +239,8 @@ const AnalysisPage = () => {
 
   const handleGoToCreation = () => {
     if (keyword) {
-      // 1. 키워드가 있을 경우: URL 쿼리 스트링으로 키워드를 붙여서 이동
-      // encodeURIComponent는 한글이나 특수문자가 깨지지 않게 해줍니다.
       navigate(`/creation?keyword=${encodeURIComponent(keyword)}`);
     } else {
-      // 2. 키워드가 없을 경우: 그냥 이동
       navigate('/creation');
     }
   };
@@ -270,26 +268,22 @@ const AnalysisPage = () => {
       const end = new Date(endDate);
       const historyMap = {};
       
-      // 1. 기존 DB에서 가져온 날짜 데이터를 Map 형태로 변환하여 검색 최적화
       (sourceData.history || []).forEach((h) => {
         historyMap[h.date] = h;
       });
 
-      // 2. startDate부터 endDate까지 하루씩 증가하며 모든 날짜 확인
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
-        const dateStr = `${yyyy}${mm}${dd}`; // 예: "20260225"
+        const dateStr = `${yyyy}${mm}${dd}`;
 
         if (historyMap[dateStr]) {
-          // 데이터가 존재하면 그대로 넣기 (undefined 방지를 위해 데이터가 없으면 0 세팅)
           historyFiltered.push({
             ...historyMap[dateStr],
             [chartDataKey]: historyMap[dateStr][chartDataKey] || 0
           });
         } else {
-          // 💡 데이터가 아예 없는 날짜는 언급량을 0으로 설정한 가짜 객체를 삽입
           historyFiltered.push({
             date: dateStr,
             mentions: 0,
@@ -302,13 +296,21 @@ const AnalysisPage = () => {
       historyFiltered = sourceData.history || [];
     }
 
-    // 기존 댓글 필터링 로직 유지
     let allComments = sourceData.comments || [];
     if (selectedPlatform !== 'all') {
       allComments = allComments.filter((c) => (c?.source || '').includes(selectedPlatform));
     }
     const youtubeComments = (allComments || []).filter((c) => (c?.source || '').includes('youtube'));
     const otherComments = (allComments || []).filter((c) => !(c?.source || '').includes('youtube'));
+
+    let selectedWordCloud = [];
+    const rawWordCloud = sourceData.wordCloud || sourceData.word_cloud || { all: [] };
+
+    if (Array.isArray(rawWordCloud)) {
+      selectedWordCloud = rawWordCloud;
+    } else if (rawWordCloud) {
+      selectedWordCloud = rawWordCloud[selectedPlatform] || rawWordCloud['all'] || [];
+    }
 
     return {
       ...data,
@@ -317,21 +319,18 @@ const AnalysisPage = () => {
       chartDataKey,
       youtubeComments: youtubeComments.slice(0, 4),
       otherComments: otherComments.slice(0, 6),
-      wordCloud: data.wordCloud || data.word_cloud || [], 
+      wordCloud: selectedWordCloud, 
       videos: data.videos || [],
     };
   }, [data, startDate, endDate, selectedPlatform]);
 
-  // 메인 차트용 데이터 가공 (최근 7일만 자르기)
   const { chartDataKey = 'mentions' } = filteredData || {};
 
   const mainChartData = useMemo(() => {
     const history = filteredData?.history || [];
-    // 데이터가 7개보다 많으면 뒤에서 7개만 자름, 아니면 그대로 사용
     return history.length > 7 ? history.slice(-7) : history;
   }, [filteredData]);
 
-  // 더보기 버튼 표시 여부
   const showMoreChartBtn = (filteredData?.history?.length || 0) > 7;
 
   const sentimentChartData = useMemo(() => {
@@ -341,17 +340,16 @@ const AnalysisPage = () => {
     comments.forEach(c => {
       if (c.sentiment === 'positive') pos++;
       else if (c.sentiment === 'negative') neg++;
-      else neu++; // 라벨이 없거나 neutral인 경우
+      else neu++;
     });
 
     return [
-      { name: '긍정', value: pos, color: '#3B82F6' }, // 파란색
-      { name: '부정', value: neg, color: '#EF4444' }, // 빨간색
-      { name: '중립', value: neu, color: '#9CA3AF' }, // 회색
+      { name: '긍정', value: pos, color: '#3B82F6' },
+      { name: '부정', value: neg, color: '#EF4444' },
+      { name: '중립', value: neu, color: '#9CA3AF' },
     ];
   }, [filteredData]);
 
-  // 페이지네이션 로직
   const usageExamples = useMemo(() => {
     if (!filteredData?.comments) return [];
     return filteredData.comments;
@@ -393,7 +391,7 @@ const AnalysisPage = () => {
     opt.value === 'all' || availablePlatforms.includes(opt.value)
   );
 
-  const todayStr = getFormattedDate(new Date()).replace(/-/g, ''); // 예: "20260224"
+  const todayStr = getFormattedDate(new Date()).replace(/-/g, '');
   const todayData = filteredData?.history?.find(h => h.date === todayStr);
   const todayScore = Math.round(todayData?.score || 0);
 
@@ -425,7 +423,7 @@ const AnalysisPage = () => {
         {/* 타이틀 및 상단 정보 */}
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 mb-2">
           
-          {/* 왼쪽: 스크랩 + 키워드 + 스코어 (한줄 처리) */}
+          {/* 왼쪽: 스크랩 + 키워드 + 스코어 */}
           <div className="flex items-center gap-3">
             <button
               onClick={handleScrapToggle}
@@ -443,26 +441,39 @@ const AnalysisPage = () => {
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-none">
                 {keyword || '검색 키워드 예시'}
               </h1>
-              <div className="flex items-baseline gap-1 text-gray-600">
+              
+              <div className="flex items-center gap-1 text-gray-600 relative ml-1">
                 {todayScore > 0 ? (
-                  // <span className="text-xs sm:text-sm font-medium">트렌드 스코어</span>,
-                  <span className="text-sm sm:text-base font-bold text-indigo-600 ml-1">
-                    트렌드 스코어 {todayScore}점
-                  </span>
+                  <>
+                    <span className="text-sm sm:text-base font-bold text-indigo-600">
+                      트렌드 스코어 {todayScore}점
+                    </span>
+                    {/* [추가] 물음표 버튼 */}
+                    <button
+                      onClick={() => setShowScoreTooltip(!showScoreTooltip)}
+                      className="text-gray-400 hover:text-indigo-500 transition-colors p-1"
+                    >
+                      <Question size={20} weight="fill" />
+                    </button>
+
+                    {/* [추가] 말풍선 툴팁 */}
+                    {showScoreTooltip && (
+                      <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in">
+                        <div className="absolute -top-1 left-4 w-3 h-3 bg-gray-800 transform rotate-45"></div>
+                        <p className="font-semibold mb-1">트렌드 스코어란?</p>
+                        <p className="opacity-90 leading-relaxed">
+                          최근 검색량, 언급량, 확산도를 종합적으로 분석하여 산출된 트렌드 지표입니다.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md ml-1">
+                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
                     오늘의 트렌드 키워드가 아닙니다
                   </span>
                 )}
               </div>
             </div>
-            
-            {/* 순위 표시가 필요하다면 여기에 추가 */}
-            {/* {filteredData.rank && (
-               <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 font-bold text-sm">
-                 #{filteredData.rank}위
-               </span>
-            )} */}
           </div>
           
           {/* 오른쪽: 콘텐츠 생성 버튼 */}
@@ -477,8 +488,9 @@ const AnalysisPage = () => {
           </div>
         </div>
 
-        {/* 설정 카드 섹션 (2개) */}
+        {/* 설정 카드 섹션 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full">
+          {/* 기간 설정 카드 */}
           <div className="card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
               <h3 className="text-gray-500 font-medium text-sm flex items-center gap-2">
@@ -518,6 +530,7 @@ const AnalysisPage = () => {
             </div>
           </div>
 
+          {/* 플랫폼 필터 카드 */}
           <div className="card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
               <h3 className="text-gray-500 font-medium text-sm flex items-center gap-2">
@@ -544,13 +557,12 @@ const AnalysisPage = () => {
         {/* 차트 영역 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:h-80 w-full">
           
-          {/* 언급량 추이 차트 (최근 7일 + 더보기 버튼) */}
+          {/* 언급량 추이 차트 */}
           <div className="card lg:col-span-1 flex flex-col min-h-[280px] lg:min-h-0 relative">
             <div className="card-header flex justify-between items-center">
               <h3 className="section-title">
                 <ChartLineUp className="text-indigo-500" /> 언급량 추이
               </h3>
-              {/* 데이터가 7일 넘을 때만 버튼 표시 */}
               {showMoreChartBtn && (
                 <button
                   onClick={() => setIsChartModalOpen(true)}
@@ -562,10 +574,8 @@ const AnalysisPage = () => {
             </div>
             <div className="flex-1 w-full min-h-0">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                {/* 7일치 데이터 사용 */}
                 <LineChart 
                   data={mainChartData}
-                  // [수정] left를 0으로 원상복구하되, right를 30으로 주어 오른쪽 끝 날짜 잘림 방지
                   margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
@@ -583,7 +593,6 @@ const AnalysisPage = () => {
                     axisLine={false} 
                     tickLine={false} 
                     tick={{ fill: '#9CA3AF', fontSize: 12 }} 
-                    // [수정] 아까 30은 너무 좁아서 잘렸으니, 40 정도로 살짝 여유를 줌 (기본값 60보다는 좁음)
                     width={40}
                   />
                   <Tooltip
@@ -606,20 +615,40 @@ const AnalysisPage = () => {
             </div>
           </div>
 
-          <div className="card flex flex-col min-h-[260px] lg:min-h-0">
+          {/* [수정] 워드 클라우드 카드: relative 설정 및 로딩 오버레이 추가 */}
+          <div className="card flex flex-col min-h-[260px] lg:min-h-0 relative overflow-hidden">
             <h3 className="section-title card-header">
               <BookmarkSimple className="text-yellow-500" /> 워드 클라우드
             </h3>
-            <div className="flex-1 flex flex-wrap content-center justify-center gap-2 overflow-hidden">
+            <div className="flex-1 flex flex-wrap content-center justify-center gap-2 overflow-hidden relative">
+              
+              {/* [추가] 분석중 블러 오버레이 */}
+              {loading && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
+                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                  <span className="text-indigo-600 font-bold animate-pulse text-lg">분석중...</span>
+                </div>
+              )}
+              
               <SimpleWordCloud words={filteredData.wordCloud} />
             </div>
           </div>
 
-          <div className="card flex flex-col min-h-[260px] lg:min-h-0">
+          {/* [수정] 여론 분석 카드: relative 설정 및 로딩 오버레이 추가 */}
+          <div className="card flex flex-col min-h-[260px] lg:min-h-0 relative overflow-hidden">
             <h3 className="section-title card-header">
               <BookmarkSimple className="text-yellow-500" /> 여론 분석
             </h3>
-            <div className="flex-1">
+            <div className="flex-1 relative">
+              
+              {/* [추가] 분석중 블러 오버레이 */}
+              {loading && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
+                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                  <span className="text-indigo-600 font-bold animate-pulse text-lg">분석중...</span>
+                </div>
+              )}
+
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
                   <Pie data={sentimentChartData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
@@ -627,7 +656,6 @@ const AnalysisPage = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  {/* Tooltip에 건수를 명시적으로 보여주도록 포맷 변경 */}
                   <Tooltip formatter={(value, name) => [`${value}건`, name]} />
                   <Legend verticalAlign="bottom" height={24} iconSize={8} />
                 </PieChart>
@@ -839,7 +867,6 @@ const AnalysisPage = () => {
       {isChartModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden">
-            {/* 모달 헤더 */}
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -857,7 +884,6 @@ const AnalysisPage = () => {
               </button>
             </div>
 
-            {/* 모달 차트 바디 (전체 데이터) */}
             <div className="flex-1 p-6 bg-gray-50/50">
               <div className="w-full h-full bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                 <ResponsiveContainer width="100%" height="100%">
