@@ -11,7 +11,7 @@ import {
   Star,
 } from '@phosphor-icons/react';
 import { LineChart, Line, Tooltip, ResponsiveContainer, XAxis } from 'recharts';
-import apiClient, { toApiUrl } from '../../utils/apiClient';
+import apiClient from '../../utils/apiClient';
 import { getStoredUser } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
 
@@ -45,17 +45,20 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
       setIsBookmarked(false);
     }
 
-    const params = new URLSearchParams({
-      keyword: data.keyword,
-      type: data.type || 'trend',
-    });
-
-    fetch(toApiUrl(`/analysis?${params.toString()}`))
-      .then((res) => res.json())
-      .then((result) => {
-        if (result.found) {
+    apiClient
+      .get('/analysis', {
+        params: {
+          keyword: data.keyword,
+          type: data.type || 'trend',
+        },
+      })
+      .then((res) => {
+        const result = res.data;
+        if (result?.found) {
           setDetailData(result);
+          return;
         }
+        setDetailData(null);
       })
       .catch((err) => {
         console.error('모달 데이터 로딩 실패:', err);

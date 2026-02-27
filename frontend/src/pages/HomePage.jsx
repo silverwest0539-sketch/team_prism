@@ -5,7 +5,7 @@ import { PlayCircle, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import SearchBar from '../components/common/SearchBar';
 import SummaryModal from '../components/home/SummaryModal';
 import { formatViews, formatDate } from '../utils/formatters';
-import { toApiUrl } from '../utils/apiClient';
+import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 
@@ -84,21 +84,20 @@ const HomePage = () => {
       const fetchData = async () => {
         try {
           // 1. 급상승 키워드 로드 (기존 유지)
-          const trendRes = await fetch(toApiUrl('/trends/rising'));
-          const trendData = await trendRes.json();
-          setRisingKeywords(trendData);
+          const trendRes = await apiClient.get('/trends/rising');
+          setRisingKeywords(trendRes.data || []);
 
           // 2. 플랫폼별 트렌드 로드 (기존 유지)
-          const platformParams = new URLSearchParams({ platform: String(selectedPlatform || '') });
-          const platformRes = await fetch(toApiUrl(`/trends/platform?${platformParams.toString()}`));
-          const platformData = await platformRes.json();
-          setRisingPlatforms(platformData);
+          const platformRes = await apiClient.get('/trends/platform', {
+            params: { platform: String(selectedPlatform || '') },
+          });
+          setRisingPlatforms(platformRes.data || []);
 
           // 3. 유튜브 인기 동영상 로드 
-          const videoParams = new URLSearchParams({ category: String(youtubeCategory || '') });
-          const videoRes = await fetch(toApiUrl(`/videos?${videoParams.toString()}`));
-          const videoData = await videoRes.json();
-          setYoutubeVideos(videoData);
+          const videoRes = await apiClient.get('/videos', {
+            params: { category: String(youtubeCategory || '') },
+          });
+          setYoutubeVideos(videoRes.data || []);
 
         } catch (error) {
           console.error('Error fetching data:', error);
@@ -112,10 +111,10 @@ const HomePage = () => {
     // 커뮤니티 인기글 불러오기
     const fetchCommunityPosts = async () => {
       try {
-        const communityParams = new URLSearchParams({ platform: String(selectedComm || '') });
-        const res = await fetch(toApiUrl(`/community/posts?${communityParams.toString()}`));
-        const data = await res.json();
-        setCommunityPosts(data);
+        const res = await apiClient.get('/community/posts', {
+          params: { platform: String(selectedComm || '') },
+        });
+        setCommunityPosts(res.data || []);
       } catch (error) {
         console.error('커뮤니티 인기글 로드 에러:', error);
       }

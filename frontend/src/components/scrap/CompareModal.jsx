@@ -4,7 +4,7 @@ import { X, ChartLineUp } from '@phosphor-icons/react';
 import {
   LineChart, Line, Tooltip, ResponsiveContainer, XAxis, Legend
 } from 'recharts';
-import { toApiUrl } from '../../utils/apiClient';
+import apiClient from '../../utils/apiClient';
 
 const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444'];
 
@@ -19,13 +19,14 @@ export default function CompareModal({ isOpen, onClose, keywords }) {
     // 각 키워드별 API 호출 후 데이터 합치기
     Promise.all(
       keywords.map((kw) => {
-        const params = new URLSearchParams({
-          keyword: String(kw.keyword || ''),
-          type: String(kw.type || 'trend'),
-        });
-
-        return fetch(toApiUrl(`/analysis?${params.toString()}`))
-          .then((res) => res.json())
+        return apiClient
+          .get('/analysis', {
+            params: {
+              keyword: String(kw.keyword || ''),
+              type: String(kw.type || 'trend'),
+            },
+          })
+          .then((res) => res.data)
           .catch(() => ({ found: false }));
       })
     ).then(results => {

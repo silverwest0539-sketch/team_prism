@@ -90,12 +90,10 @@ const CreationPage = () => {
       } else {
         const message = resolveFriendlyErrorMessage(null, data.error || '');
         setGenerationError(message);
-        showToast(message, { type: 'error' });
       }
     } catch (error) {
       const message = resolveFriendlyErrorMessage(error);
       setGenerationError(message);
-      showToast(message, { type: 'error' });
     } finally {
       setIsLoading(false);
     }

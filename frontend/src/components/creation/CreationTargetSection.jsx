@@ -16,7 +16,7 @@ const CreationTargetSection = ({
         className="w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3 2xl:mb-2 text-sm"
         value={target}
         onChange={(event) => onChangeTarget(event.target.value)}
-        placeholder="예: 2030 직장인, 육아맘 등"
+        placeholder="예: 20~30대 직장인, 간편식/헬스 관심 사용자"
       />
 
       <label className="block text-sm font-bold text-gray-700 mb-2 2xl:mb-1.5">기타 요구사항</label>
