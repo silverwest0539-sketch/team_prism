@@ -45,6 +45,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
       setIsBookmarked(false);
     }
 
+    // 팀원분이 수정한 API 호출 로직 (유지)
     apiClient
       .get('/analysis', {
         params: {
@@ -195,7 +196,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
               {/* 중립 */}
               <div className={`flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
                 topSentiment === 'neutral'
-                  ? 'border-yellow-100 shadow-sm ring-2 ring-yellow-500 ring-offset-2' // 중립은 노란색 계열로 강조
+                  ? 'border-yellow-100 shadow-sm ring-2 ring-yellow-500 ring-offset-2'
                   : 'border-gray-100 opacity-50 grayscale'
               }`}>
                 <div className={`w-3 h-3 rounded-full mb-2 ${topSentiment === 'neutral' ? 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]' : 'bg-gray-400'}`}></div>
@@ -218,10 +219,15 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
             <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
               <ChartLineUp size={18} className="text-indigo-500" /> 최근 3일 언급량 추이
             </h3>
-            <div className="h-40 w-full bg-white border border-gray-100 rounded-2xl p-2 shadow-sm">
-              {loading ? (
-                <div className="h-full flex items-center justify-center text-xs text-gray-400">데이터 로딩 중...</div>
-              ) : detailData?.history ? (
+            {/* UI 적용 1: 차트 컨테이너에 relative와 블러 오버레이 추가 */}
+            <div className="h-40 w-full bg-white border border-gray-100 rounded-2xl p-2 shadow-sm relative overflow-hidden">
+              {loading && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in rounded-2xl">
+                  <div className="w-6 h-6 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-2"></div>
+                  <span className="text-indigo-600 font-bold animate-pulse text-sm">분석중...</span>
+                </div>
+              )}
+              {detailData?.history ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={detailData.history.slice(-3)}>
                     <Tooltip
@@ -244,7 +250,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              ) : (
+              ) : !loading && (
                 <div className="h-full flex items-center justify-center text-xs text-gray-400">차트 데이터 없음</div>
               )}
             </div>
@@ -254,10 +260,15 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
             <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
               <ChatCircle size={18} className="text-blue-500" /> 실제 반응 미리보기
             </h3>
-            <div className="space-y-3">
-              {loading ? (
-                <div className="text-center py-4 text-xs text-gray-400">반응 불러오는 중...</div>
-              ) : detailData?.comments && detailData.comments.length > 0 ? (
+            {/* UI 적용 2: 반응 리스트 컨테이너에 relative와 블러 오버레이 추가 */}
+            <div className="space-y-3 relative min-h-[100px]">
+              {loading && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in rounded-xl">
+                  <div className="w-6 h-6 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-2"></div>
+                  <span className="text-indigo-600 font-bold animate-pulse text-sm">분석중...</span>
+                </div>
+              )}
+              {detailData?.comments && detailData.comments.length > 0 ? (
                 detailData.comments.slice(0, 2).map((comment, idx) => (
                   <div
                     key={idx}
@@ -277,7 +288,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
                     <p className="text-sm text-gray-600 line-clamp-2">"{comment.text}"</p>
                   </div>
                 ))
-              ) : (
+              ) : !loading && (
                 <div className="text-center py-4 text-xs text-gray-400">관련 반응 데이터가 없습니다.</div>
               )}
             </div>
