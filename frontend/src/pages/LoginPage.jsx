@@ -1,61 +1,18 @@
 // src/pages/LoginPage.jsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
 import { showToast } from '../utils/toast';
 
-const EASTER_EGG_MS = 1800;
-const EASTER_EGG_IMAGE = '/flying_toasts.png';
-const EASTER_EGG_HINT = 'Shift + Alt';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isEasterEggActive, setIsEasterEggActive] = useState(false);
-  const [showEasterEggToast, setShowEasterEggToast] = useState(false);
-  const [showEasterEggImage, setShowEasterEggImage] = useState(false);
-  const [isImageFlying, setIsImageFlying] = useState(false);
 
-  const easterEggTimerRef = useRef(null);
 
-  useEffect(() => {
-    return () => {
-      if (easterEggTimerRef.current) clearTimeout(easterEggTimerRef.current);
-    };
-  }, []);
-
-  const triggerEasterEgg = () => {
-    setIsEasterEggActive(true);
-    setShowEasterEggToast(true);
-    setShowEasterEggImage(true);
-    setIsImageFlying(false);
-
-    requestAnimationFrame(() => {
-      setIsImageFlying(true);
-    });
-
-    if (easterEggTimerRef.current) clearTimeout(easterEggTimerRef.current);
-    easterEggTimerRef.current = setTimeout(() => {
-      setIsEasterEggActive(false);
-      setShowEasterEggToast(false);
-      setShowEasterEggImage(false);
-      setIsImageFlying(false);
-    }, EASTER_EGG_MS);
-  };
-
-  const handleLogoActivate = (hasEasterEggCombo) => {
-    if (hasEasterEggCombo) {
-      triggerEasterEgg();
-      return;
-    }
-
+  const handleLogoClick = () => {
     navigate('/home');
-  };
-
-  const handleLogoClick = (event) => {
-    const hasEasterEggCombo = event.shiftKey && event.altKey;
-    handleLogoActivate(hasEasterEggCombo);
   };
 
   const handleLogin = async (e) => {
@@ -79,29 +36,6 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      {showEasterEggToast && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-indigo-600 text-white text-sm font-bold shadow-lg animate-pulse">
-          Toasts are flying!
-        </div>
-      )}
-
-      {showEasterEggImage && (
-        <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
-          <div
-            className="fixed left-[-25vw] top-1/2"
-            style={{
-              transform: isImageFlying ? 'translate(145vw, -50%)' : 'translate(0, -50%)',
-              transition: `transform ${EASTER_EGG_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1)`,
-            }}
-          >
-            <img
-              src={EASTER_EGG_IMAGE}
-              alt="Flying toasts"
-              className="w-[62vw] max-w-[380px] select-none drop-shadow-2xl animate-toast-fly-bob"
-            />
-          </div>
-        </div>
-      )}
 
       <div className="card-soft w-full max-w-md shadow-lg">
         <div className="text-center mb-10">
@@ -109,18 +43,8 @@ const LoginPage = () => {
             role="button"
             tabIndex={0}
             onClick={handleLogoClick}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                handleLogoActivate(event.shiftKey && event.altKey);
-              }
-            }}
-            className={`text-4xl font-bold mb-2 transition-all duration-500 cursor-pointer select-none ${
-              isEasterEggActive
-                ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-pink-500 to-emerald-500 scale-110 drop-shadow-[0_0_12px_rgba(99,102,241,0.45)]'
-                : 'text-indigo-600 hover:text-indigo-700'
-            }`}
-            title={`Prism (이스터에그: ${EASTER_EGG_HINT} + 클릭)`}
+            className={`text-4xl font-bold mb-2 transition-all duration-500 cursor-pointer select-none`}
+            title={`Prism 홈으로 이동`}
             aria-label="Prism 로고"
           >
             Prism
