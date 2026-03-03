@@ -41,3 +41,14 @@ exports.getNews = async (req, res) => {
     res.status(500).json([]);
   }
 };
+
+exports.getNewsByCategory = async (req, res) => {
+  try {
+    const { category } = req.query;
+    const news = await contentService.getNewsByCategory(category);
+    res.json(news);
+  } catch (error) {
+    console.error("❌ /api/news/category 에러:", error);
+    res.status(500).json([]);
+  }
+};

@@ -6,5 +6,6 @@ router.get('/contents/rising', contentController.getRisingContents);
 router.get('/videos', contentController.getVideos);
 router.get('/community/posts', contentController.getCommunityPosts);
 router.get('/news', contentController.getNews);
+router.get('/news/category', contentController.getNewsByCategory);
 
 module.exports = router;

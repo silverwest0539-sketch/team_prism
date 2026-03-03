@@ -143,12 +143,15 @@ const HomePage = () => {
   useEffect(() => {
     const fetchNewsData = async () => {
       try {
-        // [TODO] 백엔드 연동 시:
-        // const res = await apiClient.get('/news', { params: { category: selectedNewsCategory } });
-        // setTodayNews(res.data);
+        // 백엔드 API 호출 (더미 데이터 대신 실제 데이터 가져오기)
+        const res = await apiClient.get('/news/category', { 
+          params: { category: selectedNewsCategory } 
+        });
         
-        // --- 임시 더미 데이터 ---
-        // 상단 뉴스 키워드
+        // 받아온 실제 뉴스로 상태 업데이트
+        setTodayNews(res.data || []);
+        
+        // --- 상단 뉴스 키워드(Top 5)는 임시 더미 데이터 유지 ---
         setNewsKeywords([
           { keyword: '금리 인하', rank: 1, change: '-' },
           { keyword: '선거 결과', rank: 2, change: 'NEW' },
@@ -157,22 +160,13 @@ const HomePage = () => {
           { keyword: '날씨 특보', rank: 5, change: '-' },
         ]);
 
-        // 하단 뉴스 리스트 (카테고리에 따라 제목 변경)
-        const categoryLabel = NEWS_CATEGORY_OPTIONS.find(c => c.value === selectedNewsCategory)?.label || '';
-        setTodayNews([
-            { title: `[${categoryLabel}] 관련 주요 뉴스 헤드라인 1`, press: '한국경제', link: '#' },
-            { title: `[${categoryLabel}] 관련 속보 기사 제목 2`, press: 'YTN', link: '#' },
-            { title: '글로벌 테크 기업들, AI 투자 확대 경쟁', press: '전자신문', link: '#' },
-            { title: '주말 전국 비 소식, 기온 뚝', press: '기상청', link: '#' },
-            { title: '프로야구 개막전 예매 시작', press: '스포츠서울', link: '#' },
-        ]);
       } catch (error) {
         console.error('뉴스 데이터 로드 에러:', error);
       }
     };
+    
     fetchNewsData();
-  }, [selectedNewsCategory]); // selectedNewsCategory가 바뀔 때마다 실행
-
+  }, [selectedNewsCategory]);
 
   // 3. 커뮤니티 데이터
   useEffect(() => {
@@ -548,7 +542,7 @@ const HomePage = () => {
                 >
                   <div className="flex-1 overflow-hidden">
                     <h3 className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors">
-                      {post.title}
+                      [{post.category}] {post.title}
                     </h3>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
@@ -566,7 +560,7 @@ const HomePage = () => {
         <div>
           <div className="flex justify-between items-end mb-4 h-[34px]"> 
             <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1 flex items-center gap-2">
-              오늘의 뉴스 <Newspaper size={20} className="text-gray-500"/>
+              오늘의 뉴스 
             </h2>
           </div>
 
@@ -598,7 +592,7 @@ const HomePage = () => {
                     <h3 className="text-sm font-medium text-gray-800 truncate group-hover:text-emerald-600 transition-colors">
                       {news.title}
                     </h3>
-                    <p className="text-xs text-gray-400 mt-1">{news.press}</p>
+                    {/* <p className="text-xs text-gray-400 mt-1">{news.press}</p> */}
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
                 </a>

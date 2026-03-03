@@ -175,7 +175,7 @@ exports.getVideos = async (category) => {
 exports.getCommunityPosts = (platform) => {
   const platformPosts = getCommunityHotPosts(platform) || [];
   return platformPosts.slice(0, 10).map((post, index) => ({
-    rank: index + 1,
+    category: post.category,
     title: post.title || post.Title || post.subject || post.Subject || post.text || "제목 없음", 
     link: post.link || post.url || post.href || post.Link || post.Url || "#"
   }));
@@ -232,6 +232,50 @@ exports.getNews = async (keyword, startDate, endDate) => {
     });
   } catch (error) {
     console.error('RSS Error:', error);
+    return [];
+  }
+};
+
+// 5. 카테고리별 구글 뉴스 RSS 조회 (새로 추가)
+exports.getNewsByCategory = async (category) => {
+  // 프론트엔드 카테고리 값을 구글 뉴스 토픽 ID로 매핑
+  const topicMap = {
+    'korea': 'NATION',
+    'world': 'WORLD',
+    'business': 'BUSINESS',
+    'tech': 'TECHNOLOGY',
+    'entertainment': 'ENTERTAINMENT',
+    'sports': 'SPORTS'
+  };
+
+  const topic = topicMap[category] || 'NATION';
+  const feedUrl = `https://news.google.com/news/rss/headlines/section/topic/${topic}?hl=ko&gl=KR&ceid=KR:ko`;
+
+  try {
+    const feed = await parser.parseURL(feedUrl);
+    
+    // 최신순 정렬
+    const sortedItems = feed.items.sort((a, b) => {
+      return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
+    });
+
+    // 상위 5개 추출
+    return sortedItems.slice(0, 10).map(item => {
+      let publisher = 'Google News';
+      if (item.newsSource) {
+        if (typeof item.newsSource === 'string') publisher = item.newsSource;
+        else if (item.newsSource._) publisher = item.newsSource._;
+      }
+
+      return {
+        title: item.title,
+        link: item.link,
+        pubDate: item.pubDate,
+        press: publisher // 프론트엔드 변수명(press)과 맞춤
+      };
+    });
+  } catch (error) {
+    console.error(`RSS Category Error (${category}):`, error);
     return [];
   }
 };
