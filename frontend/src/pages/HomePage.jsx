@@ -1,7 +1,7 @@
 // src/pages/HomePage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom'
-import { PlayCircle, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { PlayCircle, ChevronLeft, ChevronRight, Plus, X, Newspaper } from 'lucide-react'; 
 import SearchBar from '../components/common/SearchBar';
 import SummaryModal from '../components/home/SummaryModal';
 import { formatViews, formatDate } from '../utils/formatters';
@@ -9,46 +9,60 @@ import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 
-
 const HomePage = () => {
   const navigate = useNavigate();
   
-  // 상태 관리
+  // --- 상태 관리 (State) ---
   const [risingKeywords, setRisingKeywords] = useState([]); 
   const [risingPlatforms, setRisingPlatforms] = useState([]); 
   const [selectedPlatform, setSelectedPlatform] = useState('youtube'); 
+  
+  // [뉴스 키워드]
+  const [newsKeywords, setNewsKeywords] = useState([]);
+
+  // [유튜브]
   const [youtubeVideos, setYoutubeVideos] = useState([]);
   const [youtubeCategory, setYoutubeCategory] = useState('전체');
+  
+  // [UI 상태]
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userName] = useState(() => getStoredUser()?.nickname || '');
   
-  // 모달 상태
+  // [모달 상태]
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState(null);
+  const [isTrendModalOpen, setIsTrendModalOpen] = useState(false);
+
+  // [커뮤니티 상태]
   const [communityPosts, setCommunityPosts] = useState([]);
   const [selectedComm, setSelectedComm] = useState('theqoo');
 
-  // [추가] 트렌드 더보기 모달 상태
-  const [isTrendModalOpen, setIsTrendModalOpen] = useState(false);
+  // [추가] ★ 뉴스 카테고리 및 데이터 상태 선언 (에러 해결 부분) ★
+  const [selectedNewsCategory, setSelectedNewsCategory] = useState('korea');
+  const [todayNews, setTodayNews] = useState([]);
 
   const scrollRef = useRef(null);
-
   const [searchTerm, setSearchTerm] = useState('');
 
-  const handleSearch = (e) => {
-    navigateToAnalysisOnEnter({
-      event: e,
-      keyword: searchTerm,
-      navigate,
-    });
-  };
+  // --- 상수 정의 ---
 
+  // 1. 커뮤니티 옵션 (왼쪽)
   const COMMUNITY_OPTIONS = [
     { label: '더쿠', value: 'theqoo' },
     { label: '디시인사이드', value: 'dcinside' },
     { label: '루리웹', value: 'ruliweb' },
     { label: '네이트판', value: 'natepan' },
     { label: 'FM코리아', value: 'fmkorea' },
+  ];
+
+  // [추가] 2. 뉴스 카테고리 옵션 (오른쪽)
+  const NEWS_CATEGORY_OPTIONS = [
+    { label: '대한민국', value: 'korea' },
+    { label: '세계', value: 'world' },
+    { label: '비즈니스', value: 'business' },
+    { label: '과학/기술', value: 'tech' },
+    { label: '엔터테인먼트', value: 'entertainment' },
+    { label: '스포츠', value: 'sports' },
   ];
 
   const MAIN_PLATFORM_OPTIONS = [
@@ -62,6 +76,17 @@ const HomePage = () => {
 
   const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '브이로그'];
 
+
+  // --- 핸들러 함수 ---
+
+  const handleSearch = (e) => {
+    navigateToAnalysisOnEnter({
+      event: e,
+      keyword: searchTerm,
+      navigate,
+    });
+  };
+
   const openModal = (data) => {
     setSelectedKeyword(data);
     setIsModalOpen(true);
@@ -69,31 +94,28 @@ const HomePage = () => {
 
   const closeModal = () => setIsModalOpen(false);
 
-  // 스크롤 핸들러 함수
   const scroll = (direction) => {
     if (scrollRef.current) {
       const { current } = scrollRef;
-      // 한 번 클릭 시 이동할 거리 (약 카드 1~2개 너비 + gap)
       const scrollAmount = direction === 'left' ? -300 : 300;
       current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
 
-  // API 호출
+  // --- API 호출 (useEffect) ---
+
+  // 1. 트렌드/플랫폼/유튜브 데이터
   useEffect(() => {
       const fetchData = async () => {
         try {
-          // 1. 급상승 키워드 로드 (기존 유지)
           const trendRes = await apiClient.get('/trends/rising');
           setRisingKeywords(trendRes.data || []);
 
-          // 2. 플랫폼별 트렌드 로드 (기존 유지)
           const platformRes = await apiClient.get('/trends/platform', {
             params: { platform: String(selectedPlatform || '') },
           });
           setRisingPlatforms(platformRes.data || []);
 
-          // 3. 유튜브 인기 동영상 로드 
           const videoRes = await apiClient.get('/videos', {
             params: { category: String(youtubeCategory || '') },
           });
@@ -107,8 +129,43 @@ const HomePage = () => {
       fetchData();
     }, [selectedPlatform, youtubeCategory]);
 
+  // 2. 뉴스 데이터 (카테고리 변경 시 재호출)
   useEffect(() => {
-    // 커뮤니티 인기글 불러오기
+    const fetchNewsData = async () => {
+      try {
+        // [TODO] 백엔드 연동 시:
+        // const res = await apiClient.get('/news', { params: { category: selectedNewsCategory } });
+        // setTodayNews(res.data);
+        
+        // --- 임시 더미 데이터 ---
+        // 상단 뉴스 키워드
+        setNewsKeywords([
+          { keyword: '금리 인하', rank: 1, change: '-' },
+          { keyword: '선거 결과', rank: 2, change: 'NEW' },
+          { keyword: 'AI 규제', rank: 3, change: '▲1' },
+          { keyword: '전기차 보조금', rank: 4, change: '▼1' },
+          { keyword: '날씨 특보', rank: 5, change: '-' },
+        ]);
+
+        // 하단 뉴스 리스트 (카테고리에 따라 제목 변경)
+        const categoryLabel = NEWS_CATEGORY_OPTIONS.find(c => c.value === selectedNewsCategory)?.label || '';
+        setTodayNews([
+            { title: `[${categoryLabel}] 관련 주요 뉴스 헤드라인 1`, press: '한국경제', link: '#' },
+            { title: `[${categoryLabel}] 관련 속보 기사 제목 2`, press: 'YTN', link: '#' },
+            { title: '글로벌 테크 기업들, AI 투자 확대 경쟁', press: '전자신문', link: '#' },
+            { title: '주말 전국 비 소식, 기온 뚝', press: '기상청', link: '#' },
+            { title: '프로야구 개막전 예매 시작', press: '스포츠서울', link: '#' },
+        ]);
+      } catch (error) {
+        console.error('뉴스 데이터 로드 에러:', error);
+      }
+    };
+    fetchNewsData();
+  }, [selectedNewsCategory]); // selectedNewsCategory가 바뀔 때마다 실행
+
+
+  // 3. 커뮤니티 데이터
+  useEffect(() => {
     const fetchCommunityPosts = async () => {
       try {
         const res = await apiClient.get('/community/posts', {
@@ -123,13 +180,14 @@ const HomePage = () => {
     fetchCommunityPosts();
   }, [selectedComm]);
 
+  // --- 렌더링 ---
   return (
     <div 
       className="page"
       onClick={() => isDropdownOpen && setIsDropdownOpen(false)}
     >
       
-      {/* 상단 헤더 */}
+      {/* 검색창 헤더 */}
       <div className="flex justify-between items-start mb-6">
         <SearchBar 
           placeholder="관심있는 키워드나 주제를 검색해보세요..." 
@@ -138,17 +196,15 @@ const HomePage = () => {
           onKeyDown={handleSearch}
           containerClassName="relative w-full max-w-3xl"
         />  
-
       </div>
 
       <h1 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">안녕하세요, {userName}님 </h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-10">
+      {/* 상단 3분할 영역 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
         
-        
-        {/* 카드 1: 트렌드 급상승 키워드 */}
+        {/* 1. 오늘의 트렌드 키워드 */}
         <div className="card-soft">
-          {/* 헤더 */}
           <div className="flex justify-between items-end mb-4 border-b pb-2 border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">
               오늘의 트렌드 키워드 Top 5
@@ -187,10 +243,10 @@ const HomePage = () => {
           </ul>
         </div>
 
-        {/* 카드 2: 플랫폼별 급상승 키워드 */}
+        {/* 2. 오늘의 플랫폼별 키워드 */}
         <div className="card-soft relative">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="section-title-lg">
+          <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">
               오늘의 플랫폼별 키워드 Top 5
             </h2>
             <div
@@ -206,7 +262,7 @@ const HomePage = () => {
                       : 'text-gray-500 hover:text-gray-800'
                   }`}
                 >
-                  <span className="font-medium">
+                  <span className="font-medium text-xs">
                     {MAIN_PLATFORM_OPTIONS.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
                   </span>
                   <svg
@@ -266,6 +322,46 @@ const HomePage = () => {
             ))}
           </ul>
         </div>
+
+        {/* 3. 오늘의 뉴스 키워드 */}
+        <div className="card-soft">
+          <div className="flex justify-between items-end mb-4 border-b pb-2 border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">
+              오늘의 뉴스 키워드 Top 5
+            </h2>
+          </div>
+          
+          <ul className="flex flex-col gap-2">
+            {newsKeywords.length > 0 ? (
+                newsKeywords.slice(0, 5).map((item, index) => (
+                <li 
+                    key={index} 
+                    onClick={() => openModal({ 
+                    keyword: item.keyword,
+                    rank: item.rank,
+                    title: item.keyword,
+                    desc: `${item.keyword} 관련 뉴스 분석입니다.`,
+                    type: 'news_keyword'
+                    })}
+                    className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
+                >
+                    <div className="flex items-center gap-4">
+                    <span className="font-bold text-emerald-600 w-3 text-center">{item.rank}</span>
+                    <p className="font-medium text-gray-900">{item.keyword}</p>
+                    </div>
+                    {item.change && (
+                        <div className="text-xs font-bold text-gray-400">
+                            {item.change}
+                        </div>
+                    )}
+                </li>
+                ))
+            ) : (
+                <li className="text-center text-gray-400 text-xs py-10">데이터를 불러오는 중입니다.</li>
+            )}
+          </ul>
+        </div>
+
       </div>
 
       {/* 유튜브 섹션 */}
@@ -288,10 +384,7 @@ const HomePage = () => {
           ))}
         </div>
         
-        {/* 슬라이더 컨테이너 */}
         <div className="relative">
-          
-          {/* 왼쪽 화살표 버튼 */}
           <button 
             onClick={() => scroll('left')}
             className="hidden sm:flex absolute left-1 lg:left-0 top-1/2 -translate-y-1/2 lg:-ml-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
@@ -300,7 +393,6 @@ const HomePage = () => {
             <ChevronLeft className="w-6 h-6 text-gray-600" />
           </button>
 
-          {/* 비디오 리스트 (Grid -> Flex & Scroll) */}
           <div 
             ref={scrollRef}
             className="flex overflow-x-auto gap-4 scrollbar-hide scroll-smooth pb-4 px-1"
@@ -342,7 +434,6 @@ const HomePage = () => {
             ))}
           </div>
 
-          {/* 오른쪽 화살표 버튼 */}
           <button 
             onClick={() => scroll('right')}
             className="hidden sm:flex absolute right-1 lg:right-0 top-1/2 -translate-y-1/2 lg:-mr-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
@@ -350,58 +441,107 @@ const HomePage = () => {
           >
             <ChevronRight className="w-6 h-6 text-gray-600" />
           </button>
-
         </div>
       </div>
 
-      {/* 커뮤니티 인기글 섹션 */}
-      <div className="mb-12">
-        <div className="flex justify-between items-end mb-4">
-          <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">
-            커뮤니티 인기글
-          </h2>
-        </div>
+      {/* 하단 2분할 섹션 */}
+      <div className="mb-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* 왼쪽: 커뮤니티 인기글 */}
+        <div>
+          <div className="flex justify-between items-end mb-4">
+            <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">
+              커뮤니티 인기글
+            </h2>
+          </div>
 
-        {/* 커뮤니티 카테고리 탭 */}
-        <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
-          {COMMUNITY_OPTIONS.map((comm) => (
-            <button
-              key={comm.value}
-              onClick={() => setSelectedComm(comm.value)}
-              className={`chip ${selectedComm === comm.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            >
-              {comm.label}
-            </button>
-          ))}
-        </div>
-
-        {/* 게시글 리스트 (그리드 2단 레이아웃) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {communityPosts.length > 0 ? (
-            communityPosts.map((post) => (
-              <a
-                key={post.rank}
-                href={post.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group"
+          {/* 커뮤니티 카테고리 탭 (기존 유지) */}
+          <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
+            {COMMUNITY_OPTIONS.map((comm) => (
+              <button
+                key={comm.value}
+                onClick={() => setSelectedComm(comm.value)}
+                className={`chip ${selectedComm === comm.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               >
-                <span className="text-lg font-bold text-blue-600 w-6 text-center">
-                  {post.rank}
-                </span>
-                <div className="flex-1 overflow-hidden">
-                  <h3 className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors">
-                    {post.title}
-                  </h3>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
-              </a>
-            ))
-          ) : (
-            <div className="col-span-1 md:col-span-2 text-center py-10 text-gray-400 text-sm">
-              현재 불러올 수 있는 인기글 데이터가 없습니다.
-            </div>
-          )}
+                {comm.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 게시글 리스트 */}
+          <div className="flex flex-col gap-3">
+            {communityPosts.length > 0 ? (
+              communityPosts.map((post) => (
+                <a
+                  key={post.rank}
+                  href={post.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group"
+                >
+                  <div className="flex-1 overflow-hidden">
+                    <h3 className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors">
+                      {post.title}
+                    </h3>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
+                </a>
+              ))
+            ) : (
+              <div className="text-center py-10 text-gray-400 text-sm bg-white rounded-xl border border-gray-100">
+                현재 불러올 수 있는 인기글 데이터가 없습니다.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 오른쪽: 오늘의 뉴스 */}
+        <div>
+          <div className="flex justify-between items-end mb-4 h-[34px]"> 
+            <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1 flex items-center gap-2">
+              오늘의 뉴스 <Newspaper size={20} className="text-gray-500"/>
+            </h2>
+          </div>
+
+          {/* [수정] 뉴스 카테고리 탭 (6개 카테고리 적용) */}
+          <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
+            {NEWS_CATEGORY_OPTIONS.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => setSelectedNewsCategory(cat.value)}
+                className={`chip ${selectedNewsCategory === cat.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 뉴스 리스트 */}
+          <div className="flex flex-col gap-3">
+            {todayNews.length > 0 ? (
+              todayNews.map((news, idx) => (
+                <a
+                  key={idx}
+                  href={news.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group"
+                >
+                  <div className="flex-1 overflow-hidden">
+                    <h3 className="text-sm font-medium text-gray-800 truncate group-hover:text-emerald-600 transition-colors">
+                      {news.title}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-1">{news.press}</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
+                </a>
+              ))
+            ) : (
+              <div className="text-center py-10 text-gray-400 text-sm bg-white rounded-xl border border-gray-100">
+                뉴스 데이터를 불러오는 중입니다.
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -412,12 +552,11 @@ const HomePage = () => {
         data={selectedKeyword} 
       />
 
-            {/* --- 트렌드 Top 20 모달 추가 --- */}
+      {/* 트렌드 Top 20 모달 */}
       {isTrendModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             
-            {/* 모달 헤더 */}
             <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -435,7 +574,6 @@ const HomePage = () => {
               </button>
             </div>
 
-            {/* 모달 바디 (2단 그리드) */}
             <div className="overflow-y-auto p-6 bg-gray-50/50">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                 
@@ -445,9 +583,8 @@ const HomePage = () => {
                   {risingKeywords.slice(0, 10).map((item) => (
                     <div 
                       key={item.rank}
-                      // [수정] 클릭 시 상세분석(navigate) 대신 요약 모달(openModal) 호출
                       onClick={() => {
-                        setIsTrendModalOpen(false); // 순위 모달 닫기
+                        setIsTrendModalOpen(false); 
                         openModal({ 
                           keyword: item.keyword,
                           rank: item.rank,
@@ -480,9 +617,8 @@ const HomePage = () => {
                   {risingKeywords.slice(10, 20).map((item) => (
                     <div 
                       key={item.rank}
-                      // [수정] 클릭 시 상세분석(navigate) 대신 요약 모달(openModal) 호출
                       onClick={() => {
-                        setIsTrendModalOpen(false); // 순위 모달 닫기
+                        setIsTrendModalOpen(false);
                         openModal({ 
                           keyword: item.keyword,
                           rank: item.rank,
@@ -515,7 +651,7 @@ const HomePage = () => {
         </div>
       )}
 
-    </div> // HomePage 끝나는 태그
+    </div>
   );
 };
 
