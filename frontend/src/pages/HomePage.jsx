@@ -1,6 +1,6 @@
 // src/pages/HomePage.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
 import { PlayCircle, ChevronLeft, ChevronRight, Plus, X, Newspaper } from 'lucide-react'; 
 import SearchBar from '../components/common/SearchBar';
 import SummaryModal from '../components/home/SummaryModal';
@@ -9,14 +9,24 @@ import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 
+// [수정] Plus를 빼고 Question만 가져옵니다!
+import { Question } from '@phosphor-icons/react'; 
+
 const HomePage = () => {
   const navigate = useNavigate();
   
   // --- 상태 관리 (State) ---
   const [risingKeywords, setRisingKeywords] = useState([]); 
   const [risingPlatforms, setRisingPlatforms] = useState([]); 
-  const [selectedPlatform, setSelectedPlatform] = useState('youtube'); 
+  const [selectedPlatform, setSelectedPlatform] = useState('youtube');
   
+  // [수정] 3개의 툴팁을 각각 제어하기 위한 통합 상태 ('trend', 'platform', 'news', null)
+  const [activeTooltip, setActiveTooltip] = useState(null);
+
+  // 툴팁 토글 함수
+  const toggleTooltip = (type) => {
+    setActiveTooltip(prev => prev === type ? null : type);
+  };
   // [뉴스 키워드]
   const [newsKeywords, setNewsKeywords] = useState([]);
 
@@ -200,169 +210,226 @@ const HomePage = () => {
 
       <h1 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">안녕하세요, {userName}님 </h1>
 
-      {/* 상단 3분할 영역 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
-        
-        {/* 1. 오늘의 트렌드 키워드 */}
-        <div className="card-soft">
-          <div className="flex justify-between items-end mb-4 border-b pb-2 border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900">
-              오늘의 트렌드 키워드 Top 5
-            </h2>
-            <button 
-              onClick={() => setIsTrendModalOpen(true)}
-              className="text-xs text-gray-400 hover:text-indigo-600 font-medium flex items-center gap-1 transition-colors"
+  {/* 상단 3분할 영역 */}
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
+    
+    {/* 1. 오늘의 트렌드 키워드 */}
+    <div className="card-soft">
+      <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-100">
+        <div className="flex items-center gap-1 relative">
+          <h2 className="text-lg font-bold text-gray-900">
+            오늘의 트렌드 키워드 Top 5
+          </h2>
+          <button 
+            onClick={() => toggleTooltip('trend')}
+            className="text-gray-400 hover:text-indigo-500 transition-colors p-1"
+          >
+            <Question size={18} weight="fill" />
+          </button>
+
+          {/* 말풍선 툴팁 */}
+          {activeTooltip === 'trend' && (
+            <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in">
+              <div className="absolute -top-1 left-6 w-3 h-3 bg-gray-800 transform rotate-45"></div>
+              <p className="font-semibold mb-1">트렌드 키워드란?</p>
+              <p className="opacity-90 leading-relaxed">
+                최근 검색량, 언급량, 확산도를 종합적으로 분석하여 산출된 순위입니다.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <button 
+          onClick={() => setIsTrendModalOpen(true)}
+          className="text-xs text-gray-400 hover:text-indigo-600 font-medium flex items-center gap-1 transition-colors"
+        >
+          더보기 <Plus size={12} />
+        </button>
+      </div>
+      
+      <ul className="flex flex-col gap-2">
+        {risingKeywords.slice(0, 5).map((item, index) => (
+          <li 
+            key={index} 
+            onClick={() => openModal({ 
+              keyword: item.keyword,
+              rank: item.rank,
+              score: item.score,
+              title: item.keyword,
+              desc: `${item.keyword}에 대한 트렌드 요약입니다.`,
+              type: 'trend'
+            })}
+            className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
+          >
+            <div className="flex items-center gap-4">
+              <span className="font-bold text-blue-600 w-3 text-center">{item.rank}</span>
+              <p className="font-medium text-gray-900">{item.keyword}</p>
+            </div>
+            <div className={`text-xs font-bold ${item.isUp ? 'text-red-500' : item.isUp === false ? 'text-blue-500' : 'text-gray-400'}`}>
+              {item.change}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    {/* 2. 오늘의 플랫폼별 키워드 */}
+    <div className="card-soft relative">
+      <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-100">
+        <div className="flex items-center gap-1 relative">
+          <h2 className="text-lg font-bold text-gray-900">
+            오늘의 플랫폼별 키워드 Top 5
+          </h2>
+          <button 
+            onClick={() => toggleTooltip('platform')}
+            className="text-gray-400 hover:text-indigo-500 transition-colors p-1"
+          >
+            <Question size={18} weight="fill" />
+          </button>
+
+          {activeTooltip === 'platform' && (
+            <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in">
+              <div className="absolute -top-1 left-6 w-3 h-3 bg-gray-800 transform rotate-45"></div>
+              <p className="font-semibold mb-1">플랫폼 트렌드란?</p>
+              <p className="opacity-90 leading-relaxed">
+                선택된 플랫폼 내에서의 최근 언급량과 반응 급상승 폭을 기준으로 산출된 순위입니다.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div
+          className="tab-wrap"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className={`tab-btn flex items-center gap-1 ${
+                isDropdownOpen || selectedPlatform
+                  ? 'tab-active text-green-600'
+                  : 'text-gray-500 hover:text-gray-800'
+              }`}
             >
-              더보기 <Plus size={12} />
+              <span className="font-medium text-xs">
+                {MAIN_PLATFORM_OPTIONS.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
+              </span>
+              <svg
+                className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
+
+            {isDropdownOpen && (
+              <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
+                {MAIN_PLATFORM_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setSelectedPlatform(option.value);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-xs hover:bg-gray-50 transition-colors ${
+                      selectedPlatform === option.value ? 'text-green-600 font-bold bg-green-50' : 'text-gray-600'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          
-          <ul className="flex flex-col gap-2">
-            {risingKeywords.slice(0, 5).map((item, index) => (
-              <li 
+        </div>
+      </div>
+
+      <ul className="flex flex-col gap-2">
+        {risingPlatforms.map((item, index) => (
+          <li 
+            key={index} 
+            onClick={() => openModal({ 
+              keyword: item.keyword,
+              rank: index +1,
+              score: item.count,
+              title: item.keyword,
+              desc: `${item.keyword}에 대한 트렌드 요약입니다.`,
+              type : 'platform'
+            })}
+            className="flex items-center gap-4 text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
+          >
+            <span className="font-bold text-blue-600 w-3 text-center">{item.rank || index + 1 }</span>
+            
+            <div className="flex items-baseline overflow-hidden">
+              <span className="font-medium text-gray-900 whitespace-nowrap">
+                {item.keyword}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    {/* 3. 오늘의 뉴스 키워드 */}
+    <div className="card-soft">
+      <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-100">
+        <div className="flex items-center gap-1 relative">
+          <h2 className="text-lg font-bold text-gray-900">
+            오늘의 뉴스 키워드 Top 5
+          </h2>
+          <button 
+            onClick={() => toggleTooltip('news')}
+            className="text-gray-400 hover:text-indigo-500 transition-colors p-1"
+          >
+            <Question size={18} weight="fill" />
+          </button>
+
+          {activeTooltip === 'news' && (
+            <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in">
+              <div className="absolute -top-1 left-6 w-3 h-3 bg-gray-800 transform rotate-45"></div>
+              <p className="font-semibold mb-1">뉴스 키워드란?</p>
+              <p className="opacity-90 leading-relaxed">
+                주요 언론사 기사에서 언급된 빈도와 사회적 주목도를 종합적으로 분석하여 산출된 순위입니다.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <ul className="flex flex-col gap-2">
+        {newsKeywords.length > 0 ? (
+            newsKeywords.slice(0, 5).map((item, index) => (
+            <li 
                 key={index} 
                 onClick={() => openModal({ 
-                  keyword: item.keyword,
-                  rank: item.rank,
-                  score: item.score,
-                  title: item.keyword,
-                  desc: `${item.keyword}에 대한 트렌드 요약입니다.`,
-                  type: 'trend'
+                keyword: item.keyword,
+                rank: item.rank,
+                title: item.keyword,
+                desc: `${item.keyword} 관련 뉴스 분석입니다.`,
+                type: 'news_keyword'
                 })}
                 className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
-              >
-                <div className="flex items-center gap-4">
-                  <span className="font-bold text-blue-600 w-3 text-center">{item.rank}</span>
-                  <p className="font-medium text-gray-900">{item.keyword}</p>
-                </div>
-                <div className={`text-xs font-bold ${item.isUp ? 'text-red-500' : item.isUp === false ? 'text-blue-500' : 'text-gray-400'}`}>
-                  {item.change}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* 2. 오늘의 플랫폼별 키워드 */}
-        <div className="card-soft relative">
-          <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900">
-              오늘의 플랫폼별 키워드 Top 5
-            </h2>
-            <div
-              className="tab-wrap"
-              onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative">
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className={`tab-btn flex items-center gap-1 ${
-                    isDropdownOpen || selectedPlatform
-                      ? 'tab-active text-green-600'
-                      : 'text-gray-500 hover:text-gray-800'
-                  }`}
-                >
-                  <span className="font-medium text-xs">
-                    {MAIN_PLATFORM_OPTIONS.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
-                  </span>
-                  <svg
-                    className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {isDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
-                    {MAIN_PLATFORM_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          setSelectedPlatform(option.value);
-                          setIsDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2.5 text-xs hover:bg-gray-50 transition-colors ${
-                          selectedPlatform === option.value ? 'text-green-600 font-bold bg-green-50' : 'text-gray-600'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <ul className="flex flex-col gap-2">
-            {risingPlatforms.map((item, index) => (
-              <li 
-                key={index} 
-                onClick={() => openModal({ 
-                  keyword: item.keyword,
-                  rank: index +1,
-                  score: item.count,
-                  title: item.keyword,
-                  desc: `${item.keyword}에 대한 트렌드 요약입니다.`,
-                  type : 'platform'
-                })}
-                className="flex items-center gap-4 text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
-              >
-                <span className="font-bold text-blue-600 w-3 text-center">{item.rank || index + 1 }</span>
-                
-                <div className="flex items-baseline overflow-hidden">
-                  <span className="font-medium text-gray-900 whitespace-nowrap">
-                    {item.keyword}
-                  </span>
+                <div className="flex items-center gap-4">
+                <span className="font-bold text-emerald-600 w-3 text-center">{item.rank}</span>
+                <p className="font-medium text-gray-900">{item.keyword}</p>
                 </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* 3. 오늘의 뉴스 키워드 */}
-        <div className="card-soft">
-          <div className="flex justify-between items-end mb-4 border-b pb-2 border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900">
-              오늘의 뉴스 키워드 Top 5
-            </h2>
-          </div>
-          
-          <ul className="flex flex-col gap-2">
-            {newsKeywords.length > 0 ? (
-                newsKeywords.slice(0, 5).map((item, index) => (
-                <li 
-                    key={index} 
-                    onClick={() => openModal({ 
-                    keyword: item.keyword,
-                    rank: item.rank,
-                    title: item.keyword,
-                    desc: `${item.keyword} 관련 뉴스 분석입니다.`,
-                    type: 'news_keyword'
-                    })}
-                    className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
-                >
-                    <div className="flex items-center gap-4">
-                    <span className="font-bold text-emerald-600 w-3 text-center">{item.rank}</span>
-                    <p className="font-medium text-gray-900">{item.keyword}</p>
+                {item.change && (
+                    <div className="text-xs font-bold text-gray-400">
+                        {item.change}
                     </div>
-                    {item.change && (
-                        <div className="text-xs font-bold text-gray-400">
-                            {item.change}
-                        </div>
-                    )}
-                </li>
-                ))
-            ) : (
-                <li className="text-center text-gray-400 text-xs py-10">데이터를 불러오는 중입니다.</li>
-            )}
-          </ul>
-        </div>
+                )}
+            </li>
+            ))
+        ) : (
+            <li className="text-center text-gray-400 text-xs py-10">데이터를 불러오는 중입니다.</li>
+        )}
+      </ul>
+    </div>
 
-      </div>
+  </div>
 
       {/* 유튜브 섹션 */}
       <div className="mb-8 relative group"> 
