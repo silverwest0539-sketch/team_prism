@@ -15,7 +15,8 @@ import {
   Copy,
   X, 
   ArrowsOutSimple,
-  Question, // [추가] 물음표 아이콘
+  Question, 
+  WarningCircle // [추가] 모달 내 부정댓글 경고창용 아이콘
 } from '@phosphor-icons/react';
 import {
   LineChart,
@@ -61,7 +62,6 @@ const AnalysisPage = () => {
   const initialYesterday = new Date(initialToday);
   initialYesterday.setDate(initialYesterday.getDate() - 1);
 
-  // [수정] loading 상태를 사용하기 위해 변수명 복구
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   
@@ -74,11 +74,12 @@ const AnalysisPage = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isScrapped, setIsScrapped] = useState(false);
 
-  // [추가] 트렌드 스코어 툴팁 상태
   const [showScoreTooltip, setShowScoreTooltip] = useState(false);
-
-  // 차트 확대 모달 상태
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
+
+  // [추가] 여론 분석 모달 관련 상태
+  const [sentimentModalConfig, setSentimentModalConfig] = useState({ isOpen: false, sentiment: null });
+  const [isNegativeRevealed, setIsNegativeRevealed] = useState(false);
 
   // 페이지네이션
   const [currentPage, setCurrentPage] = useState(1);
@@ -89,16 +90,13 @@ const AnalysisPage = () => {
   const fetchData = useCallback(async (currentStart, currentEnd) => {
     if (!keyword) return;
 
-    setLoading(true); // 로딩 시작
+    setLoading(true);
 
     const params = { keyword };
     if (currentStart) params.startDate = currentStart;
     if (currentEnd) params.endDate = currentEnd;
 
     try {
-      // 인위적인 딜레이가 필요하다면 아래 주석 해제 (테스트용)
-      // await new Promise(resolve => setTimeout(resolve, 1500)); 
-
       const [analysisRes, newsRes] = await Promise.all([
         apiClient.get('/analysis', { params }),
         apiClient.get('/news', { params }),
@@ -122,7 +120,7 @@ const AnalysisPage = () => {
       console.error('데이터 로드 실패:', err);
       showToast('데이터를 불러오지 못했습니다.', { type: 'error' });
     } finally {
-      setLoading(false); // 로딩 종료
+      setLoading(false);
     }
   }, [keyword]);
 
@@ -148,7 +146,7 @@ const AnalysisPage = () => {
 
     setAiSummary(null);
     setIsAiLoading(true);
-    setShowScoreTooltip(false); // 키워드 변경시 툴팁 닫기
+    setShowScoreTooltip(false);
     
     const todayDate = getFormattedDate(new Date());
     const yesterday = new Date();
@@ -245,7 +243,6 @@ const AnalysisPage = () => {
     }
   };
 
-  // 데이터 필터링 (useMemo)
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
     const chartDataKey = selectedPlatform === 'all' ? 'mentions' : selectedPlatform;
@@ -350,6 +347,26 @@ const AnalysisPage = () => {
     ];
   }, [filteredData]);
 
+  // [추가] 모달에 표시될 필터링된 댓글 리스트
+  const sentimentModalComments = useMemo(() => {
+    if (!sentimentModalConfig.isOpen || !sentimentModalConfig.sentiment) return [];
+    return (filteredData?.comments || []).filter(c => c.sentiment === sentimentModalConfig.sentiment);
+  }, [filteredData, sentimentModalConfig]);
+
+  // [추가] 차트나 레전드 클릭 핸들러
+  const handleSentimentClick = (data) => {
+    const clickedName = data?.name || data?.value || data?.payload?.name;
+    let targetSentiment = null;
+    if (clickedName === '긍정') targetSentiment = 'positive';
+    else if (clickedName === '부정') targetSentiment = 'negative';
+    else if (clickedName === '중립') targetSentiment = 'neutral';
+
+    if (targetSentiment) {
+      setSentimentModalConfig({ isOpen: true, sentiment: targetSentiment });
+      setIsNegativeRevealed(false); // 창을 열 때 무조건 블러상태로 초기화
+    }
+  };
+
   const usageExamples = useMemo(() => {
     if (!filteredData?.comments) return [];
     return filteredData.comments;
@@ -398,7 +415,6 @@ const AnalysisPage = () => {
   // ---------------- Render ----------------
   return (
     <div className="page space-y-6">
-      {/* 상단 헤더 */}
       <header className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4">
         <Link to="/home" className="p-2 bg-white rounded-full text-gray-500 hover:text-indigo-600 shadow-sm transition">
           <CaretLeft size={20} />
@@ -414,16 +430,13 @@ const AnalysisPage = () => {
         </div>
       </header>
 
-      {/* 메인 콘텐츠 */}
       <div
         className={`w-full transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
           !keyword ? 'blur-disabled' : 'blur-enabled'
         }`}
       >
-        {/* 타이틀 및 상단 정보 */}
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 mb-2">
           
-          {/* 왼쪽: 스크랩 + 키워드 + 스코어 */}
           <div className="flex items-center gap-3">
             <button
               onClick={handleScrapToggle}
@@ -448,7 +461,6 @@ const AnalysisPage = () => {
                     <span className="text-sm sm:text-base font-bold text-indigo-600">
                       트렌드 스코어 {todayScore}점
                     </span>
-                    {/* [추가] 물음표 버튼 */}
                     <button
                       onClick={() => setShowScoreTooltip(!showScoreTooltip)}
                       className="text-gray-400 hover:text-indigo-500 transition-colors p-1"
@@ -456,7 +468,6 @@ const AnalysisPage = () => {
                       <Question size={20} weight="fill" />
                     </button>
 
-                    {/* [추가] 말풍선 툴팁 */}
                     {showScoreTooltip && (
                       <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in">
                         <div className="absolute -top-1 left-4 w-3 h-3 bg-gray-800 transform rotate-45"></div>
@@ -476,7 +487,6 @@ const AnalysisPage = () => {
             </div>
           </div>
           
-          {/* 오른쪽: 콘텐츠 생성 버튼 */}
           <div className="flex gap-2">
              <button 
                onClick={handleGoToCreation}
@@ -488,9 +498,7 @@ const AnalysisPage = () => {
           </div>
         </div>
 
-        {/* 설정 카드 섹션 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full">
-          {/* 기간 설정 카드 */}
           <div className="card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
               <h3 className="text-gray-500 font-medium text-sm flex items-center gap-2">
@@ -530,7 +538,6 @@ const AnalysisPage = () => {
             </div>
           </div>
 
-          {/* 플랫폼 필터 카드 */}
           <div className="card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
               <h3 className="text-gray-500 font-medium text-sm flex items-center gap-2">
@@ -554,11 +561,9 @@ const AnalysisPage = () => {
           </div>
         </div>
 
-        {/* 차트 영역 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:h-80 w-full">
           
-          {/* 언급량 추이 차트 */}
-          <div className="card lg:col-span-1 flex flex-col min-h-[280px] lg:min-h-0 relative">
+          <div className="card lg:col-span-1 flex flex-col min-h-[280px] lg:min-h-0 relative overflow-hidden">
             <div className="card-header flex justify-between items-center">
               <h3 className="section-title">
                 <ChartLineUp className="text-indigo-500" /> 언급량 추이
@@ -572,7 +577,14 @@ const AnalysisPage = () => {
                 </button>
               )}
             </div>
-            <div className="flex-1 w-full min-h-0">
+            <div className="flex-1 w-full min-h-0 relative">
+              {loading && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
+                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                  <span className="text-indigo-600 font-bold animate-pulse text-lg">분석중...</span>
+                </div>
+              )}
+
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <LineChart 
                   data={mainChartData}
@@ -615,33 +627,32 @@ const AnalysisPage = () => {
             </div>
           </div>
 
-          {/* [수정] 워드 클라우드 카드: relative 설정 및 로딩 오버레이 추가 */}
           <div className="card flex flex-col min-h-[260px] lg:min-h-0 relative overflow-hidden">
             <h3 className="section-title card-header">
               <BookmarkSimple className="text-yellow-500" /> 워드 클라우드
             </h3>
             <div className="flex-1 flex flex-wrap content-center justify-center gap-2 overflow-hidden relative">
-              
-              {/* [추가] 분석중 블러 오버레이 */}
               {loading && (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
                   <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
                   <span className="text-indigo-600 font-bold animate-pulse text-lg">분석중...</span>
                 </div>
               )}
-              
               <SimpleWordCloud words={filteredData.wordCloud} />
             </div>
           </div>
 
-          {/* [수정] 여론 분석 카드: relative 설정 및 로딩 오버레이 추가 */}
           <div className="card flex flex-col min-h-[260px] lg:min-h-0 relative overflow-hidden">
-            <h3 className="section-title card-header">
-              <BookmarkSimple className="text-yellow-500" /> 여론 분석
+            {/* [수정] 여론분석 타이틀 옆 안내문구 추가 */}
+            <h3 className="section-title card-header flex items-baseline gap-2">
+              <div className="flex items-center gap-1">
+                <BookmarkSimple className="text-yellow-500" /> 여론 분석
+              </div>
+              <span className="text-[11px] font-normal text-gray-400 tracking-tight">
+                * 해당 반응 선택시 댓글 확인 가능
+              </span>
             </h3>
             <div className="flex-1 relative">
-              
-              {/* [추가] 분석중 블러 오버레이 */}
               {loading && (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
                   <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
@@ -651,22 +662,31 @@ const AnalysisPage = () => {
 
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
-                  <Pie data={sentimentChartData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
+                  {/* [수정] onClick과 cursor pointer 추가 */}
+                  <Pie 
+                    data={sentimentChartData} 
+                    cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value"
+                    onClick={handleSentimentClick}
+                    style={{ cursor: 'pointer' }}
+                  >
                     {sentimentChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value, name) => [`${value}건`, name]} />
-                  <Legend verticalAlign="bottom" height={24} iconSize={8} />
+                  {/* [수정] onClick과 wrapperStyle pointer 추가 */}
+                  <Legend 
+                    verticalAlign="bottom" height={24} iconSize={8} 
+                    onClick={handleSentimentClick}
+                    wrapperStyle={{ cursor: 'pointer' }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {/* 하단 영역 (AI, 뉴스, 유튜브, 댓글) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start w-full">
-          {/* 왼쪽 컬럼 */}
           <div className="card">
             <h3 className="section-title mb-4 pb-2 border-b flex justify-between">
               <span>AI 트렌드 요약</span>
@@ -768,7 +788,6 @@ const AnalysisPage = () => {
             </div>
           </div>
 
-          {/* 오른쪽 컬럼 (댓글 리스트) */}
           <div className="card h-fit flex flex-col">
             <div className="flex justify-between items-center mb-4 pb-2 border-b">
               <h3 className="section-title">관련 댓글 반응</h3>
@@ -795,7 +814,6 @@ const AnalysisPage = () => {
               )}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
                 <button
@@ -844,7 +862,6 @@ const AnalysisPage = () => {
         </div>
       </div>
 
-      {/* 키워드 없을 때 오버레이 */}
       {!keyword && (
         <div className="overlay-center top-20 sm:top-24 px-4">
           <div className="bg-white/80 backdrop-blur-md p-5 sm:p-8 rounded-3xl shadow-xl border border-white/50 text-center transform sm:translate-y-[-10%] w-full max-w-md">
@@ -920,6 +937,85 @@ const AnalysisPage = () => {
                 </ResponsiveContainer>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* [추가] 여론 분석 (긍정/부정/중립) 댓글 모달 */}
+      {sentimentModalConfig.isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden relative">
+            
+            {/* 모달 헤더 */}
+            <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-white z-20">
+              <div className="flex items-baseline gap-3">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  {sentimentModalConfig.sentiment === 'positive' && <span className="text-blue-500">긍정</span>}
+                  {sentimentModalConfig.sentiment === 'negative' && <span className="text-red-500">부정</span>}
+                  {sentimentModalConfig.sentiment === 'neutral' && <span className="text-gray-500">중립</span>}
+                  <span className="text-gray-800">댓글 반응</span>
+                </h3>
+                <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">
+                  AI의 분석 분류로 정확하지 않을 수 있습니다
+                </span>
+              </div>
+              <button 
+                onClick={() => setSentimentModalConfig({ isOpen: false, sentiment: null })}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* 내용 영역 */}
+            <div className="flex-1 p-5 overflow-y-auto bg-gray-50/50 relative">
+              
+              {/* [추가] 부정 댓글일 경우 나타나는 블러 처리 오버레이 */}
+              {sentimentModalConfig.sentiment === 'negative' && !isNegativeRevealed && (
+                <div className="absolute inset-0 z-10 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+                  <WarningCircle size={56} className="text-red-500 mb-4 animate-pulse" weight="fill" />
+                  <h4 className="text-xl font-bold text-gray-800 mb-2">주의: 부정적 댓글 반응</h4>
+                  <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                    분류된 댓글 중에는 다소 거친 표현이나 욕설이 포함되어 있을 수 있습니다.<br />
+                    그래도 내용을 확인하시겠습니까?
+                  </p>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setSentimentModalConfig({ isOpen: false, sentiment: null })}
+                      className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                    >
+                      취소하기
+                    </button>
+                    <button 
+                      onClick={() => setIsNegativeRevealed(true)}
+                      className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 shadow-md shadow-red-200 transition-all hover:-translate-y-0.5"
+                    >
+                      동의하고 확인하기
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 실제 댓글 리스트 (CommentItem 재사용) */}
+              <div className="space-y-4">
+                {sentimentModalComments.length > 0 ? (
+                  sentimentModalComments.map((comment, idx) => (
+                    <CommentItem 
+                      key={idx} 
+                      comment={comment} 
+                      globalIndex={idx + 1}
+                      keyword={keyword} 
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-gray-400 flex flex-col items-center">
+                    <BookmarkSimple size={32} className="mb-3 text-gray-300" />
+                    <p>해당 반응에 분류된 댓글이 없습니다.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
       )}
