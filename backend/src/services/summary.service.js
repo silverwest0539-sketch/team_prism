@@ -21,6 +21,7 @@ const getKstDateString = (offsetDays = 0) => {
 exports.generateSummary = async (keyword, startDate, endDate) => {
   const todayKst = getKstDateString(0);
   const yesterdayKst = getKstDateString(-1);
+  const tomorrowKst = getKstDateString(1);
 
   // 1. Lock 확인 (중복 요청 방지) - 날짜 상관없이 키워드 단위로 락
   if (summaryLocks[keyword]) {
@@ -65,7 +66,7 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
          AND u.collected_date >= ? AND u.collected_date < ?
        ORDER BY u.collected_date DESC 
        LIMIT 200`,
-      [keywordId, yesterdayKst, todayKst]
+      [keywordId, yesterdayKst, tomorrowKst]
     );
 
     let collectedComments = [];

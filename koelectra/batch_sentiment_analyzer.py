@@ -107,6 +107,7 @@ def run_daily_batch():
 
             # --- 3. 개별 댓글 태그 먼저 DB에 업데이트 ---
             print("개별 댓글 DB 업데이트를 시작합니다...")
+            connection.ping(reconnect=True)
             update_usage_sql = """
                 UPDATE USAGE_EXAMPLE 
                 SET sentiment_label = %s 
