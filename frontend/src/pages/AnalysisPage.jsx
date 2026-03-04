@@ -17,7 +17,7 @@ import {
   ArrowsOutSimple,
   Question, 
   LockKey,
-  CaretUp
+  Book
 } from '@phosphor-icons/react';
 import {
   LineChart,
@@ -93,31 +93,8 @@ const AnalysisPage = () => {
   const ITEMS_PER_PAGE = 7;
   const commentsTopRef = useRef(null);
 
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      // 화면을 300px 이상 내리면 버튼을 보여줍니다.
-      if (window.scrollY > 300) {
-        setShowScrollTop(true);
-      } else {
-        setShowScrollTop(false);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth' // 부드럽게 스크롤
-    });
-  };
-
-  // 임시 인물 판별 로직
-  const isPersonKeyword = data?.category === 'person' || keyword === '유나' || keyword === '탁재훈';
+  // 인물 판별 로직
+  const isPersonKeyword = data?.is_person === 1;
 
   // [추가2] 기준 날짜 (오늘 날짜) 포맷팅
   const todayForText = new Date();
@@ -285,6 +262,14 @@ const AnalysisPage = () => {
     } else {
       navigate('/creation');
     }
+  };
+
+  const handleGoToNamuwiki = () => {
+    if (!keyword) return;
+    // 나무위키 검색 결과 페이지 URL
+    const namuwikiUrl = `https://namu.wiki/w/${encodeURIComponent(keyword)}`;
+    // 새 창(새 탭)에서 열기
+    window.open(namuwikiUrl, '_blank', 'noopener,noreferrer');
   };
 
   // 데이터 필터링 시 적용 날짜(applied) 기준 사용
@@ -492,6 +477,11 @@ const AnalysisPage = () => {
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-none">
                 {keyword || '검색 키워드 예시'}
               </h1>
+              {isPersonKeyword && (
+                <span className="bg-indigo-100 text-indigo-700 text-sm font-bold px-2.5 py-1 rounded-full align-middle ml-1">
+                  인물
+                </span>
+              )}
               
               <div className="flex items-center gap-1 text-gray-600 relative ml-1">
                 {todayScore > 0 ? (
@@ -525,7 +515,16 @@ const AnalysisPage = () => {
             </div>
           </div>
           
-          <div className="flex-shrink-0 mt-0.5 sm:mt-0">
+          <div className="flex-shrink-0 mt-0.5 sm:mt-0 flex items-center gap-2 sm:gap-3">
+             <button 
+               onClick={handleGoToNamuwiki}
+               className="flex items-center gap-1.5 sm:gap-2 bg-white hover:bg-teal-50 text-gray-700 border border-gray-200 px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-sm transition-all hover:-translate-y-1"
+               title="나무위키에서 검색"
+             >
+               <Book size={20} className="sm:w-5 sm:h-5 text-teal-600" weight="bold" />
+               <span>나무위키 검색</span>
+             </button>
+
              <button 
                onClick={handleGoToCreation}
                className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-lg shadow-indigo-200 transition-all hover:-translate-y-1"
@@ -552,7 +551,6 @@ const AnalysisPage = () => {
             </div>
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                {/* [수정] value, onChange 속성 변경 */}
                 <input 
                   type="date" 
                   value={inputStartDate} 
@@ -1074,23 +1072,10 @@ const AnalysisPage = () => {
                 </div>
               )}
 
-              
-
             </div>
           </div>
         </div>
       )}
-
-      {showScrollTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 p-3 sm:p-4 bg-indigo-600 text-white rounded-full shadow-2xl shadow-indigo-300 hover:bg-indigo-700 hover:-translate-y-1 transition-all duration-300 z-50 flex items-center justify-center animate-fade-in-up group"
-          aria-label="상단으로 이동"
-        >
-          <CaretUp size={20} weight="bold" className="group-hover:scale-110 transition-transform" />
-        </button>
-      )}
-
     </div>
   );
 };

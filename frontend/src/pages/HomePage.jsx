@@ -36,7 +36,7 @@ const HomePage = () => {
   
   // [UI 상태]
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [userName] = useState(() => getStoredUser()?.nickname || '');
+  const [userName] = useState(() => getStoredUser()?.nickname || '사용자');
   
   // [모달 상태]
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -202,7 +202,7 @@ const HomePage = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={handleSearch}
-          containerClassName="relative w-full max-w-3xl"
+          containerClassName="w-full"
         />  
       </div>
 

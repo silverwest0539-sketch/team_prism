@@ -145,7 +145,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   }
 
   // [추가] 인물 판별 및 미리보기 댓글(최대 2개) 설정 로직
-  const isPersonKeyword = detailData?.category === 'person' || data?.keyword === '유나' || data?.keyword === '탁재훈';
+  const isPersonKeyword = detailData?.is_person === 1;
   const previewComments = detailData?.comments?.slice(0, 2) || [];
   const hasNegativePreview = previewComments.some(c => c.sentiment === 'negative');
 
@@ -154,7 +154,12 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
       <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex justify-between items-start sm:items-center gap-3 bg-white sticky top-0 z-10">
           <div className="min-w-0">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 break-all">{data?.keyword}</h2>
+            <span className="text-xl sm:text-2xl font-bold text-gray-900 break-all">{data?.keyword}</span>
+            {isPersonKeyword && (
+                <span className="bg-indigo-100 text-indigo-700 text-sm font-bold px-2.5 py-1 rounded-full align-middle ml-1">
+                  인물
+                </span>
+              )}
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
