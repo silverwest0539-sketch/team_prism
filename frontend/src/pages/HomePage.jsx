@@ -47,6 +47,42 @@ const HomePage = () => {
   const [communityPosts, setCommunityPosts] = useState([]);
   const [selectedComm, setSelectedComm] = useState('theqoo');
 
+  // [수정] 1. '커뮤니티 인기글' 읽음 처리 상태 (기존 유지)
+const [readLinks, setReadLinks] = useState(() => {
+  const savedLinks = localStorage.getItem('readCommunityLinks');
+  return savedLinks ? new Set(JSON.parse(savedLinks)) : new Set();
+});
+
+// [추가] 2. '오늘의 뉴스' 읽음 처리 상태 (새로 추가)
+const [readNewsLinks, setReadNewsLinks] = useState(() => {
+  const savedNewsLinks = localStorage.getItem('readNewsLinks');
+  return savedNewsLinks ? new Set(JSON.parse(savedNewsLinks)) : new Set();
+});
+
+// [수정] 3. '커뮤니티 인기글' 클릭 핸들러 (기존 유지)
+const handlePostClick = (link) => {
+  setReadLinks((prev) => {
+    const newSet = new Set(prev).add(link);
+    localStorage.setItem('readCommunityLinks', JSON.stringify([...newSet]));
+    return newSet;
+  });
+};
+
+// [추가] 4. '오늘의 뉴스' 클릭 핸들러 (새로 추가)
+const handleNewsClick = (link) => {
+  setReadNewsLinks((prev) => {
+    const newSet = new Set(prev).add(link);
+    localStorage.setItem('readNewsLinks', JSON.stringify([...newSet]));
+    return newSet;
+  });
+};
+
+// [수정] 5. 카테고리 뱃지 색상 함수 (파란색으로 통일)
+const getCategoryBadgeClass = (category) => {
+  // 어떤 카테고리가 들어와도 항상 파란색 계열 클래스를 반환하도록 수정
+  return 'bg-blue-100 text-blue-700';
+};
+
   // [추가] ★ 뉴스 카테고리 및 데이터 상태 선언 (에러 해결 부분) ★
   const [selectedNewsCategory, setSelectedNewsCategory] = useState('korea');
   const [todayNews, setTodayNews] = useState([]);
@@ -528,24 +564,46 @@ const HomePage = () => {
           </div>
 
           {/* 게시글 리스트 */}
+          {/* 기존 게시글 리스트 부분을 아래 코드로 교체하세요 */}
           <div className="flex flex-col gap-3">
             {communityPosts.length > 0 ? (
-              communityPosts.map((post) => (
-                <a
-                  key={post.rank}
-                  href={post.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group"
-                >
-                  <div className="flex-1 overflow-hidden">
-                    <h3 className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors">
-                      [{post.category}] {post.title}
-                    </h3>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
-                </a>
-              ))
+              communityPosts.map((post) => {
+                // 읽은 글인지 여부 확인
+                const isRead = readLinks.has(post.link);
+                
+                return (
+                  <a
+                    key={post.rank}
+                    href={post.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => handlePostClick(post.link)} // 클릭 시 읽음 처리
+                    className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group"
+                  >
+                    {/* flex 컨테이너로 묶고 아이템들을 가로 정렬 */}
+                    <div className="flex-1 overflow-hidden flex items-center gap-2">
+                      
+                      {/* 카테고리 뱃지 */}
+                      {post.category && (
+                        <span className={`shrink-0 px-2 py-0.5 text-[11px] font-bold rounded-md ${getCategoryBadgeClass(post.category)}`}>
+                          {post.category}
+                        </span>
+                      )}
+                      
+                      {/* 제목 텍스트 (읽은 글이면 회색 & 얇게, 아니면 검정색 & 굵게) */}
+                      <h3 className={`text-sm truncate transition-colors ${
+                        isRead 
+                          ? 'text-gray-400 font-normal' 
+                          : 'text-gray-800 font-medium group-hover:text-blue-600'
+                      }`}>
+                        {post.title}
+                      </h3>
+                      
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
+                  </a>
+                );
+              })
             ) : (
               <div className="text-center py-10 text-gray-400 text-sm bg-white rounded-xl border border-gray-100">
                 현재 불러올 수 있는 인기글 데이터가 없습니다.
@@ -562,7 +620,6 @@ const HomePage = () => {
             </h2>
           </div>
 
-          {/* [수정] 뉴스 카테고리 탭 (6개 카테고리 적용) */}
           <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
             {NEWS_CATEGORY_OPTIONS.map((cat) => (
               <button
@@ -575,26 +632,36 @@ const HomePage = () => {
             ))}
           </div>
 
-          {/* 뉴스 리스트 */}
+          {/* 뉴스 리스트 (아래 부분을 교체해주세요) */}
           <div className="flex flex-col gap-3">
             {todayNews.length > 0 ? (
-              todayNews.map((news, idx) => (
-                <a
-                  key={idx}
-                  href={news.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group"
-                >
-                  <div className="flex-1 overflow-hidden">
-                    <h3 className="text-sm font-medium text-gray-800 truncate group-hover:text-emerald-600 transition-colors">
-                      {news.title}
-                    </h3>
-                    {/* <p className="text-xs text-gray-400 mt-1">{news.press}</p> */}
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
-                </a>
-              ))
+              todayNews.map((news, idx) => {
+                // 읽은 뉴스인지 확인
+                const isRead = readNewsLinks.has(news.link);
+
+                return (
+                  <a
+                    key={idx}
+                    href={news.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => handleNewsClick(news.link)} // 클릭 시 읽음 처리 함수 호출
+                    className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group"
+                  >
+                    <div className="flex-1 overflow-hidden">
+                      {/* 제목 부분에 읽음 처리 스타일 적용 */}
+                      <h3 className={`text-sm truncate transition-colors ${
+                        isRead
+                          ? 'text-gray-400 font-normal' // 읽었으면 회색, 얇은 글씨
+                          : 'text-gray-800 font-medium group-hover:text-emerald-600' // 안 읽었으면 기존 스타일
+                      }`}>
+                        {news.title}
+                      </h3>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
+                  </a>
+                );
+              })
             ) : (
               <div className="text-center py-10 text-gray-400 text-sm bg-white rounded-xl border border-gray-100">
                 뉴스 데이터를 불러오는 중입니다.

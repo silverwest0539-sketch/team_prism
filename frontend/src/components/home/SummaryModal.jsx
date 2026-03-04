@@ -14,6 +14,11 @@ import { LineChart, Line, Tooltip, ResponsiveContainer, XAxis } from 'recharts';
 import apiClient from '../../utils/apiClient';
 import { getStoredUser } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
+import {
+  hasAccountLocalScrap,
+  upsertAccountLocalScrap,
+  removeAccountLocalScrap,
+} from '../../utils/accountScrapFallback';
 
 export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const navigate = useNavigate();
@@ -34,17 +39,21 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
     setIsNegativeRevealed(false); // 모달이 열릴 때마다 블러 상태 초기화
 
     const savedUser = getStoredUser();
+    const targetKeyword = String(data?.keyword || '').trim();
 
     if (savedUser?.email) {
+      const localScrapped = hasAccountLocalScrap(savedUser.email, targetKeyword);
+      setIsBookmarked(localScrapped);
+
       apiClient
         .get('/scraps/check', {
           params: {
             email: savedUser.email,
-            keyword: data.keyword,
+            keyword: targetKeyword,
           },
         })
-        .then((res) => setIsBookmarked(Boolean(res.data?.isBookmarked)))
-        .catch(() => setIsBookmarked(false));
+        .then((res) => setIsBookmarked(Boolean(res.data?.isBookmarked) || localScrapped))
+        .catch(() => setIsBookmarked(localScrapped));
     } else {
       setIsBookmarked(false);
     }
@@ -94,6 +103,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
   const toggleBookmark = async () => {
     const savedUser = getStoredUser();
+    const targetKeyword = String(data?.keyword || '').trim();
 
     if (!savedUser?.email) {
       if (
@@ -107,20 +117,32 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
       return;
     }
 
+    if (!targetKeyword) return;
+
     try {
       if (isBookmarked) {
-        await apiClient.delete('/scraps', {
-          params: {
-            email: savedUser.email,
-            keyword: data.keyword,
-          },
-        });
+        try {
+          await apiClient.delete('/scraps', {
+            params: {
+              email: savedUser.email,
+              keyword: targetKeyword,
+            },
+          });
+        } catch {
+          // Keep going to clear account-local fallback entry.
+        }
+        removeAccountLocalScrap(savedUser.email, targetKeyword);
         setIsBookmarked(false);
       } else {
-        await apiClient.post('/scraps', {
-          email: savedUser.email,
-          keyword: data.keyword,
-        });
+        try {
+          await apiClient.post('/scraps', {
+            email: savedUser.email,
+            keyword: targetKeyword,
+          });
+          removeAccountLocalScrap(savedUser.email, targetKeyword);
+        } catch {
+          upsertAccountLocalScrap(savedUser.email, targetKeyword);
+        }
         setIsBookmarked(true);
       }
       onScrapChange?.();

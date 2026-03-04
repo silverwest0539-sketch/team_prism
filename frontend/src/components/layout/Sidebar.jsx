@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, LogOut, Settings, X } from 'lucide-react';
+import { Bell, LogOut, Moon, Settings, Sun, X } from 'lucide-react';
 import { getStoredUser } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
+import { THEMES, getStoredTheme, applyTheme, saveTheme, toggleTheme, resetThemeToLight } from '../../utils/theme';
 
 const MAIN_MENUS = [
   { path: '/home', label: '트렌드 대시보드' },
@@ -18,6 +19,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
+  const [theme, setTheme] = useState(() => getStoredTheme());
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -31,8 +33,17 @@ const Sidebar = ({ isOpen = false, onClose }) => {
   }, []);
 
   useEffect(() => {
-    setUserInfo(getStoredUser());
-  }, []);
+    const storedUser = getStoredUser();
+    setUserInfo(storedUser);
+    if (!storedUser) {
+      setTheme(THEMES.LIGHT);
+    }
+  }, [location.pathname, isOpen]);
+
+  useEffect(() => {
+    applyTheme(theme);
+    saveTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!isLogoutConfirmOpen) return;
@@ -69,6 +80,11 @@ const Sidebar = ({ isOpen = false, onClose }) => {
     showToast('알림 기능은 현재 미구현 상태입니다.', { type: 'info' });
   };
 
+  const handleThemeToggle = () => {
+    setTheme((prev) => toggleTheme(prev));
+    setIsProfileOpen(false);
+  };
+
   const cancelLogout = () => {
     setIsLogoutConfirmOpen(false);
   };
@@ -77,6 +93,8 @@ const Sidebar = ({ isOpen = false, onClose }) => {
     setIsLogoutConfirmOpen(false);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    resetThemeToLight();
+    setTheme(THEMES.LIGHT);
     navigate('/');
     onClose?.();
   };
@@ -123,6 +141,15 @@ const Sidebar = ({ isOpen = false, onClose }) => {
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
                   >
                     <Settings className="w-4 h-4" /> 마이페이지
+                  </button>
+                  <button
+                    onClick={handleThemeToggle}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    {theme === THEMES.DARK ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />} 테마 변경
+                    <span className="ml-auto text-xs text-gray-400">
+                      {theme === THEMES.DARK ? '다크' : '라이트'}
+                    </span>
                   </button>
                   <button
                     onClick={requestLogout}
@@ -228,6 +255,16 @@ const Sidebar = ({ isOpen = false, onClose }) => {
                   className="w-full flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   <Bell className="w-4 h-4" /> 알림
+                </button>
+
+                <button
+                  onClick={handleThemeToggle}
+                  className="w-full flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  {theme === THEMES.DARK ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />} 테마 변경
+                  <span className="ml-auto text-xs text-gray-400">
+                    {theme === THEMES.DARK ? '다크' : '라이트'}
+                  </span>
                 </button>
 
                 <button

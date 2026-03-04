@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { resetThemeToLight } from './theme';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:5000/api';
 
@@ -35,6 +36,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       window.localStorage.removeItem('token');
       window.localStorage.removeItem('user');
+      resetThemeToLight();
 
       // 이미 로그인 페이지가 아닐 때만 리다이렉트
       if (!window.location.pathname.startsWith('/login')) {
