@@ -7,7 +7,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
-    align-items: start;
+    align-items: stretch; /* ✅ start → stretch */
   }
 
   /* 태블릿 이상에서 간격 확장 */
@@ -20,6 +20,7 @@
   @media (min-width: 1280px) {
     .creation-grid {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: stretch; /* ✅ 1280px 이상에서도 명시 */
     }
   }
 
