@@ -7,6 +7,7 @@ import ResultPanel from '../components/creation/ResultPanel';
 import { showToast } from '../utils/toast';
 import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
+import { toApiUrl } from '../utils/apiClient';
 
 const CreationPage = () => {
   const navigate = useNavigate();
@@ -68,32 +69,71 @@ const CreationPage = () => {
     return apiError || '프롬프트 생성 중 오류가 발생했어요. 다시 시도해 주세요.';
   };
 
-  const handleGenerate = async (inputData) => {
+const handleGenerate = async (inputData) => {
+    // 2. apiClient의 유틸리티 함수를 사용하여 안전하게 URL 생성
+    // prompt.routes.js가 /api 밑에 붙어 있으므로 '/generate'만 넘기면 됩니다.
+    const fullUrl = toApiUrl('/generate');
+    
+    console.log("Request URL:", fullUrl); 
     setLastPayload(inputData);
     setGenerationError('');
+    setGeneratedResult('');
     setIsLoading(true);
 
     try {
-      const response = await apiClient.post('/generate', inputData);
-      const data = response.data;
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // apiClient.js와 동일한 방식으로 토큰 추출
+          'Authorization': `Bearer ${window.localStorage.getItem('token')}` 
+        },
+        body: JSON.stringify(inputData),
+      });
 
-      if (data.success) {
-        setGeneratedResult(data.result);
-        setResultRevision((prev) => prev + 1);
-
-        if (data.selectedTemplate?.name) {
-          showToast(`생성 프롬프트 유형: ${data.selectedTemplate.name}`, {
-            type: 'info',
-            duration: 1800,
-          });
-        }
-      } else {
-        const message = resolveFriendlyErrorMessage(null, data.error || '');
-        setGenerationError(message);
+      if (!response.ok) {
+        // fetch는 에러 시 response.ok가 false가 됨
+        const errorData = await response.json().catch(() => ({}));
+        throw { response: { status: response.status, data: errorData } };
       }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      
+      let isFinished = false;
+      while (!isFinished) {
+        const { value, done: doneReading } = await reader.read();
+        if (doneReading) break;
+
+        const chunkValue = decoder.decode(value);
+        const lines = chunkValue.split('\n');
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const dataStr = line.replace('data: ', '').trim();
+          
+          // prompt.controller.js에서 보내는 종료 신호와 일치
+          if (dataStr === '[DONE]') {
+            isFinished = true;
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (parsed.chunk) {
+              setGeneratedResult((prev) => prev + parsed.chunk);
+            }
+          } catch (e) {
+            // 스트리밍 데이터가 잘려올 경우 대비
+            console.warn("JSON chunk parsing wait...");
+          }
+        }
+      }
+      
+      setResultRevision((prev) => prev + 1);
     } catch (error) {
-      const message = resolveFriendlyErrorMessage(error);
-      setGenerationError(message);
+      setGenerationError(resolveFriendlyErrorMessage(error));
+      console.error("Streaming error:", error);
     } finally {
       setIsLoading(false);
     }

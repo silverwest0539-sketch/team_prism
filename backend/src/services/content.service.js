@@ -2,6 +2,80 @@ const axios = require('axios');
 const Parser = require('rss-parser');
 const { getLatestData, getCommunityHotPosts } = require('../dataLoader');
 
+
+const fallbackTokenize = (text) => {
+  // 1. 불필요한 특수기호 제거 (한글, 영문, 숫자, 공백만 남김)
+  const cleanText = text.replace(/[^가-힣a-zA-Z0-9\s]/g, ' ');
+  const words = cleanText.split(/\s+/);
+  
+  const tokens = [];
+  words.forEach(word => {
+    // 2. 한국어에서 자주 쓰이는 접미사/조사를 대략적으로 잘라내기
+    let noun = word.replace(/(은|는|이|가|을|를|의|에|에서|로|으로|과|와|도|까지|마저|조차|부터|요|다|입니다|습니다)$/, '');
+    
+    // 3. 길이가 2~7글자인 유의미한 단어만 통과
+    if (noun.length >= 2 && noun.length <= 7) {
+      tokens.push({ form: noun, tag: 'NNG' });
+    }
+  });
+  return tokens;
+};
+
+let newsKeywordCache = {
+  data: null,
+  timestamp: 0
+};
+
+const updateNewsKeywords = async () => {
+  try {
+    console.log("🔄 [Background] 뉴스 키워드 업데이트 시작...");
+    
+    const categories = ['korea', 'business', 'tech', 'world'];
+    const fetchPromises = categories.map(cat => exports.getNewsByCategory(cat));
+    const results = await Promise.all(fetchPromises);
+    
+    const allTitles = results.flat().map(news => news.title);
+    if (allTitles.length === 0) return;
+
+    const keywordMap = {};
+    const stopWords = new Set(['뉴스', '오늘', '내일', '종합', '단독', '속보', '무단', '배포', '금지', 
+                              '기자', '재배포', '연합뉴스', '오전', '오후', '대한민국', '한겨레', '조선일보', '중앙일보', '동아일보',
+                            '경향신문', '공격']);
+
+    allTitles.forEach(title => {
+      // Kiwi가 있으면 Kiwi를 쓰고, 없으면 fallbackTokenize 사용
+      const tokens = fallbackTokenize(title);
+      
+      tokens.forEach(token => {
+        if (token.tag === 'NNG' || token.tag === 'NNP') {
+          if (token.form.length >= 2 && !stopWords.has(token.form)) {
+            keywordMap[token.form] = (keywordMap[token.form] || 0) + 1;
+          }
+        }
+      });
+    });
+
+    const formattedData = Object.entries(keywordMap)
+      .map(([keyword, count]) => ({ keyword, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map((item, index) => ({
+        rank: index + 1,
+        keyword: item.keyword,
+        change: 'NEW' 
+      }));
+
+    newsKeywordCache = { data: formattedData, timestamp: Date.now() };
+    console.log("✅ [Background] 뉴스 키워드 업데이트 완료");
+  } catch (error) {
+    console.error('❌ [Background] 업데이트 실패:', error.message);
+  }
+};
+
+// [추가] 서버 실행 5초 후 첫 실행, 이후 1시간마다 자동 갱신
+setTimeout(updateNewsKeywords, 5000); 
+setInterval(updateNewsKeywords, 1000 * 60 * 60);
+
 // RSS 파서 설정
 const parser = new Parser({
   customFields: {
@@ -174,7 +248,12 @@ exports.getVideos = async (category) => {
 // 3. 커뮤니티 인기글 조회
 exports.getCommunityPosts = (platform) => {
   const platformPosts = getCommunityHotPosts(platform) || [];
-  return platformPosts.slice(0, 10).map((post, index) => ({
+  
+  // 1. 원본 배열을 복사한 뒤 무작위로 섞습니다. (원본 배열 훼손 방지)
+  const shuffledPosts = [...platformPosts].sort(() => 0.5 - Math.random());
+
+  // 2. 무작위로 섞인 배열에서 10개를 추출하고 포맷팅합니다.
+  return shuffledPosts.slice(0, 10).map((post, index) => ({
     category: post.category,
     title: post.title || post.Title || post.subject || post.Subject || post.text || "제목 없음", 
     link: post.link || post.url || post.href || post.Link || post.Url || "#"
@@ -278,4 +357,13 @@ exports.getNewsByCategory = async (category) => {
     console.error(`RSS Category Error (${category}):`, error);
     return [];
   }
+};
+
+// 뉴스 키워드 추출용 함수
+exports.getNewsKeywordRankings = async () => {
+  // 캐시가 아직 없다면(서버 초기화 중) 급한 대로 빈 배열 대신 업데이트 시도
+  if (!newsKeywordCache.data) {
+    await updateNewsKeywords();
+  }
+  return newsKeywordCache.data || [];
 };

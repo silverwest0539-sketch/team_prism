@@ -150,15 +150,6 @@ const HomePage = () => {
         
         // 받아온 실제 뉴스로 상태 업데이트
         setTodayNews(res.data || []);
-        
-        // --- 상단 뉴스 키워드(Top 5)는 임시 더미 데이터 유지 ---
-        setNewsKeywords([
-          { keyword: '금리 인하', rank: 1, change: '-' },
-          { keyword: '선거 결과', rank: 2, change: 'NEW' },
-          { keyword: 'AI 규제', rank: 3, change: '▲1' },
-          { keyword: '전기차 보조금', rank: 4, change: '▼1' },
-          { keyword: '날씨 특보', rank: 5, change: '-' },
-        ]);
 
       } catch (error) {
         console.error('뉴스 데이터 로드 에러:', error);
@@ -167,6 +158,19 @@ const HomePage = () => {
     
     fetchNewsData();
   }, [selectedNewsCategory]);
+
+  useEffect(() => {
+  const fetchNewsKeywords = async () => {
+    try {
+      const res = await apiClient.get('/news/keywords');
+      setNewsKeywords(res.data);
+    } catch (error) {
+      console.error('뉴스 키워드 로드 실패:', error);
+    }
+  };
+  
+  fetchNewsKeywords();
+}, []);
 
   // 3. 커뮤니티 데이터
   useEffect(() => {
@@ -397,24 +401,18 @@ const HomePage = () => {
             newsKeywords.slice(0, 5).map((item, index) => (
             <li 
                 key={index} 
-                onClick={() => openModal({ 
-                keyword: item.keyword,
-                rank: item.rank,
-                title: item.keyword,
-                desc: `${item.keyword} 관련 뉴스 분석입니다.`,
-                type: 'news_keyword'
-                })}
+                onClick={() => {
+                    // 구글 뉴스 검색 URL 생성 (한국어/한국 지역 설정 포함)
+                    const searchUrl = `https://news.google.com/search?q=${encodeURIComponent(item.keyword)}&hl=ko&gl=KR&ceid=KR%3Ako`;
+                    // 새 탭에서 열기
+                    window.open(searchUrl, '_blank', 'noopener,noreferrer');
+                }}
                 className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12"
             >
                 <div className="flex items-center gap-4">
                 <span className="font-bold text-emerald-600 w-3 text-center">{item.rank}</span>
                 <p className="font-medium text-gray-900">{item.keyword}</p>
                 </div>
-                {item.change && (
-                    <div className="text-xs font-bold text-gray-400">
-                        {item.change}
-                    </div>
-                )}
             </li>
             ))
         ) : (

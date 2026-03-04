@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { Copy, Check, ArrowsClockwise, WarningCircle } from '@phosphor-icons/react';
+import { useEffect } from 'react';
 
 const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [editableContent, setEditableContent] = useState(() => String(content || ''));
+
+  useEffect(() => {
+    if (content) {
+      setEditableContent(content);
+    }
+  }, [content]);
 
   const v1Content = editableContent.trim();
 

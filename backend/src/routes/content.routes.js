@@ -7,5 +7,6 @@ router.get('/videos', contentController.getVideos);
 router.get('/community/posts', contentController.getCommunityPosts);
 router.get('/news', contentController.getNews);
 router.get('/news/category', contentController.getNewsByCategory);
+router.get('/news/keywords', contentController.getNewsKeywords);
 
 module.exports = router;

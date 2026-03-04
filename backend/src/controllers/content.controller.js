@@ -52,3 +52,12 @@ exports.getNewsByCategory = async (req, res) => {
     res.status(500).json([]);
   }
 };
+
+exports.getNewsKeywords = async (req, res) => {
+  try {
+    const keywords = await contentService.getNewsKeywordRankings();
+    res.json(keywords);
+  } catch (error) {
+    res.status(500).json([]);
+  }
+};
