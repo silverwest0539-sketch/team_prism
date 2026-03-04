@@ -16,7 +16,8 @@ import {
   X, 
   ArrowsOutSimple,
   Question, 
-  LockKey
+  LockKey,
+  CaretUp
 } from '@phosphor-icons/react';
 import {
   LineChart,
@@ -91,6 +92,29 @@ const AnalysisPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
   const commentsTopRef = useRef(null);
+
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // 화면을 300px 이상 내리면 버튼을 보여줍니다.
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth' // 부드럽게 스크롤
+    });
+  };
 
   // 임시 인물 판별 로직
   const isPersonKeyword = data?.category === 'person' || keyword === '유나' || keyword === '탁재훈';
@@ -449,9 +473,9 @@ const AnalysisPage = () => {
           !keyword ? 'blur-disabled' : 'blur-enabled'
         }`}
       >
-        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 mb-2">
+        <div className="flex flex-row items-start sm:items-center justify-between gap-2 mb-2 w-full">
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-1">
             <button
               onClick={handleScrapToggle}
               className="p-1 hover:scale-110 transition-transform focus:outline-none"
@@ -501,12 +525,12 @@ const AnalysisPage = () => {
             </div>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex-shrink-0 mt-0.5 sm:mt-0">
              <button 
                onClick={handleGoToCreation}
-               className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all hover:-translate-y-1"
+               className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-lg shadow-indigo-200 transition-all hover:-translate-y-1"
              >
-               <Export size={20} />
+               <Export size={20} className="sm:w-5 sm:h-5" />
                <span>콘텐츠 생성</span>
              </button>
           </div>
@@ -697,7 +721,7 @@ const AnalysisPage = () => {
             </div>
           </div>
         </div>
-        
+
         {/* 하단 영역 (AI, 뉴스, 유튜브, 댓글) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start w-full">
           {/* 왼쪽 컬럼 */}
@@ -1050,9 +1074,21 @@ const AnalysisPage = () => {
                 </div>
               )}
 
+              
+
             </div>
           </div>
         </div>
+      )}
+
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 p-3 sm:p-4 bg-indigo-600 text-white rounded-full shadow-2xl shadow-indigo-300 hover:bg-indigo-700 hover:-translate-y-1 transition-all duration-300 z-50 flex items-center justify-center animate-fade-in-up group"
+          aria-label="상단으로 이동"
+        >
+          <CaretUp size={20} weight="bold" className="group-hover:scale-110 transition-transform" />
+        </button>
       )}
 
     </div>
