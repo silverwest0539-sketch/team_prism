@@ -34,7 +34,7 @@ exports.getTrendStats = async (keywordId) => {
   return rows[0];
 };
 
-// 3. 어제와 오늘의 실제 사용 예문 가져오기 (최대 5개)
+// 3. 어제와 오늘의 실제 사용 예문 가져오기 (최대 10개)
 exports.getUsageExamples = async (keywordId) => {
   const query = `
     SELECT u.platform, u.content, u.sentiment_label
@@ -43,7 +43,7 @@ exports.getUsageExamples = async (keywordId) => {
     WHERE ke.keyword_id = ?
       AND u.collected_date >= CURDATE() - INTERVAL 1 DAY
     ORDER BY u.collected_date DESC
-    LIMIT 5
+    LIMIT 10
   `;
   const [rows] = await pool.query(query, [keywordId]);
   return rows;
@@ -60,9 +60,9 @@ exports.createPromptWithAI = async (formData, trendData, onStream) => {
 # 제약조건
 1. 사용자가 지정한 키워드의 트렌드 분석 결과와 사용자가 선택한 콘텐츠 생성 옵션을 바탕으로 실제 카드뉴스 이미지 세트를 만들 수 있는 프롬프트를 만들어야 합니다.
 2. 슬라이드 구성은 메인 타이틀/서브 타이틀/헤드라인/서브 문구/본문 키워드/목록 등으로 구성합니다. 마지막 슬라이드는 반드시 CTA 문구로 구성합니다.
-3. 입력문에서 제시한 상승 지표의 수치값은 실제 결과물에 활용하지 않습니다.
-4. 입력문에 제시한 데이터 외에도 웹 검색, 뉴스 검색을 통해 해당 키워드에 대한 데이터를 추가로 확보해서 활용합니다.
-4. *중요*: 인사말, 요약, 부연 설명은 절대 하지 마세요. 오직 사용자가 복사해서 사용할 '프롬프트 텍스트' 그 자체만 출력해야 합니다.
+3. 입력문에서 제시한 수치값은 실제 결과물에 활용하지 않습니다.
+4. *중요*입력문에 제시한 데이터 외에도 웹 검색, 뉴스 검색을 통해 해당 키워드에 대한 데이터를 추가로 확보해서 활용합니다.
+5. *중요*: 인사말, 요약, 부연 설명은 절대 하지 마세요. 오직 사용자가 복사해서 사용할 '프롬프트 텍스트' 그 자체만 출력해야 합니다.
 
   `.trim();
 
@@ -97,7 +97,7 @@ ${examples.map((ex, i) => `  ${i + 1}. [${ex.platform}] ${ex.content} (${ex.sent
   userPrompt += `
 \n[출력 프롬프트 작성 지침 - 필수 준수]
 당신이 출력할 프롬프트는 반드시 아래의 <프롬프트 구조 예시>와 같이 [작성 조건]을 명확히 포함하는 형태여야 합니다. 
-주어진 트렌드 데이터를 분석하여 아래 [작성 조건] 내용을 주어진 데이터에 맞게 구체적이고 매력적으로 적절하게 변경해주세요.
+주어진 트렌드 데이터를 분석하여 아래 [] 안의 내용 및 [작성 조건] 내용을 주어진 데이터에 맞게 구체적이고 매력적으로 적절하게 변경해주세요.
 마크다운 코드블록 없이 텍스트 형식으로 출력해야 하고, 이모지는 제외합니다.
 실제 이미지 세트를 만들어야 한다는 문구를 포함해야 합니다.
 각 조건마다 3개 이상의 항목을 출력합니다.
