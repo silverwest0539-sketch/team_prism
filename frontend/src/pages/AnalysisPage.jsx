@@ -697,21 +697,14 @@ const AnalysisPage = () => {
             </div>
           </div>
         </div>
-
-        {/* [추가] 하단 메뉴들의 기준 날짜 (레이아웃을 2분할하여 왼쪽 카드의 우측 상단에 완벽히 맞춤) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full mb-1">
-          <div className="flex justify-end px-1">
-            <span className="text-base text-gray-400 font-medium tracking-tight">({baseDateText})</span>
-          </div>
-          <div className="hidden lg:block"></div> {/* 데스크탑에서 우측 공간 비율 유지용 */}
-        </div>
-
+        
         {/* 하단 영역 (AI, 뉴스, 유튜브, 댓글) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start w-full">
           {/* 왼쪽 컬럼 */}
           <div className="card">
-            <h3 className="section-title mb-4 pb-2 border-b flex justify-between">
+            <h3 className="section-title mb-4 pb-2 border-b flex justify-between items-end">
               <span>AI 트렌드 요약</span>
+              <span className="text-base text-gray-400 font-medium tracking-tight">({baseDateText})</span>
             </h3>
 
             <div className="p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-500 text-sm text-gray-700 leading-relaxed mb-6">
@@ -741,7 +734,7 @@ const AnalysisPage = () => {
             </div>
 
             <h3 className="section-title mb-4 pb-2 border-b">
-              <Newspaper size={20} className="text-red-500" /> 관련 뉴스
+              관련 뉴스
             </h3>
             <div className="space-y-3">
               {news?.length > 0 ? (
@@ -773,7 +766,7 @@ const AnalysisPage = () => {
 
             <div className="mt-8">
               <h3 className="section-title mb-4 border-b pb-2 flex items-center gap-2">
-                <PlayCircle size={20} className="text-red-500" /> 관련 유튜브 반응
+                관련 유튜브 반응
               </h3>
               <div className="space-y-4">
                 {filteredData.videos && filteredData.videos.length > 0 ? (

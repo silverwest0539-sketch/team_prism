@@ -270,7 +270,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
           threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
           const searchParams = {
             part: 'snippet', q: keyword, type: 'video',
-            maxResults: 3, key: currentKey, regionCode: 'KR', order: 'viewCount', publishedAfter: threeDaysAgo.toISOString()
+            maxResults: 10, key: currentKey, regionCode: 'KR', order: 'viewCount', publishedAfter: threeDaysAgo.toISOString()
           };
           // if (startDate) searchParams.publishedAfter  = toISODate(startDate);
           // if (endDate)   searchParams.publishedBefore = toISODate(endDate, true);
@@ -289,7 +289,10 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
             views:        parseInt(item.statistics.viewCount || 0),
             thumbnail:    item.snippet.thumbnails.medium.url,
             publish_time: item.snippet.publishedAt,
-          }));
+          }))
+          .filter(video => 
+            /[가-힣]/.test(video.title || '')
+          );
         } catch (err) {
           const isQuotaError = err.response?.status === 403;
           if (isQuotaError && retryCount < API_KEYS.length - 1) {
