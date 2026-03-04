@@ -17,7 +17,6 @@ import {
   ArrowsOutSimple,
   Question, 
   LockKey,
-  CaretUp,
   Book
 } from '@phosphor-icons/react';
 import {
@@ -93,29 +92,6 @@ const AnalysisPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
   const commentsTopRef = useRef(null);
-
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      // 화면을 300px 이상 내리면 버튼을 보여줍니다.
-      if (window.scrollY > 300) {
-        setShowScrollTop(true);
-      } else {
-        setShowScrollTop(false);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth' // 부드럽게 스크롤
-    });
-  };
 
   // 인물 판별 로직
   const isPersonKeyword = data?.is_person === 1;
@@ -575,7 +551,6 @@ const AnalysisPage = () => {
             </div>
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                {/* [수정] value, onChange 속성 변경 */}
                 <input 
                   type="date" 
                   value={inputStartDate} 
@@ -1097,23 +1072,10 @@ const AnalysisPage = () => {
                 </div>
               )}
 
-              
-
             </div>
           </div>
         </div>
       )}
-
-      {showScrollTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 p-3 sm:p-4 bg-indigo-600 text-white rounded-full shadow-2xl shadow-indigo-300 hover:bg-indigo-700 hover:-translate-y-1 transition-all duration-300 z-50 flex items-center justify-center animate-fade-in-up group"
-          aria-label="상단으로 이동"
-        >
-          <CaretUp size={20} weight="bold" className="group-hover:scale-110 transition-transform" />
-        </button>
-      )}
-
     </div>
   );
 };

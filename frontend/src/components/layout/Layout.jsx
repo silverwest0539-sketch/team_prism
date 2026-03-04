@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
+import ScrollToTopButton from '../common/ScrollToTopButton'; // 👈 추가
 
 const Layout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -36,6 +37,9 @@ const Layout = ({ children }) => {
       <main className="w-full min-w-0 pt-16 lg:pt-0 lg:pl-64">
         {children}
       </main>
+
+      {/* 👈 여기에 버튼 컴포넌트를 추가하면 모든 페이지에 알아서 들어갑니다! */}
+      <ScrollToTopButton /> 
     </div>
   );
 };
