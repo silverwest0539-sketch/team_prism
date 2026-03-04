@@ -1,14 +1,14 @@
 // src/components/home/SummaryModal.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
   ArrowRight,
-  TrendUp,
   ChatCircle,
   ChartLineUp,
   Smiley,
   Star,
+  LockKey // [추가] 인물 부정댓글 잠금용 아이콘
 } from '@phosphor-icons/react';
 import { LineChart, Line, Tooltip, ResponsiveContainer, XAxis } from 'recharts';
 import apiClient from '../../utils/apiClient';
@@ -21,6 +21,9 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const [loading, setLoading] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
+  // [추가] 부정 댓글 블러 해제 상태
+  const [isNegativeRevealed, setIsNegativeRevealed] = useState(false);
+
   useEffect(() => {
     if (!isOpen || !data?.keyword) {
       setDetailData(null);
@@ -28,6 +31,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
     }
 
     setLoading(true);
+    setIsNegativeRevealed(false); // 모달이 열릴 때마다 블러 상태 초기화
 
     const savedUser = getStoredUser();
 
@@ -45,7 +49,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
       setIsBookmarked(false);
     }
 
-    // 팀원분이 수정한 API 호출 로직 (유지)
+    // API 호출 로직 (유지)
     apiClient
       .get('/analysis', {
         params: {
@@ -131,14 +135,19 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
   const maxScore = Math.max(posScore, neuScore, negScore);
   
-  let topSentiment = 'none'; // 데이터가 없거나 모두 0일 때
+  let topSentiment = 'none'; 
   if (maxScore > 0) {
     if (maxScore === posScore) topSentiment = 'positive';
     else if (maxScore === negScore) topSentiment = 'negative';
     else topSentiment = 'neutral';
   } else if (detailData) {
-    topSentiment = 'neutral'; // 데이터는 있지만 점수가 모두 0이면 기본값으로 중립 표시
+    topSentiment = 'neutral'; 
   }
+
+  // [추가] 인물 판별 및 미리보기 댓글(최대 2개) 설정 로직
+  const isPersonKeyword = detailData?.category === 'person' || data?.keyword === '유나' || data?.keyword === '탁재훈';
+  const previewComments = detailData?.comments?.slice(0, 2) || [];
+  const hasNegativePreview = previewComments.some(c => c.sentiment === 'negative');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 animate-[fadeIn_0.2s_ease-out]">
@@ -178,12 +187,13 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
         </div>
 
         <div className="overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
+          
+          {/* 여론 신호등 */}
           <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
             <h3 className="font-bold text-gray-700 text-sm flex items-center gap-1 mb-3">
               <Smiley size={18} className="text-gray-500" /> 여론 신호등
             </h3>
             <div className="flex gap-2">
-              {/* 긍정적 */}
               <div className={`flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
                 topSentiment === 'positive'
                   ? 'border-green-100 shadow-sm ring-2 ring-green-500 ring-offset-2'
@@ -193,7 +203,6 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
                 <span className={`text-xs font-bold ${topSentiment === 'positive' ? 'text-green-700' : 'text-gray-600'}`}>긍정적</span>
               </div>
 
-              {/* 중립 */}
               <div className={`flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
                 topSentiment === 'neutral'
                   ? 'border-yellow-100 shadow-sm ring-2 ring-yellow-500 ring-offset-2'
@@ -203,7 +212,6 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
                 <span className={`text-xs font-bold ${topSentiment === 'neutral' ? 'text-yellow-700' : 'text-gray-600'}`}>중립</span>
               </div>
 
-              {/* 부정적 */}
               <div className={`flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
                 topSentiment === 'negative'
                   ? 'border-red-100 shadow-sm ring-2 ring-red-500 ring-offset-2'
@@ -215,11 +223,11 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
             </div>
           </div>
 
+          {/* 최근 3일 언급량 추이 */}
           <div>
             <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
               <ChartLineUp size={18} className="text-indigo-500" /> 최근 3일 언급량 추이
             </h3>
-            {/* UI 적용 1: 차트 컨테이너에 relative와 블러 오버레이 추가 */}
             <div className="h-40 w-full bg-white border border-gray-100 rounded-2xl p-2 shadow-sm relative overflow-hidden">
               {loading && (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in rounded-2xl">
@@ -256,11 +264,28 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
             </div>
           </div>
 
+          {/* 실제 반응 미리보기 */}
           <div>
-            <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
-              <ChatCircle size={18} className="text-blue-500" /> 실제 반응 미리보기
-            </h3>
-            {/* UI 적용 2: 반응 리스트 컨테이너에 relative와 블러 오버레이 추가 */}
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-gray-800 flex items-center gap-2 text-sm">
+                <ChatCircle size={18} className="text-blue-500" /> 실제 반응 미리보기
+              </h3>
+              
+              {/* [추가] 인물이 아니면서 부정 댓글이 포함된 경우에만 동의 버튼 표시 */}
+              {hasNegativePreview && !isPersonKeyword && (
+                <button
+                  onClick={() => setIsNegativeRevealed(!isNegativeRevealed)}
+                  className={`text-[10px] px-2 py-1 rounded-md font-bold transition-all border ${
+                    isNegativeRevealed 
+                      ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
+                      : 'bg-white text-gray-500 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
+                  }`}
+                >
+                  {isNegativeRevealed ? '부정 반응 가리기' : '부정 반응 보기 동의'}
+                </button>
+              )}
+            </div>
+
             <div className="space-y-3 relative min-h-[100px]">
               {loading && (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in rounded-xl">
@@ -268,26 +293,57 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
                   <span className="text-indigo-600 font-bold animate-pulse text-sm">분석중...</span>
                 </div>
               )}
-              {detailData?.comments && detailData.comments.length > 0 ? (
-                detailData.comments.slice(0, 2).map((comment, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          comment.source.includes('youtube')
-                            ? 'bg-red-100 text-red-600'
-                            : 'bg-green-100 text-green-600'
-                        }`}
-                      >
-                        {comment.source}
-                      </span>
+
+              {previewComments.length > 0 ? (
+                previewComments.map((comment, idx) => {
+                  const isNegative = comment.sentiment === 'negative';
+
+                  // 케이스 1: 인물에 대한 부정 댓글 (아예 차단 및 안내)
+                  if (isNegative && isPersonKeyword) {
+                    return (
+                      <div key={idx} className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col items-center justify-center text-center gap-2">
+                        <LockKey size={20} className="text-gray-400" weight="fill" />
+                        <p className="text-[11px] text-gray-500">사이트 정책상 인물에 대한 부정 댓글은 공개되지 않습니다.</p>
+                      </div>
+                    );
+                  }
+
+                  // 케이스 2: 일반적인 경우 (동의 전 부정 댓글은 블러 처리)
+                  const isBlurred = isNegative && !isNegativeRevealed;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="relative bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-2 overflow-hidden"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            comment.source.includes('youtube')
+                              ? 'bg-red-100 text-red-600'
+                              : 'bg-green-100 text-green-600'
+                          }`}
+                        >
+                          {comment.source}
+                        </span>
+                        {isNegative && <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 rounded">부정적</span>}
+                      </div>
+
+                      <p className={`text-sm text-gray-600 line-clamp-2 transition-all duration-300 ${isBlurred ? 'blur-sm select-none opacity-40' : ''}`}>
+                        "{comment.text}"
+                      </p>
+
+                      {/* 미동의 부정 댓글 오버레이 안내 */}
+                      {isBlurred && (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/30 backdrop-blur-[1px]">
+                          <span className="text-[10px] font-bold text-gray-500 bg-white/95 px-2.5 py-1 rounded-md shadow-sm border border-gray-200">
+                            상단의 동의 버튼을 눌러 확인하세요
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-2">"{comment.text}"</p>
-                  </div>
-                ))
+                  );
+                })
               ) : !loading && (
                 <div className="text-center py-4 text-xs text-gray-400">관련 반응 데이터가 없습니다.</div>
               )}
