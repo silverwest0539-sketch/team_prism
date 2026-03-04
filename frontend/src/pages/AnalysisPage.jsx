@@ -17,7 +17,8 @@ import {
   ArrowsOutSimple,
   Question, 
   LockKey,
-  CaretUp
+  CaretUp,
+  Book
 } from '@phosphor-icons/react';
 import {
   LineChart,
@@ -287,6 +288,14 @@ const AnalysisPage = () => {
     }
   };
 
+  const handleGoToNamuwiki = () => {
+    if (!keyword) return;
+    // 나무위키 검색 결과 페이지 URL
+    const namuwikiUrl = `https://namu.wiki/w/${encodeURIComponent(keyword)}`;
+    // 새 창(새 탭)에서 열기
+    window.open(namuwikiUrl, '_blank', 'noopener,noreferrer');
+  };
+
   // 데이터 필터링 시 적용 날짜(applied) 기준 사용
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
@@ -530,7 +539,16 @@ const AnalysisPage = () => {
             </div>
           </div>
           
-          <div className="flex-shrink-0 mt-0.5 sm:mt-0">
+          <div className="flex-shrink-0 mt-0.5 sm:mt-0 flex items-center gap-2 sm:gap-3">
+             <button 
+               onClick={handleGoToNamuwiki}
+               className="flex items-center gap-1.5 sm:gap-2 bg-white hover:bg-teal-50 text-gray-700 border border-gray-200 px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-sm transition-all hover:-translate-y-1"
+               title="나무위키에서 검색"
+             >
+               <Book size={20} className="sm:w-5 sm:h-5 text-teal-600" weight="bold" />
+               <span>나무위키 검색</span>
+             </button>
+
              <button 
                onClick={handleGoToCreation}
                className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-lg shadow-indigo-200 transition-all hover:-translate-y-1"
