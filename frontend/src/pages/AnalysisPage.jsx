@@ -16,7 +16,7 @@ import {
   X, 
   ArrowsOutSimple,
   Question, 
-  WarningCircle // [추가] 모달 내 부정댓글 경고창용 아이콘
+  LockKey
 } from '@phosphor-icons/react';
 import {
   LineChart,
@@ -66,8 +66,14 @@ const AnalysisPage = () => {
   const [loading, setLoading] = useState(false);
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [startDate, setStartDate] = useState(getFormattedDate(initialYesterday));
-  const [endDate, setEndDate] = useState(getFormattedDate(initialToday));
+  
+  // [수정1] 입력용 날짜와 실제 적용(차트렌더링)용 날짜를 분리
+  const [inputStartDate, setInputStartDate] = useState(getFormattedDate(initialYesterday));
+  const [inputEndDate, setInputEndDate] = useState(getFormattedDate(initialToday));
+  
+  const [appliedStartDate, setAppliedStartDate] = useState(getFormattedDate(initialYesterday));
+  const [appliedEndDate, setAppliedEndDate] = useState(getFormattedDate(initialToday));
+
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [news, setNews] = useState([]);
   const [aiSummary, setAiSummary] = useState('');
@@ -77,7 +83,7 @@ const AnalysisPage = () => {
   const [showScoreTooltip, setShowScoreTooltip] = useState(false);
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
 
-  // [추가] 여론 분석 모달 관련 상태
+  // 여론 분석 모달 관련 상태
   const [sentimentModalConfig, setSentimentModalConfig] = useState({ isOpen: false, sentiment: null });
   const [isNegativeRevealed, setIsNegativeRevealed] = useState(false);
 
@@ -85,6 +91,13 @@ const AnalysisPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
   const commentsTopRef = useRef(null);
+
+  // 임시 인물 판별 로직
+  const isPersonKeyword = data?.category === 'person' || keyword === '유나' || keyword === '탁재훈';
+
+  // [추가2] 기준 날짜 (오늘 날짜) 포맷팅
+  const todayForText = new Date();
+  const baseDateText = `${todayForText.getMonth() + 1}월 ${todayForText.getDate()}일 기준`;
 
   // 데이터 불러오기
   const fetchData = useCallback(async (currentStart, currentEnd) => {
@@ -108,8 +121,12 @@ const AnalysisPage = () => {
       if (analysisData.found) {
         setData(analysisData);
         if (!currentStart && analysisData.history?.length > 0) {
-          setStartDate(formatDateForInput(analysisData.history[0].date));
-          setEndDate(formatDateForInput(analysisData.history[analysisData.history.length - 1].date));
+          const sDate = formatDateForInput(analysisData.history[0].date);
+          const eDate = formatDateForInput(analysisData.history[analysisData.history.length - 1].date);
+          setInputStartDate(sDate);
+          setInputEndDate(eDate);
+          setAppliedStartDate(sDate);
+          setAppliedEndDate(eDate);
         }
       } else {
         setData(null);
@@ -153,8 +170,10 @@ const AnalysisPage = () => {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayDate = getFormattedDate(yesterday);
 
-    setStartDate(yesterdayDate);
-    setEndDate(todayDate);
+    setInputStartDate(yesterdayDate);
+    setInputEndDate(todayDate);
+    setAppliedStartDate(yesterdayDate);
+    setAppliedEndDate(todayDate);
     setCurrentPage(1);
     
     const savedUser = getStoredUser();
@@ -183,7 +202,10 @@ const AnalysisPage = () => {
   };
 
   const handleDateApply = () => {
-    fetchData(startDate, endDate);
+    // 조회 버튼 클릭 시에만 적용 날짜 상태를 업데이트
+    setAppliedStartDate(inputStartDate);
+    setAppliedEndDate(inputEndDate);
+    fetchData(inputStartDate, inputEndDate);
     setCurrentPage(1);
   };
 
@@ -193,8 +215,10 @@ const AnalysisPage = () => {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayDate = getFormattedDate(yesterday);
 
-    setStartDate(yesterdayDate);
-    setEndDate(todayDate);
+    setInputStartDate(yesterdayDate);
+    setInputEndDate(todayDate);
+    setAppliedStartDate(yesterdayDate);
+    setAppliedEndDate(todayDate);
     setCurrentPage(1);
     
     fetchData(yesterdayDate, todayDate);
@@ -204,11 +228,7 @@ const AnalysisPage = () => {
   const handleScrapToggle = async () => {
     const savedUser = getStoredUser();
     if (!savedUser?.email) {
-      if (
-        window.confirm(
-          '관심 키워드 저장(스크랩) 기능은 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?'
-        )
-      ) {
+      if (window.confirm('관심 키워드 저장(스크랩) 기능은 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?')) {
         navigate('/login');
       }
       return;
@@ -243,6 +263,7 @@ const AnalysisPage = () => {
     }
   };
 
+  // 데이터 필터링 시 적용 날짜(applied) 기준 사용
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
     const chartDataKey = selectedPlatform === 'all' ? 'mentions' : selectedPlatform;
@@ -260,9 +281,9 @@ const AnalysisPage = () => {
     }
 
     let historyFiltered = [];
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+    if (appliedStartDate && appliedEndDate) {
+      const start = new Date(appliedStartDate);
+      const end = new Date(appliedEndDate);
       const historyMap = {};
       
       (sourceData.history || []).forEach((h) => {
@@ -281,12 +302,7 @@ const AnalysisPage = () => {
             [chartDataKey]: historyMap[dateStr][chartDataKey] || 0
           });
         } else {
-          historyFiltered.push({
-            date: dateStr,
-            mentions: 0,
-            score: 0,
-            [chartDataKey]: 0 
-          });
+          historyFiltered.push({ date: dateStr, mentions: 0, score: 0, [chartDataKey]: 0 });
         }
       }
     } else {
@@ -319,7 +335,7 @@ const AnalysisPage = () => {
       wordCloud: selectedWordCloud, 
       videos: data.videos || [],
     };
-  }, [data, startDate, endDate, selectedPlatform]);
+  }, [data, appliedStartDate, appliedEndDate, selectedPlatform]);
 
   const { chartDataKey = 'mentions' } = filteredData || {};
 
@@ -347,13 +363,11 @@ const AnalysisPage = () => {
     ];
   }, [filteredData]);
 
-  // [추가] 모달에 표시될 필터링된 댓글 리스트
   const sentimentModalComments = useMemo(() => {
     if (!sentimentModalConfig.isOpen || !sentimentModalConfig.sentiment) return [];
     return (filteredData?.comments || []).filter(c => c.sentiment === sentimentModalConfig.sentiment);
   }, [filteredData, sentimentModalConfig]);
 
-  // [추가] 차트나 레전드 클릭 핸들러
   const handleSentimentClick = (data) => {
     const clickedName = data?.name || data?.value || data?.payload?.name;
     let targetSentiment = null;
@@ -363,7 +377,7 @@ const AnalysisPage = () => {
 
     if (targetSentiment) {
       setSentimentModalConfig({ isOpen: true, sentiment: targetSentiment });
-      setIsNegativeRevealed(false); // 창을 열 때 무조건 블러상태로 초기화
+      setIsNegativeRevealed(false); 
     }
   };
 
@@ -514,17 +528,18 @@ const AnalysisPage = () => {
             </div>
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
+                {/* [수정] value, onChange 속성 변경 */}
                 <input 
                   type="date" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)} 
+                  value={inputStartDate} 
+                  onChange={(e) => setInputStartDate(e.target.value)} 
                   className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all" 
                 />
                 <span className="text-gray-400">~</span>
                 <input 
                   type="date" 
-                  value={endDate} 
-                  onChange={(e) => setEndDate(e.target.value)} 
+                  value={inputEndDate} 
+                  onChange={(e) => setInputEndDate(e.target.value)} 
                   className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all" 
                 />
                 <button
@@ -643,7 +658,6 @@ const AnalysisPage = () => {
           </div>
 
           <div className="card flex flex-col min-h-[260px] lg:min-h-0 relative overflow-hidden">
-            {/* [수정] 여론분석 타이틀 옆 안내문구 추가 */}
             <h3 className="section-title card-header flex items-baseline gap-2">
               <div className="flex items-center gap-1">
                 <BookmarkSimple className="text-yellow-500" /> 여론 분석
@@ -662,7 +676,6 @@ const AnalysisPage = () => {
 
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
-                  {/* [수정] onClick과 cursor pointer 추가 */}
                   <Pie 
                     data={sentimentChartData} 
                     cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value"
@@ -674,7 +687,6 @@ const AnalysisPage = () => {
                     ))}
                   </Pie>
                   <Tooltip formatter={(value, name) => [`${value}건`, name]} />
-                  {/* [수정] onClick과 wrapperStyle pointer 추가 */}
                   <Legend 
                     verticalAlign="bottom" height={24} iconSize={8} 
                     onClick={handleSentimentClick}
@@ -686,11 +698,22 @@ const AnalysisPage = () => {
           </div>
         </div>
 
+        {/* [추가] 하단 메뉴들의 기준 날짜 (레이아웃을 2분할하여 왼쪽 카드의 우측 상단에 완벽히 맞춤) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full mb-1">
+          <div className="flex justify-end px-1">
+            <span className="text-base text-gray-400 font-medium tracking-tight">({baseDateText})</span>
+          </div>
+          <div className="hidden lg:block"></div> {/* 데스크탑에서 우측 공간 비율 유지용 */}
+        </div>
+
+        {/* 하단 영역 (AI, 뉴스, 유튜브, 댓글) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start w-full">
+          {/* 왼쪽 컬럼 */}
           <div className="card">
             <h3 className="section-title mb-4 pb-2 border-b flex justify-between">
               <span>AI 트렌드 요약</span>
             </h3>
+
             <div className="p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-500 text-sm text-gray-700 leading-relaxed mb-6">
               {isAiLoading ? (
                 <div className="flex flex-col items-center justify-center py-4 gap-3">
@@ -941,7 +964,7 @@ const AnalysisPage = () => {
         </div>
       )}
 
-      {/* [추가] 여론 분석 (긍정/부정/중립) 댓글 모달 */}
+      {/* 여론 분석 (긍정/부정/중립) 댓글 모달 */}
       {sentimentModalConfig.isOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden relative">
@@ -955,67 +978,86 @@ const AnalysisPage = () => {
                   {sentimentModalConfig.sentiment === 'neutral' && <span className="text-gray-500">중립</span>}
                   <span className="text-gray-800">댓글 반응</span>
                 </h3>
-                <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">
+                <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 hidden sm:inline-block">
                   AI의 분석 분류로 정확하지 않을 수 있습니다
                 </span>
               </div>
-              <button 
-                onClick={() => setSentimentModalConfig({ isOpen: false, sentiment: null })}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X size={22} />
-              </button>
+              
+              <div className="flex items-center gap-3">
+                {/* 비인물 부정 댓글일 경우 동의 버튼 */}
+                {sentimentModalConfig.sentiment === 'negative' && !isPersonKeyword && (
+                  <button
+                    onClick={() => setIsNegativeRevealed(!isNegativeRevealed)}
+                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all border ${
+                      isNegativeRevealed 
+                        ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
+                        : 'bg-white text-gray-500 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
+                    }`}
+                  >
+                    {isNegativeRevealed ? '부정 댓글 가리기' : '부정 댓글 보기 동의'}
+                  </button>
+                )}
+
+                <button 
+                  onClick={() => setSentimentModalConfig({ isOpen: false, sentiment: null })}
+                  className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={22} />
+                </button>
+              </div>
             </div>
 
             {/* 내용 영역 */}
             <div className="flex-1 p-5 overflow-y-auto bg-gray-50/50 relative">
               
-              {/* [추가] 부정 댓글일 경우 나타나는 블러 처리 오버레이 */}
-              {sentimentModalConfig.sentiment === 'negative' && !isNegativeRevealed && (
-                <div className="absolute inset-0 z-10 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
-                  <WarningCircle size={56} className="text-red-500 mb-4 animate-pulse" weight="fill" />
-                  <h4 className="text-xl font-bold text-gray-800 mb-2">주의: 부정적 댓글 반응</h4>
-                  <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                    분류된 댓글 중에는 다소 거친 표현이나 욕설이 포함되어 있을 수 있습니다.<br />
-                    그래도 내용을 확인하시겠습니까?
+              {/* 케이스 1: 인물에 대한 부정 댓글 (차단) */}
+              {sentimentModalConfig.sentiment === 'negative' && isPersonKeyword ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center h-full">
+                  <LockKey size={48} className="mb-4 text-gray-300" weight="fill" />
+                  <h4 className="text-lg font-bold text-gray-700 mb-2">인물 관련 부정 댓글 비공개</h4>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    사이트 정책상 인물에 대한 부정 댓글은 공개되지 않습니다.
                   </p>
-                  <div className="flex gap-3">
-                    <button 
-                      onClick={() => setSentimentModalConfig({ isOpen: false, sentiment: null })}
-                      className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
-                    >
-                      취소하기
-                    </button>
-                    <button 
-                      onClick={() => setIsNegativeRevealed(true)}
-                      className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 shadow-md shadow-red-200 transition-all hover:-translate-y-0.5"
-                    >
-                      동의하고 확인하기
-                    </button>
+                </div>
+              ) : (
+                /* 케이스 2: 긍정/중립 이거나, 인물이 아닌 부정 댓글 */
+                <div className="relative h-full">
+                  
+                  {/* 동의 전 블러 상태에서 띄울 안내 박스 */}
+                  {sentimentModalConfig.sentiment === 'negative' && !isPersonKeyword && !isNegativeRevealed && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pt-10">
+                      <span className="bg-white/90 backdrop-blur-sm px-5 py-2.5 rounded-full text-sm font-medium text-gray-600 shadow-sm border border-gray-200">
+                        우측 상단의 <strong className="text-red-500">동의 버튼</strong>을 누르시면 확인할 수 있습니다.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 실제 댓글 리스트 */}
+                  <div className={`space-y-4 transition-all duration-300 ${
+                    sentimentModalConfig.sentiment === 'negative' && !isNegativeRevealed 
+                      ? 'pointer-events-none select-none opacity-40 blur-[3px]' 
+                      : ''
+                  }`}>
+                    {sentimentModalComments.length > 0 ? (
+                      sentimentModalComments.map((comment, idx) => (
+                        <CommentItem 
+                          key={idx} 
+                          comment={comment} 
+                          globalIndex={idx + 1}
+                          keyword={keyword} 
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-12 text-gray-400 flex flex-col items-center">
+                        <BookmarkSimple size={32} className="mb-3 text-gray-300" />
+                        <p>해당 반응에 분류된 댓글이 없습니다.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* 실제 댓글 리스트 (CommentItem 재사용) */}
-              <div className="space-y-4">
-                {sentimentModalComments.length > 0 ? (
-                  sentimentModalComments.map((comment, idx) => (
-                    <CommentItem 
-                      key={idx} 
-                      comment={comment} 
-                      globalIndex={idx + 1}
-                      keyword={keyword} 
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-12 text-gray-400 flex flex-col items-center">
-                    <BookmarkSimple size={32} className="mb-3 text-gray-300" />
-                    <p>해당 반응에 분류된 댓글이 없습니다.</p>
-                  </div>
-                )}
-              </div>
             </div>
-
           </div>
         </div>
       )}
