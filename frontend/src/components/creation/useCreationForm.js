@@ -7,21 +7,7 @@ import {
 
 const CONTENT_TYPES = ['카드뉴스', '포스터', '썸네일'];
 
-const INDUSTRIES = [
-  '크리에이터/유튜브',
-  '카페/디저트',
-  '맛집/요식업',
-  '뷰티/헤어샵',
-  '패션/의류',
-  '헬스/피트니스',
-  '교육/클래스',
-  '화장품/스킨케어',
-  '리빙/인테리어',
-  '여행/숙박',
-  '온라인 쇼핑몰',
-  '공구/마켓',
-  '기타',
-];
+const INDUSTRIES = ['크리에이터', '마케터'];
 
 export const useCreationForm = ({ initialKeyword = '' }) => {
   const normalizedInitialKeyword = useMemo(() => initialKeyword.trim(), [initialKeyword]);
