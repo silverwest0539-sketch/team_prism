@@ -288,11 +288,21 @@ exports.getNews = async (keyword, startDate, endDate) => {
   try {
     const feedUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
     const feed = await parser.parseURL(feedUrl);
+
+    const normalizedKeyword = keyword.replace(/\s+/g, '').toLowerCase();
     
     // 1. 최신글이 최상단에 오도록 pubDate 기준으로 내림차순 정렬
-    const sortedItems = feed.items.sort((a, b) => {
-      return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
-    });
+    const sortedItems = feed.items
+      .filter(item => {
+        if (!item.title) return false;
+        // 기사 제목에서 띄어쓰기를 다 없애버림
+        const normalizedTitle = item.title.replace(/\s+/g, '').toLowerCase();
+        // 띄어쓰기가 제거된 상태에서 키워드가 포함되어 있는지 확인
+        return normalizedTitle.includes(normalizedKeyword);
+      })
+      .sort((a, b) => {
+        return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
+      });
 
     // 2. 정렬된 데이터에서 상위 5개 추출
     return sortedItems.slice(0, 5).map(item => {

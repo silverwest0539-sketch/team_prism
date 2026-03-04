@@ -130,13 +130,14 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
 
   // ── 1. 키워드 기본 정보 ───────────────────────────────
   const [kwRows] = await db.execute(
-    `SELECT keyword_id, keyword_name FROM TREND_KEYWORD WHERE keyword_name = ?`,
+    `SELECT keyword_id, keyword_name, is_person FROM TREND_KEYWORD WHERE keyword_name = ?`,
     [keyword]
   );
   if (kwRows.length === 0) return { found: false, message: '데이터 없음' };
 
   const keywordId   = kwRows[0].keyword_id;
   const keywordName = kwRows[0].keyword_name;
+  const isPerson = kwRows[0].is_person;
 
   // 가장 최근 날짜의 언급량 + 트렌드 스코어
   const [latestStats] = await db.execute(
@@ -322,6 +323,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
     const finalResponse = {
       found:         true,
       keyword:       keywordName,
+      is_person:     isPerson,
       totalMentions,
       positive_score: positiveScore, 
       neutral_score:  neutralScore, 

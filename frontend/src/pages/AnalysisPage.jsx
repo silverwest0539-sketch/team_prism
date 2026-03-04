@@ -116,8 +116,8 @@ const AnalysisPage = () => {
     });
   };
 
-  // 임시 인물 판별 로직
-  const isPersonKeyword = data?.category === 'person' || keyword === '유나' || keyword === '탁재훈';
+  // 인물 판별 로직
+  const isPersonKeyword = data?.is_person === 1;
 
   // [추가2] 기준 날짜 (오늘 날짜) 포맷팅
   const todayForText = new Date();
@@ -492,6 +492,11 @@ const AnalysisPage = () => {
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-none">
                 {keyword || '검색 키워드 예시'}
               </h1>
+              {isPersonKeyword && (
+                <span className="bg-indigo-100 text-indigo-700 text-sm font-bold px-2.5 py-1 rounded-full align-middle ml-1">
+                  인물
+                </span>
+              )}
               
               <div className="flex items-center gap-1 text-gray-600 relative ml-1">
                 {todayScore > 0 ? (
