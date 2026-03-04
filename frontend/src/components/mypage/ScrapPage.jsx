@@ -15,6 +15,11 @@ import SummaryModal from '../home/SummaryModal';
 import apiClient from '../../utils/apiClient';
 import { getStoredUserEmail } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
+import {
+    getAccountLocalScraps,
+    removeAccountLocalScrap,
+    mergeServerAndLocalScraps,
+} from '../../utils/accountScrapFallback';
 
 // ─── 날짜 계산 헬퍼 함수 (수정사항 3번 해결) ───
 const getRelativeDate = (dateString) => {
@@ -91,15 +96,19 @@ const ScrapPage = () => {
         const userEmail = getStoredUserEmail();
         if (!userEmail) return;
 
+        const localScraps = getAccountLocalScraps(userEmail);
         try {
             const response = await apiClient.get('/scraps', {
                 params: { email: userEmail }
             });
             if (response.data.success) {
-                setScraps(response.data.scraps);
+                setScraps(mergeServerAndLocalScraps(response.data.scraps, localScraps));
+                return;
             }
+            setScraps(localScraps);
         } catch (error) {
             console.error("스크랩 데이터를 불러오는데 실패했습니다.", error);
+            setScraps(localScraps);
         }
     }, []);
 
@@ -159,15 +168,19 @@ const ScrapPage = () => {
     ), []);
 
     // 단일 삭제 (애니메이션 포함)
-    const handleDelete = async (e, keyword) => {
+    const handleDelete = async (e, item) => {
         e.stopPropagation();
         const userEmail = getStoredUserEmail();
         if (!userEmail) return;
+        const keyword = item.keyword;
 
         if (window.confirm(`'${keyword}' 스크랩을 삭제하시겠습니까?`)) {
             setRemovingKeywords(new Set([keyword]));
             try {
-                await deleteScrapItem(userEmail, keyword);
+                if (!item.isLocalFallback) {
+                    await deleteScrapItem(userEmail, keyword);
+                }
+                removeAccountLocalScrap(userEmail, keyword);
                 setTimeout(() => {
                     refreshScraps();
                     setRemovingKeywords(new Set());
@@ -189,11 +202,26 @@ const ScrapPage = () => {
         if (window.confirm(`선택된 ${count}개의 스크랩을 삭제하시겠습니까?`)) {
             setRemovingKeywords(new Set(deleteSelection));
             try {
-                // 병렬로 API 호출
-                const promises = Array.from(deleteSelection).map(keyword => 
-                    deleteScrapItem(userEmail, keyword)
-                );
-                await Promise.all(promises);
+                const selectedItems = scraps.filter((item) => deleteSelection.has(item.keyword));
+                const serverKeywords = selectedItems
+                    .filter((item) => !item.isLocalFallback)
+                    .map((item) => item.keyword);
+                const localKeywords = selectedItems
+                    .filter((item) => item.isLocalFallback)
+                    .map((item) => item.keyword);
+
+                if (serverKeywords.length > 0) {
+                    const results = await Promise.allSettled(
+                        serverKeywords.map((keyword) => deleteScrapItem(userEmail, keyword))
+                    );
+                    if (results.some((result) => result.status === 'rejected')) {
+                        throw new Error('SERVER_BULK_DELETE_FAILED');
+                    }
+                }
+
+                [...serverKeywords, ...localKeywords].forEach((keyword) => {
+                    removeAccountLocalScrap(userEmail, keyword);
+                });
 
                 setTimeout(() => {
                     refreshScraps();
@@ -386,7 +414,7 @@ const ScrapPage = () => {
                         </div>
                         {!isDeleteMode && viewMode === 'grid' && (
                             <button
-                                onClick={(e) => handleDelete(e, item.keyword)}
+                                onClick={(e) => handleDelete(e, item)}
                                 className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition"
                                 title="삭제"
                             >
@@ -409,7 +437,7 @@ const ScrapPage = () => {
                 {/* 리스트 뷰: 우측 삭제 버튼 */}
                 {!isDeleteMode && viewMode === 'list' && (
                     <button
-                        onClick={(e) => handleDelete(e, item.keyword)}
+                        onClick={(e) => handleDelete(e, item)}
                         className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition flex-shrink-0 self-center"
                         title="삭제"
                     >
