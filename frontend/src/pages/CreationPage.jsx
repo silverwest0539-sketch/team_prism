@@ -5,9 +5,10 @@ import ErrorBoundary from '../components/common/ErrorBoundary';
 import InputPanel from '../components/creation/InputPanel';
 import ResultPanel from '../components/creation/ResultPanel';
 import { showToast } from '../utils/toast';
-import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { toApiUrl } from '../utils/apiClient';
+import { getTemplateMeta } from '../utils/promptTemplates';
+import { upsertAccountSavedPrompt } from '../utils/promptStorage';
 
 const CreationPage = () => {
   const navigate = useNavigate();
@@ -123,7 +124,7 @@ const handleGenerate = async (inputData) => {
             if (parsed.chunk) {
               setGeneratedResult((prev) => prev + parsed.chunk);
             }
-          } catch (e) {
+          } catch {
             // 스트리밍 데이터가 잘려올 경우 대비
             console.warn("JSON chunk parsing wait...");
           }
@@ -142,6 +143,47 @@ const handleGenerate = async (inputData) => {
   const handleRetry = () => {
     if (!lastPayload || isLoading) return;
     handleGenerate(lastPayload);
+  };
+
+  const handleSavePrompt = async (promptText) => {
+    const normalizedPrompt = String(promptText || '').trim();
+    const currentUser = getStoredUser();
+    const userEmail = String(currentUser?.email || '').trim();
+
+    if (!normalizedPrompt) {
+      showToast('저장할 프롬프트가 없습니다.', { type: 'warning' });
+      return false;
+    }
+
+    if (!userEmail) {
+      showToast('로그인 정보가 확인되지 않아 저장할 수 없습니다.', { type: 'error' });
+      return false;
+    }
+
+    const templateKey = String(lastPayload?.promptTemplate || '').trim();
+    const templateMeta = templateKey ? getTemplateMeta(templateKey) : null;
+
+    const result = upsertAccountSavedPrompt(userEmail, {
+      prompt: normalizedPrompt,
+      keyword: lastPayload?.keyword || '',
+      templateKey,
+      templateName: templateMeta?.name || '',
+      type: lastPayload?.type || '',
+      industry: lastPayload?.industry || '',
+    });
+
+    if (!result.ok) {
+      showToast('프롬프트 저장에 실패했습니다.', { type: 'error' });
+      return false;
+    }
+
+    showToast(
+      result.duplicated
+        ? '같은 프롬프트가 있어 최신 내용으로 갱신했습니다.'
+        : '마이페이지에 프롬프트를 저장했습니다.',
+      { type: 'success' },
+    );
+    return true;
   };
 
   if (!authChecked) {
@@ -184,6 +226,7 @@ const handleGenerate = async (inputData) => {
             isLoading={isLoading}
             errorMessage={generationError}
             onRetry={handleRetry}
+            onSave={handleSavePrompt}
           />
         </ErrorBoundary>
       </div>

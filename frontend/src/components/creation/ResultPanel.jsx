@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, ArrowsClockwise, WarningCircle } from '@phosphor-icons/react';
+import { Copy, Check, ArrowsClockwise, WarningCircle, BookmarkSimple } from '@phosphor-icons/react';
 
-const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry }) => {
+const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, onSave }) => {
   const [isCopied, setIsCopied] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [editableContent, setEditableContent] = useState(() => String(content || ''));
 
   useEffect(() => {
@@ -12,6 +13,9 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry })
   }, [content]);
 
   const v1Content = editableContent.trim();
+  useEffect(() => {
+    setIsSaved(false);
+  }, [v1Content]);
 
   const handleCopy = async () => {
     if (!v1Content) return;
@@ -21,6 +25,19 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry })
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
       console.error('복사 실패:', err);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!v1Content || typeof onSave !== 'function') return;
+
+    try {
+      const didSave = await onSave(v1Content);
+      if (!didSave) return;
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+    } catch (err) {
+      console.error('저장 실패:', err);
     }
   };
 
@@ -84,25 +101,48 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry })
           <span className="text-sm font-bold text-gray-700">V1. AI 생성 프롬프트</span>
           {v1Content && <span className="w-2 h-2 rounded-full bg-green-500" />}
         </div>
-        <button
-          onClick={handleCopy}
-          disabled={!v1Content || isLoading}
-          className={`flex items-center gap-1 p-1.5 rounded-lg transition ${
-            v1Content && !isLoading
-              ? 'text-gray-500 hover:bg-gray-100 cursor-pointer'
-              : 'text-gray-300 cursor-not-allowed'
-          }`}
-          title="프롬프트 복사하기"
-        >
-          {isCopied ? (
-            <>
-              <Check size={20} weight="bold" className="text-green-600" />
-              <span className="text-xs font-bold text-green-600">복사됨</span>
-            </>
-          ) : (
-            <Copy size={20} weight="bold" />
-          )}
-        </button>
+
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleSave}
+            disabled={!v1Content || isLoading || typeof onSave !== 'function'}
+            className={`flex items-center gap-1 p-1.5 rounded-lg transition ${
+              v1Content && !isLoading && typeof onSave === 'function'
+                ? 'text-gray-500 hover:bg-gray-100 cursor-pointer'
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title="마이페이지에 저장하기"
+          >
+            {isSaved ? (
+              <>
+                <Check size={20} weight="bold" className="text-green-600" />
+                <span className="text-xs font-bold text-green-600">저장됨</span>
+              </>
+            ) : (
+              <BookmarkSimple size={20} weight="bold" />
+            )}
+          </button>
+
+          <button
+            onClick={handleCopy}
+            disabled={!v1Content || isLoading}
+            className={`flex items-center gap-1 p-1.5 rounded-lg transition ${
+              v1Content && !isLoading
+                ? 'text-gray-500 hover:bg-gray-100 cursor-pointer'
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title="프롬프트 복사하기"
+          >
+            {isCopied ? (
+              <>
+                <Check size={20} weight="bold" className="text-green-600" />
+                <span className="text-xs font-bold text-green-600">복사됨</span>
+              </>
+            ) : (
+              <Copy size={20} weight="bold" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ✅ 본문 — 남은 높이를 채우고 내부 스크롤 */}

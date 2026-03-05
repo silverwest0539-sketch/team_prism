@@ -36,6 +36,10 @@ html.theme-dark .bg-gray-50 {
   background-color: #0f172a !important;
 }
 
+html.theme-dark .bg-gray-50\/50 {
+  background-color: #1e293b !important;
+}
+
 html.theme-dark .bg-gray-100 {
   background-color: #1f2937 !important;
 }
@@ -106,6 +110,54 @@ html.theme-dark .hover\:bg-gray-100:hover {
 
 html.theme-dark .hover\:text-blue-600:hover {
   color: #93c5fd !important;
+}
+
+.keyword-highlight {
+  background-color: #fde68a;
+  color: #111827;
+}
+
+html.theme-dark .keyword-highlight {
+  background-color: #facc15;
+  color: #111827;
+}
+
+html.theme-dark .ai-summary-box {
+  background-color: #1e293b !important;
+  border-left-color: #818cf8 !important;
+  color: #e2e8f0 !important;
+}
+
+html.theme-dark .ai-summary-box .ai-summary-content {
+  border-left-color: #475569 !important;
+  color: inherit;
+}
+
+html.theme-dark .ai-summary-box :where(p, li, span, strong, em, b) {
+  color: inherit;
+}
+
+.analysis-empty-state-card {
+  background-color: rgba(255, 255, 255, 0.96);
+  border-color: rgba(226, 232, 240, 0.9);
+}
+
+html.theme-dark .analysis-empty-state-card {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+html.theme-dark .analysis-empty-icon {
+  background-color: #1e293b !important;
+  color: #818cf8 !important;
+}
+
+html.theme-dark .analysis-empty-title {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .analysis-empty-desc {
+  color: #cbd5e1 !important;
 }
 
 @layer utilities {

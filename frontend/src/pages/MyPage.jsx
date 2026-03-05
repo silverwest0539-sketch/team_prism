@@ -8,6 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { showToast } from '../utils/toast';
 // 스크랩 페이지 컴포넌트 불러오기
 import ScrapPage from '../components/mypage/ScrapPage';
+import SavedPromptsSection from '../components/mypage/SavedPromptsSection';
 
 const MODAL = Object.freeze({
   ACCOUNT: 'account',
@@ -240,13 +241,21 @@ const MyPage = () => {
          ========================================= */}
       <ErrorBoundary
         variant="section"
+        title="저장 프롬프트 섹션을 표시하지 못했습니다."
+        description="잠시 후 다시 시도해 주세요."
+      >
+      <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 sm:mb-10">
+           <SavedPromptsSection email={userInfo.email} />
+      </section>
+      </ErrorBoundary>
+
+      <ErrorBoundary
+        variant="section"
         title="스크랩 섹션을 표시하지 못했습니다."
         description="잠시 후 다시 시도해 주세요."
       >
-      <section className="w-full">
-        <div className="bg-white">
-           <ScrapPage />
-        </div>
+      <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+           <ScrapPage isEmbedded />
       </section>
       </ErrorBoundary>
 
@@ -365,7 +374,7 @@ const MyPage = () => {
                       closeModal(); 
                     }
                   }} 
-                  className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+                  className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all"
                 >
                   {/* 텍스트도 account 에 맞게 수정 */}
                   {activeModal === MODAL.ACCOUNT ? '프로필 저장하기' : '저장하기'}

@@ -60,7 +60,7 @@ const SORT_OPTIONS = [
     { label: '이름 역순', value: 'name_desc' },
 ];
 
-const ScrapPage = () => {
+const ScrapPage = ({ isEmbedded = false }) => {
     const navigate = useNavigate();
     const [scraps, setScraps] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -448,8 +448,10 @@ const ScrapPage = () => {
         );
     };
 
+    const rootClassName = isEmbedded ? 'w-full p-4 sm:p-6 lg:p-8' : 'page';
+
     return (
-        <div className="page" onClick={() => isSortOpen && setIsSortOpen(false)}>
+        <div className={rootClassName} onClick={() => isSortOpen && setIsSortOpen(false)}>
             {/* ─── 헤더 ─── */}
             <div className="mb-5 sm:mb-6">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">

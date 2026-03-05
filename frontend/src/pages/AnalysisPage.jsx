@@ -590,7 +590,7 @@ const AnalysisPage = () => {
 
              <button 
                onClick={handleGoToCreation}
-               className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-lg shadow-indigo-200 transition-all hover:-translate-y-1"
+               className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base transition-all hover:-translate-y-1"
              >
                <Export size={20} className="sm:w-5 sm:h-5" />
                <span>콘텐츠 생성</span>
@@ -902,7 +902,7 @@ const AnalysisPage = () => {
                 <h3 className="section-title mb-4 pb-2 border-b">
                   AI 트렌드 요약
                 </h3>
-                <div className="p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-500 text-sm text-gray-700 leading-relaxed">
+                <div className="ai-summary-box p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-500 text-sm text-gray-700 leading-relaxed">
                   {isAiLoading ? (
                     <div className="flex flex-col items-center justify-center py-4 gap-3">
                       <div className="flex gap-2">
@@ -918,7 +918,7 @@ const AnalysisPage = () => {
                     aiSummary ? (
                       <div className="animate-fade-in-up">
                           <div 
-                            className="mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed"
+                            className="ai-summary-content mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed"
                             dangerouslySetInnerHTML={{ __html: aiSummary }} 
                           />
                       </div>
@@ -1010,14 +1010,14 @@ const AnalysisPage = () => {
 
       {!keyword && (
         <div className="overlay-center top-20 sm:top-24 px-4">
-          <div className="bg-white/80 backdrop-blur-md p-5 sm:p-8 rounded-3xl shadow-xl border border-white/50 text-center transform sm:translate-y-[-10%] w-full max-w-md">
-            <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="analysis-empty-state-card p-5 sm:p-8 rounded-3xl border text-center transform sm:translate-y-[-10%] w-full max-w-md">
+            <div className="analysis-empty-icon w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">분석할 키워드를 입력해주세요</h2>
-            <p className="text-gray-500">
+            <h2 className="analysis-empty-title text-xl sm:text-2xl font-bold text-gray-800 mb-2">분석할 키워드를 입력해주세요</h2>
+            <p className="analysis-empty-desc text-gray-500">
               상단 검색창에 검색어를 입력하면
               <br />
               빅데이터 분석 리포트가 즉시 생성됩니다.

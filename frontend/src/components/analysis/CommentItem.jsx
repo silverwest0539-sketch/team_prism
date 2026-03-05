@@ -8,7 +8,7 @@ const highlightText = (text, targetKeyword) => {
 
   return parts.map((part, index) =>
     part.toLowerCase() === targetKeyword.toLowerCase() ? (
-      <span key={index} className="bg-yellow-200 text-gray-900 font-bold px-0.5 rounded">
+      <span key={index} className="keyword-highlight font-bold px-0.5 rounded">
         {part}
       </span>
     ) : (

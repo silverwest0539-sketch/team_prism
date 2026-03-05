@@ -390,7 +390,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
           </button>
           <button
             onClick={handleDetailMove}
-            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-lg shadow-indigo-200"
+            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition"
           >
             상세 분석 리포트 보러가기 <ArrowRight weight="bold" />
           </button>
