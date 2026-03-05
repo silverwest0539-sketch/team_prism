@@ -1,3 +1,4 @@
+const axios = require('axios');
 const authService = require('../services/auth.service');
 
 exports.sendCode = async (req, res) => {
@@ -85,5 +86,81 @@ exports.withdraw = async (req, res) => {
     if (error.message === "NOT_FOUND") return res.status(404).json({ success: false, message: "유저를 찾을 수 없습니다." });
     console.error("회원 탈퇴 에러:", error);
     res.status(500).json({ success: false, message: "회원 탈퇴 처리 중 오류 발생" });
+  }
+};
+
+exports.kakaoLogin = async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    // 1. 카카오 서버로 Access Token 요청
+    const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
+      params: {
+        grant_type: 'authorization_code',
+        client_id: process.env.KAKAO_CLIENT_ID,
+        client_secret: process.env.KAKAO_CLIENT_SECRET,
+        redirect_uri: process.env.KAKAO_REDIRECT_URI,
+        code: code,
+      },
+      headers: { 'Content-type': 'application/x-www-form-urlencoded;charset=utf-8' }
+    });
+
+    // 2. Access Token으로 카카오 유저 정보 요청
+    const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
+      headers: {
+        Authorization: `Bearer ${tokenResponse.data.access_token}`,
+        'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
+      }
+    });
+
+    const kakaoUser = userResponse.data;
+    const userInfo = {
+      sns_id: String(kakaoUser.id),
+      email: kakaoUser.kakao_account?.email,
+      nickname: kakaoUser.properties?.nickname,
+    };
+
+    const result = await authService.socialLogin(userInfo, 'kakao');
+    res.json({ success: true, ...result });
+
+  } catch (error) {
+    console.error('Kakao login error:', error.response?.data || error.message);
+    res.status(500).json({ success: false, message: '카카오 로그인에 실패했습니다.' });
+  }
+};
+
+exports.naverLogin = async (req, res) => {
+  try {
+    const { code, state } = req.body;
+
+    // 1. 네이버 서버로 Access Token 요청
+    const tokenResponse = await axios.get('https://nid.naver.com/oauth2.0/token', {
+      params: {
+        grant_type: 'authorization_code',
+        client_id: process.env.NAVER_CLIENT_ID,
+        client_secret: process.env.NAVER_CLIENT_SECRET,
+        code: code,
+        state: state
+      }
+    });
+
+    // 2. Access Token으로 네이버 유저 정보 요청
+    const userResponse = await axios.get('https://openapi.naver.com/v1/nid/me', {
+      headers: { Authorization: `Bearer ${tokenResponse.data.access_token}` }
+    });
+
+    const naverUser = userResponse.data.response;
+    const userInfo = {
+      sns_id: String(naverUser.id),
+      email: naverUser.email,
+      nickname: naverUser.nickname || naverUser.name,
+    };
+
+    const result = await authService.socialLogin(userInfo, 'naver');
+    res.json({ success: true, ...result });
+
+  } catch (error) {
+    console.error('Naver login error:', error.response?.data || error.message);
+    res.status(500).json({ success: false, message: '네이버 로그인에 실패했습니다.' });
   }
 };

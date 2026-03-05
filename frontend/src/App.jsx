@@ -9,7 +9,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage'));
 const FindPasswordPage = lazy(() => import('./pages/FindPasswordPage'));
-
+const OAuthCallback = lazy(()=> import('./pages/OAuthCallback'))
 const HomePage = lazy(() => import('./pages/HomePage'));
 const AnalysisPage = lazy(() => import('./pages/AnalysisPage'));
 const CreationPage = lazy(() => import('./pages/CreationPage'));
@@ -35,7 +35,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/find-password" element={<FindPasswordPage />} />
-
+          <Route path="/oauth/callback/:provider" element={<OAuthCallback />} />
           <Route path="/home" element={withLayout(<HomePage />)} />
           <Route path="/analysis" element={withLayout(<AnalysisPage />)} />
           {/* [추가] 키워드를 파라미터로 받는 경로 */}

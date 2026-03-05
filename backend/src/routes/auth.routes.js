@@ -9,5 +9,7 @@ router.post('/find-password', authController.findPassword);
 router.post('/update-profile', authController.updateProfile);
 router.post('/change-password', authController.changePassword);
 router.delete('/withdraw', authController.withdraw);
+router.post('/kakao', authController.kakaoLogin);
+router.post('/naver', authController.naverLogin);
 
 module.exports = router;

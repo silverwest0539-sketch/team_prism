@@ -66,12 +66,12 @@ exports.login = async (email, password) => {
 
   // JWT 발급
   const token = jwt.sign(
-    { email: user.user_email, nickname: user.nickname },
+    { email: user.user_email, nickname: user.nickname, provider: user.provider },
     process.env.JWT_SECRET,
     { expiresIn: '2h' }
   );
 
-  return { token, user: { email: user.user_email, nickname: user.nickname } };
+  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider } };
 };
 
 exports.findPassword = async (email) => {
@@ -117,4 +117,56 @@ exports.withdraw = async (email) => {
   const [result] = await db.execute('DELETE FROM USERS WHERE user_email = ?', [email]);
   
   if (result.affectedRows === 0) throw new Error("NOT_FOUND");
+};
+
+exports.socialLogin = async (userInfo, provider) => {
+  const { sns_id, email, nickname } = userInfo;
+
+  // 1. 이미 가입된 소셜 유저인지 확인
+  const [rows] = await db.execute(
+    'SELECT * FROM USERS WHERE sns_id = ? AND provider = ?', 
+    [sns_id, provider]
+  );
+  
+  let user = rows[0];
+
+  // 2. 신규 유저라면 자동 회원가입 진행
+  if (!user) {
+    let finalEmail = email;
+
+    // 소셜에서 이메일을 주지 않았을 경우 가짜 이메일 생성
+    if (!finalEmail) {
+      finalEmail = `${provider}_${sns_id}@prism.local`;
+    } else {
+      // 이메일을 줬더라도, 자체 가입(local) 등으로 이미 존재하는지 체크
+      const [existingEmail] = await db.execute(
+        'SELECT user_email FROM USERS WHERE user_email = ?', 
+        [finalEmail]
+      );
+      if (existingEmail.length > 0) {
+        finalEmail = `${provider}_${sns_id}@prism.local`;
+      }
+    }
+
+    // 닉네임이 없을 경우 랜덤 닉네임 부여
+    const finalNickname = nickname || `prism_${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const query = `INSERT INTO USERS (user_email, nickname, provider, sns_id) VALUES (?, ?, ?, ?)`;
+    await db.execute(query, [finalEmail, finalNickname, provider, sns_id]);
+    
+    const [newRows] = await db.execute(
+      'SELECT * FROM USERS WHERE sns_id = ? AND provider = ?', 
+      [sns_id, provider]
+    );
+    user = newRows[0];
+  }
+
+  // 3. JWT 토큰 발급
+  const token = jwt.sign(
+    { email: user.user_email, nickname: user.nickname, provider: user.provider },
+    process.env.JWT_SECRET,
+    { expiresIn: '2h' }
+  );
+
+  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider } };
 };

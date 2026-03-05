@@ -10,6 +10,24 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  const handleKakaoLogin = () => {
+    // 환경변수(REACT_APP_...)에 카카오 REST API 키를 넣어야 합니다.
+    const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
+    const REDIRECT_URI = "http://localhost:5173/oauth/callback/kakao";
+    const kakaoURL = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+    
+    window.location.href = kakaoURL;
+  };
+
+  const handleNaverLogin = () => {
+    const NAVER_CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID;
+    const REDIRECT_URI = "http://localhost:5173/oauth/callback/naver";
+    const state = Math.random().toString(36).substring(3, 14); // 보안용 임의 문자열
+    const naverURL = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${state}`;
+    
+    window.location.href = naverURL;
+  };
+
 
   const handleLogoClick = () => {
     navigate('/home');
@@ -81,8 +99,8 @@ const LoginPage = () => {
         </form>
 
         <div className="mt-6 space-y-2">
-          <button className="btn-kakao">카카오톡으로 시작하기</button>
-          <button className="btn-naver">네이버로 시작하기</button>
+          <button type="button" onClick={handleKakaoLogin} className="btn-kakao w-full py-2 bg-yellow-300 rounded font-bold">카카오톡으로 시작하기</button>
+          <button type="button" onClick={handleNaverLogin} className="btn-naver w-full py-2 bg-green-500 text-white rounded font-bold">네이버로 시작하기</button>
         </div>
 
         <div className="text-center mt-8">
