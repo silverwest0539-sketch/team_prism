@@ -168,7 +168,10 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
   // [추가] 인물 판별 및 미리보기 댓글(최대 2개) 설정 로직
   const isPersonKeyword = detailData?.is_person === 1;
-  const previewComments = detailData?.comments?.slice(0, 2) || [];
+  const allComments = detailData?.comments || [];
+  const nonNegativeComments = allComments.filter(c => c.sentiment !== 'negative');
+  const negativeComments = allComments.filter(c => c.sentiment === 'negative');
+  const previewComments = [...nonNegativeComments, ...negativeComments].slice(0, 2);
   const hasNegativePreview = previewComments.some(c => c.sentiment === 'negative');
 
   return (
