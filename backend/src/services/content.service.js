@@ -40,7 +40,7 @@ const updateNewsKeywords = async () => {
     const keywordMap = {};
     const stopWords = new Set(['뉴스', '오늘', '내일', '종합', '단독', '속보', '무단', '배포', '금지', 
                               '기자', '재배포', '연합뉴스', '오전', '오후', '대한민국', '한겨레', '조선일보', '중앙일보', '동아일보',
-                            '경향신문', '공격']);
+                            '경향신문', '공격', '매일경제', '디지털투데', '확대', '10']);
 
     allTitles.forEach(title => {
       // Kiwi가 있으면 Kiwi를 쓰고, 없으면 fallbackTokenize 사용

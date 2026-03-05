@@ -11,7 +11,10 @@ const promptRoutes = require('./routes/prompt.routes');
 const app = express();
 const PORT = 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://prism-front.s3-website.ap-northeast-2.amazonaws.com'], 
+  credentials: true,
+}));
 app.use(express.json());
 
 app.use('/api/scraps', scrapRoutes);
