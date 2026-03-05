@@ -73,7 +73,7 @@ const AnalysisPage = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   
-  // [수정1] 입력용 날짜와 실제 적용(차트렌더링)용 날짜를 분리
+  // 입력용 날짜와 실제 적용(차트렌더링)용 날짜를 분리
   const [inputStartDate, setInputStartDate] = useState(getFormattedDate(initialYesterday));
   const [inputEndDate, setInputEndDate] = useState(getFormattedDate(initialToday));
   
@@ -101,7 +101,7 @@ const AnalysisPage = () => {
   // 인물 판별 로직
   const isPersonKeyword = data?.is_person === 1;
 
-  // [추가2] 기준 날짜 (오늘 날짜) 포맷팅
+  // 기준 날짜 (오늘 날짜) 포맷팅
   const todayForText = new Date();
   const baseDateText = `${todayForText.getMonth() + 1}월 ${todayForText.getDate()}일 기준`;
 
@@ -783,182 +783,227 @@ const AnalysisPage = () => {
           </div>
         </div>
 
-        {/* 하단 영역 (AI, 뉴스, 유튜브, 댓글) */}
+        {/* 하단 영역 (댓글, 우측: AI/뉴스/유튜브 종합 리포트) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start w-full">
-          {/* 왼쪽 컬럼 */}
-          <div className="card">
-            <h3 className="section-title mb-4 pb-2 border-b flex justify-between items-end">
-              <span>AI 트렌드 요약</span>
-              <span className="text-base text-gray-400 font-medium tracking-tight">({baseDateText})</span>
-            </h3>
+          
+          {/* 좌측: 댓글 반응 영역 */}
+          <div className="flex flex-col h-full w-full gap-4">
+            
+            {/* 대제목 영역 */}
+            <div className="flex justify-between items-end pb-2 border-b-2 border-gray-200 px-1">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+                  관련 댓글 반응
+                </h2>
+                <p className="text-xs text-gray-500 mt-1 hidden sm:block">
+                  커뮤니티 및 미디어 주요 여론
+                </p>
+              </div>
+              
+              {/* 총 개수 뱃지 */}
+              <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
+                총 {totalItems}건
+              </span>
+            </div>
 
-            <div className="p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-500 text-sm text-gray-700 leading-relaxed mb-6">
-              {isAiLoading ? (
-                <div className="flex flex-col items-center justify-center py-4 gap-3">
-                  <div className="flex gap-2">
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-75"></div>
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-150"></div>
-                  </div>
-                  <span className="text-xs text-indigo-400 font-medium animate-pulse">
-                    AI가 데이터를 분석하여 리포트를 작성 중입니다...
-                  </span>
-                </div>
-              ) : (
-                aiSummary ? (
-                  <div className="animate-fade-in-up">
-                      <div 
-                        className="mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: aiSummary }} 
+            <div className="card h-fit flex flex-col">
+              <div ref={commentsTopRef} />
+
+              <div className="space-y-4 flex-1">
+                {currentUsageExamples?.length > 0 ? (
+                  currentUsageExamples.map((comment, i) => {
+                    const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
+                    return (
+                      <CommentItem 
+                        key={i} 
+                        comment={comment} 
+                        globalIndex={globalIndex}
+                        keyword={keyword} 
                       />
-                  </div>
+                    );
+                  })
                 ) : (
-                  <p className="text-gray-400 text-center text-xs">키워드를 분석할 준비가 되었습니다.</p>
-                )
-              )}
-            </div>
-
-            <h3 className="section-title mb-4 pb-2 border-b">
-              관련 뉴스
-            </h3>
-            <div className="space-y-3">
-              {news?.length > 0 ? (
-                news.map((item, idx) => (
-                  <a
-                    key={idx}
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="row-hover border border-transparent hover:border-gray-100"
-                  >
-                    <div className="flex justify-between items-start">
-                      <p className="text-sm font-medium text-gray-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                        {item.title}
-                      </p>
-                      <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2 mt-0.5">
-                        {new Date(item.pubDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="badge bg-gray-100 text-gray-500">{item.source}</span>
-                    </div>
-                  </a>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">관련 뉴스가 없습니다.</div>
-              )}
-            </div>
-
-            <div className="mt-8">
-              <h3 className="section-title mb-4 border-b pb-2 flex items-center gap-2">
-                관련 유튜브 반응
-              </h3>
-              <div className="space-y-4">
-                {filteredData.videos && filteredData.videos.length > 0 ? (
-                  filteredData.videos.slice(0, 3).map((video) => (
-                    <a
-                      key={video.id}
-                      href={video.views === 0 ? '#' : `https://www.youtube.com/watch?v=${encodeURIComponent(String(video.id || ''))}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex flex-col sm:flex-row gap-3 sm:gap-4 group cursor-pointer"
-                    >
-                      <div className="w-full sm:w-32 h-44 sm:h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative">
-                        <img src={video.thumbnail} alt="" className="w-full h-full object-cover" />
-                        {video.views > 0 && (
-                          <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 rounded">Video</div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition leading-snug">
-                          {video.title}
-                        </h4>
-                        <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
-                          <span className="truncate">{video.channel}</span>
-                          {video.views > 0 && <span>• 조회수 {formatViews(video.views)}</span>}
-                        </div>
-                      </div>
-                    </a>
-                  ))
-                ) : (
-                  <div className="text-gray-400 text-sm py-4 text-center bg-gray-50 rounded-lg">
-                    관련 유튜브 영상을 찾을 수 없습니다.
-                  </div>
+                  <div className="text-center py-10 text-gray-400">데이터가 없습니다.</div>
                 )}
               </div>
+
+              {totalPages > 1 && (
+                <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => goToPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent"
+                    aria-label="이전 페이지"
+                  >
+                    <CaretLeft size={16} weight="bold" />
+                  </button>
+
+                  {paginationItems.map((it, idx) => {
+                    if (it === DOTS) {
+                      return (
+                        <span key={`dots-${idx}`} className="px-2 text-xs text-gray-400 select-none">
+                          ...
+                        </span>
+                      );
+                    }
+                    const pageNum = it;
+                    const isActive = pageNum === currentPage;
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => goToPage(pageNum)}
+                        className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-medium transition-all
+                          ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-indigo-600'}`}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent"
+                    aria-label="다음 페이지"
+                  >
+                    <CaretRight size={16} weight="bold" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="card h-fit flex flex-col">
-            <div className="flex justify-between items-center mb-4 pb-2 border-b">
-              <h3 className="section-title">관련 댓글 반응</h3>
-              <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-full">총 {totalItems}건</span>
-            </div>
-
-            <div ref={commentsTopRef} />
-
-            <div className="space-y-4 flex-1">
-              {currentUsageExamples?.length > 0 ? (
-                currentUsageExamples.map((comment, i) => {
-                  const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
-                  return (
-                    <CommentItem 
-                      key={i} 
-                      comment={comment} 
-                      globalIndex={globalIndex}
-                      keyword={keyword} 
-                    />
-                  );
-                })
-              ) : (
-                <div className="text-center py-10 text-gray-400">데이터가 없습니다.</div>
-              )}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
-                <button
-                  onClick={() => goToPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent"
-                  aria-label="이전 페이지"
-                >
-                  <CaretLeft size={16} weight="bold" />
-                </button>
-
-                {paginationItems.map((it, idx) => {
-                  if (it === DOTS) {
-                    return (
-                      <span key={`dots-${idx}`} className="px-2 text-xs text-gray-400 select-none">
-                        ...
-                      </span>
-                    );
-                  }
-                  const pageNum = it;
-                  const isActive = pageNum === currentPage;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => goToPage(pageNum)}
-                      className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-medium transition-all
-                        ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-indigo-600'}`}
-                      aria-current={isActive ? 'page' : undefined}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-
-                <button
-                  onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent"
-                  aria-label="다음 페이지"
-                >
-                  <CaretRight size={16} weight="bold" />
-                </button>
+          {/* 우측 컬럼 (종합 트렌드 인사이트) */}
+          <div className="flex flex-col h-full w-full gap-4">
+            
+            {/* 대제목 영역 */}
+            <div className="flex justify-between items-end pb-2 border-b-2 border-gray-200 px-1">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+                  종합 트렌드 인사이트
+                </h2>
+                <p className="text-xs text-gray-500 mt-1 hidden sm:block">
+                  AI 요약 및 주요 뉴스, 미디어 반응 종합 리포트
+                </p>
               </div>
-            )}
+              
+              {/* 기준일 뱃지 */}
+              <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
+                {baseDateText}
+              </span>
+            </div>
+
+            {/* 기존 데이터 카드 래퍼 */}
+            <div className="card h-fit flex flex-col space-y-8">
+              
+              {/* 1. AI 트렌드 요약 */}
+              <div>
+                <h3 className="section-title mb-4 pb-2 border-b">
+                  AI 트렌드 요약
+                </h3>
+                <div className="p-4 bg-indigo-50 rounded-xl border-l-4 border-indigo-500 text-sm text-gray-700 leading-relaxed">
+                  {isAiLoading ? (
+                    <div className="flex flex-col items-center justify-center py-4 gap-3">
+                      <div className="flex gap-2">
+                        <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-75"></div>
+                        <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-150"></div>
+                      </div>
+                      <span className="text-xs text-indigo-400 font-medium animate-pulse">
+                        AI가 데이터를 분석하여 리포트를 작성 중입니다...
+                      </span>
+                    </div>
+                  ) : (
+                    aiSummary ? (
+                      <div className="animate-fade-in-up">
+                          <div 
+                            className="mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: aiSummary }} 
+                          />
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 text-center text-xs">키워드를 분석할 준비가 되었습니다.</p>
+                    )
+                  )}
+                </div>
+              </div>
+
+              {/* 2. 관련 뉴스 */}
+              <div>
+                <h3 className="section-title mb-4 pb-2 border-b">
+                  관련 뉴스
+                </h3>
+                <div className="space-y-3">
+                  {news?.length > 0 ? (
+                    news.map((item, idx) => (
+                      <a
+                        key={idx}
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="row-hover border border-transparent hover:border-gray-100"
+                      >
+                        <div className="flex justify-between items-start">
+                          <p className="text-sm font-medium text-gray-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                            {item.title}
+                          </p>
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2 mt-0.5">
+                            {new Date(item.pubDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="badge bg-gray-100 text-gray-500">{item.source}</span>
+                        </div>
+                      </a>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-400 text-sm">관련 뉴스가 없습니다.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. 관련 유튜브 반응 */}
+              <div>
+                <h3 className="section-title mb-4 border-b pb-2 flex items-center gap-2">
+                  관련 유튜브 반응
+                </h3>
+                <div className="space-y-4">
+                  {filteredData.videos && filteredData.videos.length > 0 ? (
+                    filteredData.videos.slice(0, 3).map((video) => (
+                      <a
+                        key={video.id}
+                        href={video.views === 0 ? '#' : `https://www.youtube.com/watch?v=${encodeURIComponent(String(video.id || ''))}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex flex-col sm:flex-row gap-3 sm:gap-4 group cursor-pointer"
+                      >
+                        <div className="w-full sm:w-32 h-44 sm:h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative">
+                          <img src={video.thumbnail} alt="" className="w-full h-full object-cover" />
+                          {video.views > 0 && (
+                            <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 rounded">Video</div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition leading-snug">
+                            {video.title}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
+                            <span className="truncate">{video.channel}</span>
+                            {video.views > 0 && <span>• 조회수 {formatViews(video.views)}</span>}
+                          </div>
+                        </div>
+                      </a>
+                    ))
+                  ) : (
+                    <div className="text-gray-400 text-sm py-4 text-center bg-gray-50 rounded-lg">
+                      관련 유튜브 영상을 찾을 수 없습니다.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
       </div>
