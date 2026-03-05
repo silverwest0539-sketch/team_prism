@@ -154,7 +154,7 @@ const handleGenerate = async (inputData) => {
         <div>
           <h1 className="text-xl sm:text-2xl 2xl:text-xl font-bold text-gray-900">콘텐츠 생성 스튜디오</h1>
           <p className="text-sm sm:text-base 2xl:text-sm text-gray-500 mt-1 2xl:mt-0.5">
-            다양한 브랜드 톤앤매너로 수정부터 재생성까지 한 번에 완료하세요.
+            컨텐츠 생성을 위한 프롬프트 초안을 만들어 드립니다.
           </p>
         </div>
       </div>
