@@ -66,7 +66,7 @@ const updateNewsKeywords = async () => {
     const stopWords = new Set(['뉴스', '오늘', '내일', '종합', '단독', '속보', '무단', '배포', '금지', 
                               '기자', '재배포', '연합뉴스', '오전', '오후', '대한민국', '한겨레', '조선일보', '중앙일보', '동아일보',
                             '경향신문', '공격', '매일경제', '디지털투데', '확대', '10', '뉴스1', '경향신문', 'MBC뉴스', '부산경남', '맑아져',
-                            '경남북서내륙', 'knn', 'co', 'kr', '흔들리', '말아먹', '보수냐']);
+                            '경남북서내륙', 'knn', 'co', 'kr', '흔들리', '말아먹', '보수냐', 'bntnews', '한국경제', '남자', '22']);
 
     for (const category of categories) {
       const newsList = await exports.getNewsByCategory(category);
@@ -77,12 +77,31 @@ const updateNewsKeywords = async () => {
       const keywordMap = {};
 
       for (const title of titles) {
+        let cleanTitle = title.replace(/\s*[-|][^-|]*$/, '');
+        cleanTitle = cleanTitle.replace(/\[.*?\]|\(.*?\)|<.*?>|【.*?】/g, '');
+        cleanTitle = cleanTitle.trim();
         // 제목에서 실제 '명사'만 추출
-        const nouns = await extractNouns(title);
+        const nouns = await extractNouns(cleanTitle);
         
         nouns.forEach(noun => {
-          // 2글자 이상이며, 불용어 사전에 없는 명사만 카운트
-          if (noun.length >= 2 && !stopWords.has(noun)) {
+          // ✨ 1. 숫자 + 단위 필터링 (예: 7만, 000달러, 10명, 3천억, 1위)
+          // 숫자와 쉼표/마침표 뒤에 올 수 있는 대표적인 단위들을 묶어서 걸러냅니다.
+          const isNumWithUnit = /^[0-9,.]+(만|천|백|십|억|조|달러|원|엔|명|개|위|회|년|월|일|주|차|배|건|종|대|프로|퍼센트|%)?$/.test(noun);
+          
+          // ✨ 2. 동사/형용사 활용형 꼬리표 필터링 (예: 상상해본, 시작하는, 예상되는)
+          // 2-1. 명백한 서술어 꼬리표
+          const hasVerbTail = /(해본|하는|되는|있는|없는|같은|대해|관해|위해|통해|가진|받은|주는|만든|시킨|다는|라서)$/.test(noun);
+          // 2-2. 세 글자 이상이면서 '-한', '-할', '-된', '-인', '-적'으로 끝나는 경우 (예: 다양한, 준비된, 경제적)
+          const isModifier = noun.length >= 3 && /(한|할|된|인|적)$/.test(noun);
+
+          // ✨ 3. 최종 조건: 2글자 이상 & 불용어 아님 & 숫자/단위 아님 & 서술어/수식어 아님
+          if (
+            noun.length >= 2 && 
+            !stopWords.has(noun) && 
+            !isNumWithUnit && 
+            !hasVerbTail && 
+            !isModifier
+          ) {
             keywordMap[noun] = (keywordMap[noun] || 0) + 1;
           }
         });

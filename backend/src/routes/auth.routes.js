@@ -11,5 +11,6 @@ router.post('/change-password', authController.changePassword);
 router.delete('/withdraw', authController.withdraw);
 router.post('/kakao', authController.kakaoLogin);
 router.post('/naver', authController.naverLogin);
+router.post('/update-preference', authController.updatePreference);
 
 module.exports = router;

@@ -9,6 +9,7 @@ import { showToast } from '../utils/toast';
 // 스크랩 페이지 컴포넌트 불러오기
 import ScrapPage from '../components/mypage/ScrapPage';
 import SavedPromptsSection from '../components/mypage/SavedPromptsSection';
+import InitialCommunityModal from '../components/home/InitialCommunityModal';
 
 const MODAL = Object.freeze({
   ACCOUNT: 'account',
@@ -26,6 +27,7 @@ const API_ENDPOINT = Object.freeze({
   UPDATE_PROFILE: '/auth/update-profile',
   CHANGE_PASSWORD: '/auth/change-password',
   WITHDRAW: '/auth/withdraw',
+  UPDATE_PREFERENCE: '/auth/update-preference',
 });
 
 const STORAGE_KEY = Object.freeze({
@@ -34,7 +36,6 @@ const STORAGE_KEY = Object.freeze({
 });
 
 const TOAST_MESSAGE = Object.freeze({
-  NOTIFICATION_UNAVAILABLE: '알림 기능은 현재 미구현 상태입니다.',
   PROFILE_UPDATE_SUCCESS: '프로필이 저장되었습니다.',
   PROFILE_UPDATE_ERROR: '이름 수정 중 오류가 발생했습니다.',
   PASSWORD_MISMATCH: '새 비밀번호 확인이 일치하지 않습니다.',
@@ -42,6 +43,8 @@ const TOAST_MESSAGE = Object.freeze({
   PASSWORD_CHANGE_ERROR: '비밀번호 변경에 실패했습니다.',
   WITHDRAW_SUCCESS: '회원 탈퇴가 완료되었습니다.',
   WITHDRAW_ERROR: '회원 탈퇴 중 오류가 발생했습니다.',
+  COMMUNITY_UPDATE_SUCCESS: '선호 커뮤니티가 변경되었습니다.', 
+  COMMUNITY_UPDATE_ERROR: '선호 커뮤니티 변경 중 오류가 발생했습니다.',
 });
 
 const MyPage = () => {
@@ -53,7 +56,8 @@ const MyPage = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [userInfo, setUserInfo] = useState(() => storedUser || { nickname: '', email: '' });
   const [editNickname, setEditNickname] = useState(() => storedUser?.nickname || '');
-  
+  const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
+
   // 비밀번호 상태
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -158,6 +162,31 @@ const MyPage = () => {
     }
   };
 
+  const handleCommunitySubmit = async (communityValue) => {
+    if (communityValue === 'skip') {
+      setIsCommunityModalOpen(false);
+      return;
+    }
+
+    try {
+      const response = await apiClient.post(API_ENDPOINT.UPDATE_PREFERENCE, {
+        email: userInfo.email,
+        preferredCommunity: communityValue
+      });
+
+      if (response.data.success) {
+        const updatedUser = { ...userInfo, preferredCommunity: communityValue };
+        setUserInfo(updatedUser);
+        localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
+        
+        showToast(TOAST_MESSAGE.COMMUNITY_UPDATE_SUCCESS, { type: 'success' });
+        setIsCommunityModalOpen(false);
+      }
+    } catch (error) {
+      showToast(TOAST_MESSAGE.COMMUNITY_UPDATE_ERROR, { type: 'error' });
+    }
+  };
+
   if (!authChecked) {
     return null;
   }
@@ -208,14 +237,14 @@ const MyPage = () => {
               <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
 
-            {/* 2. 알림 설정 */}
+            {/* 2. 선호 커뮤니티 설정 */}
             <div 
-              onClick={handleNotificationNotice}
+              onClick={() => setIsCommunityModalOpen(true)}
               className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors"
             >
               <div>
-                <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">알림 설정</h3>
-                <p className="text-xs text-gray-400 mt-1">이메일 수신 및 푸시 알림 관리</p>
+                <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 커뮤니티 설정</h3>
+                <p className="text-xs text-gray-400 mt-1">홈 화면에 기본으로 보여질 커뮤니티 변경</p>
               </div>
               <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
@@ -384,6 +413,10 @@ const MyPage = () => {
           </div>
         </div>
       )}
+      <InitialCommunityModal 
+        isOpen={isCommunityModalOpen} 
+        onSubmit={handleCommunitySubmit} 
+      />
     </div>
   );
 };

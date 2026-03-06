@@ -55,6 +55,10 @@ exports.signup = async (email, nickname, password, code) => {
   delete emailAuthCache[email];
 };
 
+exports.updatePreference = async (email, preferredCommunity) => {
+  await db.execute('UPDATE USERS SET preferred_community = ? WHERE user_email = ?', [preferredCommunity, email]);
+};
+
 exports.login = async (email, password) => {
   const [rows] = await db.execute('SELECT * FROM USERS WHERE user_email = ?', [email]);
   if (rows.length === 0) throw new Error("INVALID_CREDENTIALS");
@@ -71,7 +75,7 @@ exports.login = async (email, password) => {
     { expiresIn: '2h' }
   );
 
-  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider } };
+  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider, preferredCommunity: user.preferred_community } };
 };
 
 exports.findPassword = async (email) => {
@@ -168,5 +172,5 @@ exports.socialLogin = async (userInfo, provider) => {
     { expiresIn: '2h' }
   );
 
-  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider } };
+  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider, preferredCommunity: user.preferred_community } };
 };

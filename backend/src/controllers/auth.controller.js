@@ -164,3 +164,14 @@ exports.naverLogin = async (req, res) => {
     res.status(500).json({ success: false, message: '네이버 로그인에 실패했습니다.' });
   }
 };
+
+exports.updatePreference = async (req, res) => {
+  const { email, preferredCommunity } = req.body;
+  try {
+    await authService.updatePreference(email, preferredCommunity);
+    res.json({ success: true, message: "선호 커뮤니티가 저장되었습니다.", preferredCommunity });
+  } catch (error) {
+    console.error("선호 커뮤니티 저장 오류:", error);
+    res.status(500).json({ success: false, message: "서버 오류 발생" });
+  }
+};

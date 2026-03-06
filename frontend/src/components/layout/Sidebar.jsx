@@ -74,12 +74,6 @@ const Sidebar = ({ isOpen = false, onClose }) => {
     setIsLogoutConfirmOpen(true);
   };
 
-  const openNotificationSettings = () => {
-    setIsProfileOpen(false);
-    onClose?.();
-    showToast('알림 기능은 현재 미구현 상태입니다.', { type: 'info' });
-  };
-
   const handleThemeToggle = () => {
     setTheme((prev) => toggleTheme(prev));
     setIsProfileOpen(false);
@@ -130,12 +124,6 @@ const Sidebar = ({ isOpen = false, onClose }) => {
                     <p className="text-sm font-bold text-gray-900">{userInfo.nickname}님</p>
                     <p className="text-xs text-gray-500 truncate">{userInfo.user_email || userInfo.email}</p>
                   </div>
-                  <button
-                    onClick={openNotificationSettings}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-                  >
-                    <Bell className="w-4 h-4" /> 알림
-                  </button>
                   <button
                     onClick={() => handleNavigate('/mypage')}
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
@@ -248,13 +236,6 @@ const Sidebar = ({ isOpen = false, onClose }) => {
                   className="w-full flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   <Settings className="w-4 h-4" /> 마이페이지
-                </button>
-
-                <button
-                  onClick={openNotificationSettings}
-                  className="w-full flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  <Bell className="w-4 h-4" /> 알림
                 </button>
 
                 <button

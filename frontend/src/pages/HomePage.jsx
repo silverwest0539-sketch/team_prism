@@ -13,12 +13,16 @@ import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 import { Question } from '@phosphor-icons/react'; 
 
 const HomePage = () => {
+  const userInfo = getStoredUser();
+  const defaultCommunity = userInfo?.preferredCommunity || 'theqoo';
+  const ALLdefaultCommunity = userInfo?.preferredCommunity || 'youtube';
   const navigate = useNavigate();
+
   
   // --- 상태 관리 (State) ---
   const [risingKeywords, setRisingKeywords] = useState([]); 
   const [risingPlatforms, setRisingPlatforms] = useState([]); 
-  const [selectedPlatform, setSelectedPlatform] = useState('youtube');
+  const [selectedPlatform, setSelectedPlatform] = useState(ALLdefaultCommunity);
   
   // 툴팁 통합 상태 ('trend', 'platform', 'news', null)
   const [activeTooltip, setActiveTooltip] = useState(null);
@@ -48,7 +52,7 @@ const HomePage = () => {
 
   // [커뮤니티 상태 (하단)]
   const [communityPosts, setCommunityPosts] = useState([]);
-  const [selectedComm, setSelectedComm] = useState('theqoo');
+  const [selectedComm, setSelectedComm] = useState(defaultCommunity);
   const [visibleCommunityCount, setVisibleCommunityCount] = useState(5); // [추가] 커뮤니티 더보기 카운트
 
   // [뉴스 상태 (하단)]
@@ -136,11 +140,29 @@ const HomePage = () => {
 
   const getCategoryBadgeClass = (category) => 'bg-blue-100 text-blue-700';
 
-  // [추가] 초기 모달 제출 핸들러
-  const handleInitialCommunitySubmit = (communityValue) => {
+  // 초기 모달 제출 핸들러
+  const handleInitialCommunitySubmit = async (communityValue) => {
     if (communityValue !== 'skip') {
-      setSelectedComm(communityValue);
+      setSelectedComm(communityValue); // 상단 플랫폼(selectedPlatform)은 변경하지 않음
+      
+      try {
+        if (userInfo?.email) {
+          // 1. 백엔드에 선택 정보 저장
+          await apiClient.post('/auth/update-preference', { 
+            email: userInfo.email,
+            preferredCommunity: communityValue 
+          });
+
+          // 2. 로컬 스토리지의 유저 정보 업데이트 (다음에 로그인 안 해도 유지되도록)
+          const updatedUser = { ...userInfo, preferredCommunity: communityValue };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+      } catch (error) {
+        console.error('커뮤니티 설정 저장 실패:', error);
+      }
     }
+    
+    // 이 브라우저에서는 다시 모달을 띄우지 않도록 기록
     localStorage.setItem('hasSelectedCommunity', 'true');
     setIsInitialModalOpen(false);
   };
