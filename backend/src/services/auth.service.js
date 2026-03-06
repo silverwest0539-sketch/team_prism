@@ -55,8 +55,43 @@ exports.signup = async (email, nickname, password, code) => {
   delete emailAuthCache[email];
 };
 
-exports.updatePreference = async (email, preferredCommunity) => {
-  await db.execute('UPDATE USERS SET preferred_community = ? WHERE user_email = ?', [preferredCommunity, email]);
+exports.getPreferences = async (email) => {
+  const [rows] = await db.execute(
+    'SELECT preferred_community, preferred_newscategory FROM USERS WHERE user_email = ?', 
+    [email]
+  );
+  if (rows.length === 0) throw new Error("NOT_FOUND");
+  
+  return {
+    preferredCommunity: rows[0].preferred_community,
+    preferredNews: rows[0].preferred_newscategory
+  };
+};
+
+exports.updatePreference = async (email, preferredCommunity, preferredNewsCategory) => {
+  const updates = [];
+  const values = [];
+
+  // preferredCommunity 값이 넘어왔을 때만 업데이트 항목에 추가
+  if (preferredCommunity !== undefined) {
+    updates.push('preferred_community = ?');
+    values.push(preferredCommunity);
+  }
+
+  // preferredNewsCategory 값이 넘어왔을 때만 업데이트 항목에 추가
+  if (preferredNewsCategory !== undefined) {
+    updates.push('preferred_newscategory = ?');
+    values.push(preferredNewsCategory);
+  }
+
+  // 둘 다 안 넘어왔으면 쿼리를 실행하지 않고 종료
+  if (updates.length === 0) return;
+
+  // 동적으로 쿼리문 조립 (예: UPDATE USERS SET preferred_community = ? WHERE user_email = ?)
+  const query = `UPDATE USERS SET ${updates.join(', ')} WHERE user_email = ?`;
+  values.push(email);
+
+  await db.execute(query, values);
 };
 
 exports.login = async (email, password) => {
@@ -75,7 +110,7 @@ exports.login = async (email, password) => {
     { expiresIn: '2h' }
   );
 
-  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider, preferredCommunity: user.preferred_community } };
+  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider, preferredCommunity: user.preferred_community, preferredNews: user.preferred_newscategory } };
 };
 
 exports.findPassword = async (email) => {
@@ -172,5 +207,5 @@ exports.socialLogin = async (userInfo, provider) => {
     { expiresIn: '2h' }
   );
 
-  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider, preferredCommunity: user.preferred_community } };
+  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider, preferredCommunity: user.preferred_community, preferredNews: user.preferred_newscategory } };
 };

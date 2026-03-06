@@ -6,25 +6,16 @@ import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { showToast } from '../utils/toast';
-import {
-  getAccountPreferredCommunity,
-  setAccountPreferredCommunity,
-} from '../utils/platformPreferenceStorage';
-import {
-  getAccountPreferredNewsCategory,
-  setAccountPreferredNewsCategory,
-} from '../utils/newsCategoryPreferenceStorage';
 // 스크랩 페이지 컴포넌트 불러오기
 import ScrapPage from '../components/mypage/ScrapPage';
 import SavedPromptsSection from '../components/mypage/SavedPromptsSection';
-import InitialCommunityModal from '../components/home/InitialCommunityModal';
+import BasePreferenceModal from '../components/common/BasePreferenceModal';
 
 const MODAL = Object.freeze({
   ACCOUNT: 'account',
   PASSWORD: 'password',
   WITHDRAW: 'withdraw',
-  PREFERRED_PLATFORM: 'preferred_platform',
-  PREFERRED_NEWS_CATEGORY: 'preferred_news_category',
+  NOTIFICATION: 'notification',
 });
 
 const ROUTE = Object.freeze({
@@ -45,10 +36,6 @@ const STORAGE_KEY = Object.freeze({
 });
 
 const TOAST_MESSAGE = Object.freeze({
-  PREFERRED_PLATFORM_SAVE_SUCCESS: '선호 플랫폼이 저장되었습니다.',
-  PREFERRED_PLATFORM_SAVE_ERROR: '선호 플랫폼 저장에 실패했습니다.',
-  PREFERRED_NEWS_SAVE_SUCCESS: '선호 뉴스 카테고리가 저장되었습니다.',
-  PREFERRED_NEWS_SAVE_ERROR: '선호 뉴스 카테고리 저장에 실패했습니다.',
   PROFILE_UPDATE_SUCCESS: '프로필이 저장되었습니다.',
   PROFILE_UPDATE_ERROR: '이름 수정 중 오류가 발생했습니다.',
   PASSWORD_MISMATCH: '새 비밀번호 확인이 일치하지 않습니다.',
@@ -68,7 +55,7 @@ const COMMUNITY_OPTIONS = [
   { label: 'FM코리아', value: 'fmkorea' },
 ];
 
-const NEWS_CATEGORY_OPTIONS = [
+const NEWS_OPTIONS = [
   { label: '대한민국', value: 'korea' },
   { label: '세계', value: 'world' },
   { label: '비즈니스', value: 'business' },
@@ -86,9 +73,7 @@ const MyPage = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [userInfo, setUserInfo] = useState(() => storedUser || { nickname: '', email: '' });
   const [editNickname, setEditNickname] = useState(() => storedUser?.nickname || '');
-  const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
-  const [preferredCommunity, setPreferredCommunity] = useState(COMMUNITY_OPTIONS[0].value);
-  const [preferredNewsCategory, setPreferredNewsCategory] = useState(NEWS_CATEGORY_OPTIONS[0].value);
+  const [prefModalType, setPrefModalType] = useState(null);
 
   // 비밀번호 상태
   const [passwordForm, setPasswordForm] = useState({
@@ -116,64 +101,19 @@ const MyPage = () => {
 
   useEffect(() => {
     const modal = new URLSearchParams(location.search).get('modal');
-    if (modal === MODAL.PREFERRED_PLATFORM) {
-      setActiveModal(MODAL.PREFERRED_PLATFORM);
+    if (modal === MODAL.NOTIFICATION) {
+      showToast(TOAST_MESSAGE.NOTIFICATION_UNAVAILABLE, { type: 'info' });
       navigate(ROUTE.MYPAGE, { replace: true });
       return;
     }
-
-    if (modal === MODAL.PREFERRED_NEWS_CATEGORY) {
-      setActiveModal(MODAL.PREFERRED_NEWS_CATEGORY);
-      navigate(ROUTE.MYPAGE, { replace: true });
-    }
   }, [location.search, navigate]);
 
-  useEffect(() => {
-    const preferredCommunityValue = getAccountPreferredCommunity(userInfo.email);
-    if (preferredCommunityValue) {
-      setPreferredCommunity(preferredCommunityValue);
-    }
-
-    const preferredNewsValue = getAccountPreferredNewsCategory(userInfo.email);
-    if (preferredNewsValue) {
-      setPreferredNewsCategory(preferredNewsValue);
-    }
-  }, [userInfo.email]);
 
   const closeModal = () => {
     setActiveModal(null);
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
   };
 
-  const handleOpenPreferredPlatformModal = () => {
-    setActiveModal(MODAL.PREFERRED_PLATFORM);
-  };
-
-  const handleOpenPreferredNewsModal = () => {
-    setActiveModal(MODAL.PREFERRED_NEWS_CATEGORY);
-  };
-
-  const handleSavePreferredCommunity = () => {
-    const isSaved = setAccountPreferredCommunity(userInfo.email, preferredCommunity);
-    if (!isSaved) {
-      showToast(TOAST_MESSAGE.PREFERRED_PLATFORM_SAVE_ERROR, { type: 'error' });
-      return;
-    }
-
-    showToast(TOAST_MESSAGE.PREFERRED_PLATFORM_SAVE_SUCCESS, { type: 'success' });
-    closeModal();
-  };
-
-  const handleSavePreferredNewsCategory = () => {
-    const isSaved = setAccountPreferredNewsCategory(userInfo.email, preferredNewsCategory);
-    if (!isSaved) {
-      showToast(TOAST_MESSAGE.PREFERRED_NEWS_SAVE_ERROR, { type: 'error' });
-      return;
-    }
-
-    showToast(TOAST_MESSAGE.PREFERRED_NEWS_SAVE_SUCCESS, { type: 'success' });
-    closeModal();
-  };
 
   // 닉네임 수정 함수
   const handleSaveProfile = async () => {
@@ -238,28 +178,34 @@ const MyPage = () => {
     }
   };
 
-  const handleCommunitySubmit = async (communityValue) => {
-    if (communityValue === 'skip') {
-      setIsCommunityModalOpen(false);
+  const handlePreferenceSubmit = async (value) => {
+    if (value === 'skip') {
+      setPrefModalType(null);
       return;
     }
 
     try {
-      const response = await apiClient.post(API_ENDPOINT.UPDATE_PREFERENCE, {
-        email: userInfo.email,
-        preferredCommunity: communityValue
-      });
+      // 💡 핵심: 현재 열린 모달 타입에 따라 변경할 값 딱 하나만 payload에 담습니다.
+      const payload = { email: userInfo.email };
+      if (prefModalType === 'community') payload.preferredCommunity = value;
+      if (prefModalType === 'news') payload.preferredNews = value;
+
+      const response = await apiClient.post(API_ENDPOINT.UPDATE_PREFERENCE, payload);
 
       if (response.data.success) {
-        const updatedUser = { ...userInfo, preferredCommunity: communityValue };
+        // 로컬 상태(userInfo)에도 변경된 값만 업데이트
+        const updatedUser = { ...userInfo };
+        if (prefModalType === 'community') updatedUser.preferredCommunity = value;
+        if (prefModalType === 'news') updatedUser.preferredNews = value;
+
         setUserInfo(updatedUser);
         localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         
-        showToast(TOAST_MESSAGE.COMMUNITY_UPDATE_SUCCESS, { type: 'success' });
-        setIsCommunityModalOpen(false);
+        showToast(TOAST_MESSAGE.PREFERENCE_UPDATE_SUCCESS, { type: 'success' });
+        setPrefModalType(null);
       }
-    } catch {
-      showToast(TOAST_MESSAGE.COMMUNITY_UPDATE_ERROR, { type: 'error' });
+    } catch (error){
+      showToast(TOAST_MESSAGE.PREFERENCE_UPDATE_ERROR, { type: 'error' });
     }
   };
 
@@ -302,24 +248,24 @@ const MyPage = () => {
               <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
 
-            <div
-              onClick={handleOpenPreferredPlatformModal}
+            <div 
+              onClick={() => setPrefModalType('community')}
               className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors"
             >
               <div>
                 <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 플랫폼 설정</h3>
-                <p className="text-xs text-gray-400 mt-1">대시보드에서 우선 표시할 커뮤니티 설정</p>
+                <p className="text-xs text-gray-400 mt-1">대시보드에서 우선 표시할 플랫폼 설정</p>
               </div>
               <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
 
-            <div
-              onClick={handleOpenPreferredNewsModal}
+            <div 
+              onClick={() => setPrefModalType('news')}
               className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors"
             >
               <div>
                 <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 뉴스 카테고리 설정</h3>
-                <p className="text-xs text-gray-400 mt-1">대시보드에서 우선 표시할 뉴스 카테고리 설정</p>
+                <p className="text-xs text-gray-400 mt-1">대시보드에서 우선 표시할 뉴스 분야 설정</p>
               </div>
               <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
@@ -372,8 +318,6 @@ const MyPage = () => {
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900">
                 {activeModal === MODAL.ACCOUNT && '계정 정보 설정'}
-                {activeModal === MODAL.PREFERRED_PLATFORM && '선호 플랫폼 설정'}
-                {activeModal === MODAL.PREFERRED_NEWS_CATEGORY && '선호 뉴스 카테고리 설정'}
                 {activeModal === MODAL.WITHDRAW && '회원 탈퇴'}
               </h3>
               <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full transition">
@@ -450,60 +394,6 @@ const MyPage = () => {
                 </div>
               )}
 
-              {activeModal === MODAL.PREFERRED_PLATFORM && (
-                <div>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    설정한 플랫폼을 기준으로 대시보드의 플랫폼별 키워드와 커뮤니티 인기글을 우선 노출합니다.
-                  </p>
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {COMMUNITY_OPTIONS.map((option) => {
-                      const isSelected = preferredCommunity === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setPreferredCommunity(option.value)}
-                          className={`w-full text-left rounded-xl border px-3 py-2.5 transition ${
-                            isSelected
-                              ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          <span className="text-sm font-semibold">{option.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {activeModal === MODAL.PREFERRED_NEWS_CATEGORY && (
-                <div>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    설정한 카테고리를 기준으로 대시보드의 뉴스 키워드와 오늘의 뉴스를 우선 노출합니다.
-                  </p>
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {NEWS_CATEGORY_OPTIONS.map((option) => {
-                      const isSelected = preferredNewsCategory === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setPreferredNewsCategory(option.value)}
-                          className={`w-full text-left rounded-xl border px-3 py-2.5 transition ${
-                            isSelected
-                              ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          <span className="text-sm font-semibold">{option.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
               {/* 3. 회원 탈퇴 */}
               {activeModal === MODAL.WITHDRAW && (
                 <div className="text-center">
@@ -526,33 +416,43 @@ const MyPage = () => {
                   onClick={() => {
                     if (activeModal === MODAL.ACCOUNT) {
                       handleSaveProfile();
-                    } else if (activeModal === MODAL.PREFERRED_PLATFORM) {
-                      handleSavePreferredCommunity();
-                    } else if (activeModal === MODAL.PREFERRED_NEWS_CATEGORY) {
-                      handleSavePreferredNewsCategory();
                     } else {
                       closeModal();
                     }
                   }}
                   className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all"
                 >
-                  {activeModal === MODAL.ACCOUNT
-                    ? '프로필 저장하기'
-                    : activeModal === MODAL.PREFERRED_PLATFORM
-                      ? '선호 플랫폼 저장하기'
-                      : activeModal === MODAL.PREFERRED_NEWS_CATEGORY
-                        ? '선호 뉴스 저장하기'
-                      : '저장하기'}
+                  {activeModal === MODAL.ACCOUNT ? '프로필 저장하기' : '저장하기'}
                 </button>
               </div>
             )}
           </div>
         </div>
       )}
-      <InitialCommunityModal 
-        isOpen={isCommunityModalOpen} 
-        onSubmit={handleCommunitySubmit} 
-      />
+      {/* [추가] 취향 설정 모달 렌더링 영역 */}
+      {prefModalType === 'community' && (
+        <BasePreferenceModal 
+          isOpen={true}
+          title="선호 커뮤니티 설정"
+          subtitle="대시보드에서 우선 표시할 커뮤니티를 선택해주세요."
+          options={COMMUNITY_OPTIONS}
+          submitText="변경하기"
+          onSubmit={handlePreferenceSubmit}
+          onClose={() => setPrefModalType(null)} 
+        />
+      )}
+
+      {prefModalType === 'news' && (
+        <BasePreferenceModal 
+          isOpen={true}
+          title="선호 뉴스 카테고리 설정"
+          subtitle="대시보드에서 우선 표시할 뉴스 분야를 선택해주세요."
+          options={NEWS_OPTIONS}
+          submitText="변경하기"
+          onSubmit={handlePreferenceSubmit}
+          onClose={() => setPrefModalType(null)}
+        />
+      )}
     </div>
   );
 };

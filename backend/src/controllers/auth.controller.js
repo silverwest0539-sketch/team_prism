@@ -166,12 +166,31 @@ exports.naverLogin = async (req, res) => {
 };
 
 exports.updatePreference = async (req, res) => {
-  const { email, preferredCommunity } = req.body;
+  // req.body에서 preferredNews도 함께 받습니다 (HomePage.jsx에서 이렇게 보내고 있음)
+  const { email, preferredCommunity, preferredNews } = req.body; 
   try {
-    await authService.updatePreference(email, preferredCommunity);
-    res.json({ success: true, message: "선호 커뮤니티가 저장되었습니다.", preferredCommunity });
+    await authService.updatePreference(email, preferredCommunity, preferredNews);
+    res.json({ 
+      success: true, 
+      message: "선호 설정이 저장되었습니다.", 
+      preferredCommunity,
+      preferredNews 
+    });
   } catch (error) {
-    console.error("선호 커뮤니티 저장 오류:", error);
+    console.error("선호 설정 저장 오류:", error);
     res.status(500).json({ success: false, message: "서버 오류 발생" });
+  }
+};
+
+exports.getPreferences = async (req, res) => {
+  const { email } = req.query; // GET 요청이므로 query에서 받습니다.
+  if (!email) return res.status(400).json({ success: false, message: "이메일이 필요합니다." });
+
+  try {
+    const prefs = await authService.getPreferences(email);
+    res.json({ success: true, ...prefs });
+  } catch (error) {
+    console.error("취향 조회 에러:", error);
+    res.status(500).json({ success: false, message: "서버 에러가 발생했습니다." });
   }
 };

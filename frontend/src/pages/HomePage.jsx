@@ -6,12 +6,9 @@ import { PlayCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, X,
 import SearchBar from '../components/common/SearchBar';
 import SummaryModal from '../components/home/SummaryModal';
 import InitialWizardModal from '../components/home/InitialWizardModal';
-import InitialCommunityModal from '../components/home/InitialCommunityModal'; // [추가] 초기 커뮤니티 모달
 import { formatViews, formatDate } from '../utils/formatters';
 import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
-import { getAccountPreferredCommunity } from '../utils/platformPreferenceStorage';
-import { getAccountPreferredNewsCategory } from '../utils/newsCategoryPreferenceStorage';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 import { Question } from '@phosphor-icons/react'; 
 
@@ -29,20 +26,11 @@ const HomePage = () => {
   const navigate = useNavigate();
   const storedUser = getStoredUser();
   const userInfo = storedUser;
-  const preferredCommunity = getAccountPreferredCommunity(storedUser?.email || '');
-  const preferredNewsCategory = getAccountPreferredNewsCategory(storedUser?.email || '');
   
   // --- 상태 관리 (State) ---
   const [risingKeywords, setRisingKeywords] = useState([]); 
   const [risingPlatforms, setRisingPlatforms] = useState([]); 
-  // [수정] 상단 플랫폼: 팀원이 수정한 user 객체 안에서 값을 찾도록 수정
-  const [selectedPlatform, setSelectedPlatform] = useState(() => {
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    const saved = user?.preferredCommunity || localStorage.getItem('preferredCommunity');
-    
-    return (saved && saved !== 'skip') ? saved : 'youtube';
-  });
+  const [selectedPlatform, setSelectedPlatform] = useState('youtube');
   
   
   // 툴팁 통합 상태 ('trend', 'platform', 'news', null)
@@ -54,12 +42,7 @@ const HomePage = () => {
 
   // [뉴스 키워드 (상단)]
   const [newsKeywords, setNewsKeywords] = useState([]);
-    const [selectedNewsTopCategory, setSelectedNewsTopCategory] = useState(() => {
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    const saved = user?.preferredNews || localStorage.getItem('preferredNews');
-    return (saved && saved !== 'skip') ? saved : 'korea';
-  });
+  const [selectedNewsTopCategory, setSelectedNewsTopCategory] = useState('korea');
   const [isNewsDropdownOpen, setIsNewsDropdownOpen] = useState(false); // 상단 뉴스 드롭다운 상태
 
   // [유튜브]
@@ -78,36 +61,16 @@ const HomePage = () => {
 
   // [커뮤니티 상태 (하단)]
   const [communityPosts, setCommunityPosts] = useState([]);
-  // [수정] 하단 커뮤니티: 팀원이 수정한 user 객체 안에서 값을 찾도록 수정
-  const [selectedComm, setSelectedComm] = useState(() => {
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    const saved = user?.preferredCommunity || localStorage.getItem('preferredCommunity');
-    
-    return (saved && saved !== 'skip') ? saved : 'theqoo';
-  });
+  const [selectedComm, setSelectedComm] = useState('theqoo');
   const [visibleCommunityCount, setVisibleCommunityCount] = useState(5); // [추가] 커뮤니티 더보기 카운트
 
-  // [뉴스 상태 (하단)]
-    const [selectedNewsCategory, setSelectedNewsCategory] = useState(() => {
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    const saved = user?.preferredNews || localStorage.getItem('preferredNews');
-    return (saved && saved !== 'skip') ? saved : 'korea';
-  });
+  const [selectedNewsCategory, setSelectedNewsCategory] = useState('korea');
   const [todayNews, setTodayNews] = useState([]);
   const [visibleNewsCount, setVisibleNewsCount] = useState(5); // [추가] 뉴스 더보기 카운트
 
   // 읽음 처리 상태
-  const [readLinks, setReadLinks] = useState(() => {
-    const savedLinks = localStorage.getItem('readCommunityLinks');
-    return savedLinks ? new Set(JSON.parse(savedLinks)) : new Set();
-  });
-
-  const [readNewsLinks, setReadNewsLinks] = useState(() => {
-    const savedNewsLinks = localStorage.getItem('readNewsLinks');
-    return savedNewsLinks ? new Set(JSON.parse(savedNewsLinks)) : new Set();
-  });
+  const [readLinks, setReadLinks] = useState(new Set());
+  const [readNewsLinks, setReadNewsLinks] = useState(new Set());
 
   const scrollRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -139,9 +102,10 @@ const HomePage = () => {
     { label: 'FM코리아', value: 'fmkorea' },
   ];
 
-  const prioritizedCommunityOptions = prioritizeOptions(COMMUNITY_OPTIONS, preferredCommunity);
-  const prioritizedMainPlatformOptions = prioritizeOptions(MAIN_PLATFORM_OPTIONS, preferredCommunity);
-  const prioritizedNewsCategoryOptions = prioritizeOptions(NEWS_CATEGORY_OPTIONS, preferredNewsCategory);
+  // 수정 전의 preferredCommunity 변수 대신 State 값 사용
+  const prioritizedCommunityOptions = prioritizeOptions(COMMUNITY_OPTIONS, selectedComm);
+  const prioritizedMainPlatformOptions = prioritizeOptions(MAIN_PLATFORM_OPTIONS, selectedPlatform);
+  const prioritizedNewsCategoryOptions = prioritizeOptions(NEWS_CATEGORY_OPTIONS, selectedNewsTopCategory);
 
   const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '브이로그'];
 
@@ -165,31 +129,21 @@ const HomePage = () => {
   };
 
   const handlePostClick = (link) => {
-    setReadLinks((prev) => {
-      const newSet = new Set(prev).add(link);
-      localStorage.setItem('readCommunityLinks', JSON.stringify([...newSet]));
-      return newSet;
-    });
+    setReadLinks((prev) => new Set(prev).add(link));
   };
 
   const handleNewsClick = (link) => {
-    setReadNewsLinks((prev) => {
-      const newSet = new Set(prev).add(link);
-      localStorage.setItem('readNewsLinks', JSON.stringify([...newSet]));
-      return newSet;
-    });
+    setReadNewsLinks((prev) => new Set(prev).add(link));
   };
 
   const getCategoryBadgeClass = () => 'bg-blue-100 text-blue-700';
 
   // [수정] 2단계 마법사 모달 제출 핸들러
   const handleInitialPreferencesSubmit = async ({ community, news }) => {
-    // 1. 커뮤니티 상태 적용
     if (community !== 'skip') {
       setSelectedComm(community); 
       setSelectedPlatform(community); 
     }
-    // 2. 뉴스 상태 적용
     if (news !== 'skip') {
       setSelectedNewsTopCategory(news);
       setSelectedNewsCategory(news);
@@ -197,36 +151,21 @@ const HomePage = () => {
     
     try {
       if (userInfo?.email) {
-        // [백엔드 연동] - 팀원 분의 API가 업데이트 되었다고 가정 (news 필드 추가 등)
         await apiClient.post('/auth/update-preference', { 
           email: userInfo.email,
           preferredCommunity: community,
-          preferredNews: news // 뉴스 필드 추가
+          preferredNews: news 
         });
-
-        const updatedUser = { ...userInfo, preferredCommunity: community, preferredNews: news };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-      } else {
-        localStorage.setItem('preferredCommunity', community);
-        localStorage.setItem('preferredNews', news);
       }
     } catch (error) {
       console.error('취향 설정 저장 실패:', error);
     }
     
-    localStorage.setItem('hasSelectedCommunity', 'true');
+    // ❌ 로컬스토리지 저장 삭제 (localStorage.setItem('hasSelectedCommunity', 'true');)
     setIsInitialModalOpen(false);
   };
-
   // --- API 호출 (useEffect) ---
 
-  // [최초 로드 시] 모달 오픈 여부 체크
-  useEffect(() => {
-    const hasSelected = localStorage.getItem('hasSelectedCommunity');
-    if (!hasSelected) {
-      setIsInitialModalOpen(true);
-    }
-  }, []);
 
   // [탭 변경 시] 더보기 카운트 초기화
   useEffect(() => setVisibleCommunityCount(5), [selectedComm]);
@@ -299,6 +238,42 @@ const HomePage = () => {
     };
     fetchCommunityPosts();
   }, [selectedComm]);
+
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      if (userInfo?.email) {
+        try {
+          const res = await apiClient.get('/auth/preferences', { 
+            params: { email: userInfo.email } 
+          });
+          
+          if (res.data.success) {
+            const { preferredCommunity, preferredNews } = res.data;
+            
+            // 💡 핵심: DB에 값이 하나라도 없다면 취향 설정 모달을 띄웁니다.
+            if (!preferredCommunity || !preferredNews) {
+              setIsInitialModalOpen(true);
+            } else {
+              // DB에 값이 있으면 해당 값으로 화면 세팅
+              setSelectedPlatform(preferredCommunity);
+              setSelectedComm(preferredCommunity);
+              setSelectedNewsTopCategory(preferredNews);
+              setSelectedNewsCategory(preferredNews);
+            }
+          }
+        } catch (error) {
+          console.error('유저 취향 정보를 불러오지 못했습니다:', error);
+          // 에러 발생 시 안전하게 모달을 띄워 설정하게 유도할 수 있습니다.
+          setIsInitialModalOpen(true); 
+        }
+      } else {
+        // 비로그인 상태일 때도 최초 진입 모달을 띄우고 싶다면 추가
+        setIsInitialModalOpen(true);
+      }
+    };
+
+    fetchUserPreferences();
+  }, [userInfo?.email]);
 
 
   // --- 렌더링 ---
@@ -752,7 +727,7 @@ const HomePage = () => {
 
 
             {/* 개발용 임시 버튼 (나중에 지우기!) */}
-      <button 
+      {/* <button 
         onClick={() => {
           localStorage.removeItem('hasSelectedCommunity'); // 저장된 기록 삭제
           setIsInitialModalOpen(true); // 모달 바로 열기
@@ -760,7 +735,7 @@ const HomePage = () => {
         className="fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-full shadow-lg z-50 text-xs"
       >
         모달 테스트 열기
-      </button>
+      </button> */}
 
 
 

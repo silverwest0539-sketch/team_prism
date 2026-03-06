@@ -66,7 +66,8 @@ const updateNewsKeywords = async () => {
     const stopWords = new Set(['뉴스', '오늘', '내일', '종합', '단독', '속보', '무단', '배포', '금지', 
                               '기자', '재배포', '연합뉴스', '오전', '오후', '대한민국', '한겨레', '조선일보', '중앙일보', '동아일보',
                             '경향신문', '공격', '매일경제', '디지털투데', '확대', '10', '뉴스1', '경향신문', 'MBC뉴스', '부산경남', '맑아져',
-                            '경남북서내륙', 'knn', 'co', 'kr', '흔들리', '말아먹', '보수냐', 'bntnews', '한국경제', '남자', '22', '그냥']);
+                            '경남북서내륙', 'knn', 'co', 'kr', '흔들리', '말아먹', '보수냐', 'bntnews', '한국경제', '남자', '22', '그냥',
+                            '끼어', '돌아', '여행하']);
 
     for (const category of categories) {
       const newsList = await exports.getNewsByCategory(category);
@@ -94,7 +95,7 @@ const updateNewsKeywords = async () => {
           // 2-2. 세 글자 이상이면서 '-한', '-할', '-된', '-인', '-적'으로 끝나는 경우 (예: 다양한, 준비된, 경제적)
           const isModifier = noun.length >= 3 && /(한|할|된|인|적)$/.test(noun);
 
-          const isVerbEnding = /[가-힣](랐|렸|썼|쓸|솟|겠|챘|켰|팠|봤|왔|갔|줬|췄)(고|게|다|어|아)?$/.test(noun) || /(치솟|쓸게)$/.test(noun);
+          const isVerbEnding = /[가-힣](랐|렸|썼|쓸|솟|겠|챘|켰|팠|봤|왔|갔|줬|췄)(고|게|다|어|아|려)?$/.test(noun) || /(치솟|쓸게)$/.test(noun);
 
           // ✨ 3. 최종 조건: 2글자 이상 & 불용어 아님 & 숫자/단위 아님 & 서술어/수식어 아님
           if (
