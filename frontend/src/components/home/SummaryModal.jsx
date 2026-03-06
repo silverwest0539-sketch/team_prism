@@ -151,9 +151,9 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
     }
   };
 
-  const posScore = detailData?.positive_score || 0;
-  const neuScore = detailData?.neutral_score || 0;
-  const negScore = detailData?.negative_score || 0;
+  const posScore = Number(detailData?.positive_score) || 0;
+  const neuScore = Number(detailData?.neutral_score) || 0;
+  const negScore = Number(detailData?.negative_score) || 0;
 
   const maxScore = Math.max(posScore, neuScore, negScore);
   

@@ -1,4 +1,5 @@
 import os
+import json
 import datetime
 import pymysql
 from dotenv import load_dotenv
@@ -33,6 +34,15 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
 model.eval()
 
+with open(os.path.join(MODEL_PATH, "label_map.json"), "r", encoding="utf-8") as f:
+    label_map = json.load(f)
+
+db_label_mapping = {
+    "pos": "positive",
+    "neg": "negative",
+    "neu": "neutral"
+}
+
 def analyze_sentiment(text):
     inputs = tokenizer(
         text, 
@@ -48,14 +58,14 @@ def analyze_sentiment(text):
     logits = outputs.logits
     probs = F.softmax(logits, dim=-1).squeeze().tolist()
     
+    if isinstance(probs, float):
+        probs = [probs]
+
     max_index = probs.index(max(probs))
+
+    short_label = label_map["id2label"][str(max_index)]
     
-    if max_index == 0:
-        label = 'neutral'
-    elif max_index == 1:
-        label = 'negative'
-    else:
-        label = 'positive'
+    label = db_label_mapping[short_label]
         
     return label
 

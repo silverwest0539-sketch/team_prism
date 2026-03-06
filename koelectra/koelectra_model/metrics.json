@@ -1,0 +1,13 @@
+{
+  "best_valid_f1_macro": 0.8565799453549184,
+  "test_accuracy": 0.889727219965177,
+  "test_precision_macro": 0.8615817361550252,
+  "test_recall_macro": 0.851050146081799,
+  "test_f1_macro": 0.8559458619839146,
+  "test_precision_weighted": 0.8887199907624078,
+  "test_recall_weighted": 0.889727219965177,
+  "test_f1_weighted": 0.8889157646527462,
+  "model_dir": "",
+  "base_model_dir": "",
+  "max_length": 256
+}
