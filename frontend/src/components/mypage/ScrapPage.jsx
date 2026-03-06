@@ -8,16 +8,11 @@ import {
     MagnifyingGlass, SortAscending, SquaresFour, List,
     Export, Checks
 } from '@phosphor-icons/react';
-import { reorderScraps } from '../../utils/storage';
 import SummaryModal from '../home/SummaryModal';
 import apiClient from '../../utils/apiClient';
 import { getStoredUserEmail } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
-import {
-    getAccountLocalScraps,
-    removeAccountLocalScrap,
-    mergeServerAndLocalScraps,
-} from '../../utils/accountScrapFallback';
+
 
 // ─── 날짜 계산 헬퍼 함수 (수정사항 3번 해결) ───
 const getRelativeDate = (dateString) => {
@@ -36,17 +31,6 @@ const getRelativeDate = (dateString) => {
     if (diffDays === 0) return '오늘';
     // 필요하다면 '1일 전'을 '어제'로 변경 가능
     return `${diffDays}일 전`;
-};
-
-// ─── 변동 뱃지 (더미: 해시 기반 할당, 실제론 API 연동) ───
-const BADGE_TYPES = [
-    { label: '급상승', icon: Fire, color: 'bg-red-50 text-red-500 border-red-200' },
-    { label: '신규', icon: Sparkle, color: 'bg-indigo-50 text-indigo-500 border-indigo-200' },
-    null, null, null
-];
-const getBadge = (keyword) => {
-    const hash = keyword.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return BADGE_TYPES[hash % BADGE_TYPES.length];
 };
 
 // ─── 정렬 옵션 ───
@@ -94,19 +78,18 @@ const ScrapPage = ({ isEmbedded = false }) => {
         const userEmail = getStoredUserEmail();
         if (!userEmail) return;
 
-        const localScraps = getAccountLocalScraps(userEmail);
         try {
             const response = await apiClient.get('/scraps', {
                 params: { email: userEmail }
             });
-            if (response.data.success) {
-                setScraps(mergeServerAndLocalScraps(response.data.scraps, localScraps));
-                return;
+            if (response.data && response.data.success) {
+                setScraps(response.data.scraps || []);
+            } else {
+                setScraps([]);
             }
-            setScraps(localScraps);
         } catch (error) {
             console.error("스크랩 데이터를 불러오는데 실패했습니다.", error);
-            setScraps(localScraps);
+            setScraps([]); // 실패 시 빈 배열 처리 (DB 에러 확인 용이)
         }
     }, []);
 
@@ -175,10 +158,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
         if (window.confirm(`'${keyword}' 스크랩을 삭제하시겠습니까?`)) {
             setRemovingKeywords(new Set([keyword]));
             try {
-                if (!item.isLocalFallback) {
-                    await deleteScrapItem(userEmail, keyword);
-                }
-                removeAccountLocalScrap(userEmail, keyword);
+                await deleteScrapItem(userEmail, keyword);
                 setTimeout(() => {
                     refreshScraps();
                     setRemovingKeywords(new Set());
@@ -200,26 +180,15 @@ const ScrapPage = ({ isEmbedded = false }) => {
         if (window.confirm(`선택된 ${count}개의 스크랩을 삭제하시겠습니까?`)) {
             setRemovingKeywords(new Set(deleteSelection));
             try {
-                const selectedItems = scraps.filter((item) => deleteSelection.has(item.keyword));
-                const serverKeywords = selectedItems
-                    .filter((item) => !item.isLocalFallback)
-                    .map((item) => item.keyword);
-                const localKeywords = selectedItems
-                    .filter((item) => item.isLocalFallback)
-                    .map((item) => item.keyword);
-
-                if (serverKeywords.length > 0) {
-                    const results = await Promise.allSettled(
-                        serverKeywords.map((keyword) => deleteScrapItem(userEmail, keyword))
-                    );
-                    if (results.some((result) => result.status === 'rejected')) {
-                        throw new Error('SERVER_BULK_DELETE_FAILED');
-                    }
+                // 선택된 키워드들을 서버에서 일괄 삭제 시도
+                const keywordsToDelete = Array.from(deleteSelection);
+                const results = await Promise.allSettled(
+                    keywordsToDelete.map((keyword) => deleteScrapItem(userEmail, keyword))
+                );
+                
+                if (results.some((result) => result.status === 'rejected')) {
+                    throw new Error('SERVER_BULK_DELETE_FAILED');
                 }
-
-                [...serverKeywords, ...localKeywords].forEach((keyword) => {
-                    removeAccountLocalScrap(userEmail, keyword);
-                });
 
                 setTimeout(() => {
                     refreshScraps();
@@ -289,7 +258,6 @@ const ScrapPage = ({ isEmbedded = false }) => {
         const reordered = [...scraps];
         const [moved] = reordered.splice(dragIndex, 1);
         reordered.splice(dropIndex, 0, moved);
-        reorderScraps(reordered);
         setScraps(reordered);
         setDragIndex(null);
         setDragOverIndex(null);
@@ -316,7 +284,6 @@ const ScrapPage = ({ isEmbedded = false }) => {
 
     // 카드 컨텐츠 (그리드/리스트 공용 추출)
     const renderCardContent = (item, index) => {
-        const badge = getBadge(item.keyword);
         const isRemoving = removingKeywords.has(item.keyword);
         const isSelected = getCheckState(item.keyword);
         const isDragOver = dragOverIndex === index;
@@ -365,14 +332,6 @@ const ScrapPage = ({ isEmbedded = false }) => {
                     </div>
                 )}
 
-                {/* 변동 뱃지 (우측 상단 아이콘+텍스트) */}
-                {badge && (
-                    <div className={`absolute ${viewMode === 'list' ? 'top-3 right-4' : 'top-3 right-12'} flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${badge.color}`}>
-                        <badge.icon size={10} weight="fill" />
-                        {badge.label}
-                    </div>
-                )}
-
                 {/* 메인 컨텐츠 */}
                 <div className={`flex-1 ${viewMode === 'list' ? 'min-w-0' : ''}`}>
                     <div className="flex justify-between items-start mb-3">
@@ -394,7 +353,6 @@ const ScrapPage = ({ isEmbedded = false }) => {
                     </div>
                     
                     <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3">
-                        {/* (수정사항 3번 반영) getRelativeDate 함수 사용 */}
                         <span>{item.savedAt ? getRelativeDate(item.savedAt) : '날짜 정보 없음'} 저장됨</span>
                         {!isDeleteMode && (
                             <span className="flex items-center gap-1 text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
@@ -434,20 +392,6 @@ const ScrapPage = ({ isEmbedded = false }) => {
                             관심 있게 본 트렌드 키워드를 모아두었습니다.
                         </p>
                     </div>
-
-                    {/* (수정사항 1번: 내보내기 버튼 주석 처리) */}
-                    {/* 
-                    {scraps.length > 0 && (
-                        <button
-                            onClick={handleExport}
-                            className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-gray-500 bg-white border border-gray-200 rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition-all"
-                            title="CSV로 내보내기"
-                        >
-                            <Export size={14} />
-                            내보내기
-                        </button>
-                    )} 
-                    */}
                 </div>
             </div>
 

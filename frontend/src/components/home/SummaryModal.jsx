@@ -14,11 +14,7 @@ import { LineChart, Line, Tooltip, ResponsiveContainer, XAxis } from 'recharts';
 import apiClient from '../../utils/apiClient';
 import { getStoredUser } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
-import {
-  hasAccountLocalScrap,
-  upsertAccountLocalScrap,
-  removeAccountLocalScrap,
-} from '../../utils/accountScrapFallback';
+
 
 export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const navigate = useNavigate();
@@ -41,10 +37,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
     const savedUser = getStoredUser();
     const targetKeyword = String(data?.keyword || '').trim();
 
-    if (savedUser?.email) {
-      const localScrapped = hasAccountLocalScrap(savedUser.email, targetKeyword);
-      setIsBookmarked(localScrapped);
-
+   if (savedUser?.email) {
       apiClient
         .get('/scraps/check', {
           params: {
@@ -52,13 +45,13 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
             keyword: targetKeyword,
           },
         })
-        .then((res) => setIsBookmarked(Boolean(res.data?.isBookmarked) || localScrapped))
-        .catch(() => setIsBookmarked(localScrapped));
+        .then((res) => setIsBookmarked(Boolean(res.data?.isBookmarked)))
+        .catch(() => setIsBookmarked(false));
     } else {
       setIsBookmarked(false);
     }
 
-    // API 호출 로직 (유지)
+    // 상세 데이터 (여론, 차트 등) 호출
     apiClient
       .get('/analysis', {
         params: {
@@ -121,32 +114,25 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
     try {
       if (isBookmarked) {
-        try {
-          await apiClient.delete('/scraps', {
-            params: {
-              email: savedUser.email,
-              keyword: targetKeyword,
-            },
-          });
-        } catch {
-          // Keep going to clear account-local fallback entry.
-        }
-        removeAccountLocalScrap(savedUser.email, targetKeyword);
-        setIsBookmarked(false);
-      } else {
-        try {
-          await apiClient.post('/scraps', {
+        // 스크랩 취소 (DELETE)
+        await apiClient.delete('/scraps', {
+          params: {
             email: savedUser.email,
             keyword: targetKeyword,
-          });
-          removeAccountLocalScrap(savedUser.email, targetKeyword);
-        } catch {
-          upsertAccountLocalScrap(savedUser.email, targetKeyword);
-        }
+          },
+        });
+        setIsBookmarked(false);
+      } else {
+        // 스크랩 추가 (POST)
+        await apiClient.post('/scraps', {
+          email: savedUser.email,
+          keyword: targetKeyword,
+        });
         setIsBookmarked(true);
       }
-      onScrapChange?.();
-    } catch {
+      onScrapChange?.(); // 부모 컴포넌트(ScrapPage 등)에 변경 알림
+    } catch (error) {
+      console.error('스크랩 처리 에러:', error);
       showToast('스크랩 처리 중 오류가 발생했습니다.', { type: 'error' });
     }
   };

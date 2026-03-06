@@ -41,11 +41,6 @@ import { formatDateLabel, formatDateForInput, formatViews } from '../utils/forma
 import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { showToast } from '../utils/toast';
-import {
-  hasAccountLocalScrap,
-  upsertAccountLocalScrap,
-  removeAccountLocalScrap,
-} from '../utils/accountScrapFallback';
 import SimpleWordCloud from '../components/analysis/SimpleWordCloud';
 import CommentItem from '../components/analysis/CommentItem';
 import { DUMMY_DATA, PLATFORM_OPTIONS, SENTIMENT_DATA } from '../constants/analysisConstants';
@@ -201,15 +196,12 @@ const AnalysisPage = () => {
     
     const savedUser = getStoredUser();
     if (savedUser?.email) {
-      const localScrapped = hasAccountLocalScrap(savedUser.email, keyword);
-      setIsScrapped(localScrapped);
-
       apiClient
         .get('/scraps/check', {
           params: { email: savedUser.email, keyword: keyword },
         })
-        .then((res) => setIsScrapped(Boolean(res.data?.isBookmarked) || localScrapped))
-        .catch(() => setIsScrapped(localScrapped));
+        .then((res) => setIsScrapped(Boolean(res.data?.isBookmarked)))
+        .catch(() => setIsScrapped(false));
     } else {
       setIsScrapped(false);
     }
@@ -289,29 +281,23 @@ const AnalysisPage = () => {
 
     try {
       if (isScrapped) {
+        // 스크랩 취소
         if (resolvedKeyword) {
           await apiClient.delete('/scraps', {
             params: { email: savedUser.email, keyword: resolvedKeyword },
           });
         }
-        removeAccountLocalScrap(savedUser.email, targetKeyword);
         setIsScrapped(false);
         showToast('스크랩이 취소되었습니다.', { type: 'info' });
       } else {
-        try {
-          if (!resolvedKeyword) throw new Error('NO_SERVER_KEYWORD');
-          await apiClient.post('/scraps', {
-            email: savedUser.email,
-            keyword: resolvedKeyword,
-          });
-          removeAccountLocalScrap(savedUser.email, resolvedKeyword);
-          setIsScrapped(true);
-          showToast('관심 키워드로 저장되었습니다.', { type: 'success' });
-        } catch {
-          upsertAccountLocalScrap(savedUser.email, targetKeyword);
-          setIsScrapped(true);
-          showToast('해당 계정의 로컬 스크랩에 저장되었습니다.', { type: 'success' });
-        }
+        // 스크랩 추가
+        if (!resolvedKeyword) throw new Error('NO_SERVER_KEYWORD');
+        await apiClient.post('/scraps', {
+          email: savedUser.email,
+          keyword: resolvedKeyword,
+        });
+        setIsScrapped(true);
+        showToast('관심 키워드로 저장되었습니다.', { type: 'success' });
       }
     } catch (error) {
       console.error(error);
@@ -324,15 +310,13 @@ const AnalysisPage = () => {
     const resolvedKeyword = String(data?.keyword || keyword || '').trim();
     if (!savedUser?.email || !resolvedKeyword) return;
 
-    const localScrapped = hasAccountLocalScrap(savedUser.email, resolvedKeyword);
-    setIsScrapped(localScrapped);
-
+    // ✅ 로컬 체크 로직 삭제, API 호출만 남김
     apiClient
       .get('/scraps/check', {
         params: { email: savedUser.email, keyword: resolvedKeyword },
       })
-      .then((res) => setIsScrapped(Boolean(res.data?.isBookmarked) || localScrapped))
-      .catch(() => setIsScrapped(localScrapped));
+      .then((res) => setIsScrapped(Boolean(res.data?.isBookmarked)))
+      .catch(() => setIsScrapped(false));
   }, [data?.keyword, keyword]);
 
   const handleGoToCreation = () => {
