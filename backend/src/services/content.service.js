@@ -1,72 +1,108 @@
 const axios = require('axios');
 const Parser = require('rss-parser');
+const os = require('os');
 const { getLatestData, getCommunityHotPosts } = require('../dataLoader');
 
+const isWindows = os.platform() === 'win32';
 
-const fallbackTokenize = (text) => {
-  // 1. 불필요한 특수기호 제거 (한글, 영문, 숫자, 공백만 남김)
+let mecab = null;
+
+if (!isWindows) {
+  try {
+    mecab = require('mecab-ya');
+    console.log("✅ [NLP] Ubuntu 환경 감지: Mecab 형태소 분석기를 사용합니다.");
+  } catch (error) {
+    console.error("⚠️ [NLP] Mecab 모듈 로드 실패. 로컬 환경으로 간주합니다.");
+  }
+} else {
+  console.log("💻 [NLP] Windows 환경 감지: 내장 자체 형태소 분석기(Fallback)를 사용합니다.");
+}
+
+const fallbackTokenizeForNouns = (text) => {
+  // '그런데' 같은 부사, 접속사를 걸러내기 위한 1차 필터
+  const nonNouns = new Set(['그런데', '그리고', '그래서', '하지만', '그러나', '너무', '정말', '진짜', '매우', '가장']);
   const cleanText = text.replace(/[^가-힣a-zA-Z0-9\s]/g, ' ');
   const words = cleanText.split(/\s+/);
   
-  const tokens = [];
+  const nouns = [];
   words.forEach(word => {
-    // 2. 한국어에서 자주 쓰이는 접미사/조사를 대략적으로 잘라내기
     let noun = word.replace(/(은|는|이|가|을|를|의|에|에서|로|으로|과|와|도|까지|마저|조차|부터|요|다|입니다|습니다)$/, '');
-    
-    // 3. 길이가 2~7글자인 유의미한 단어만 통과
-    if (noun.length >= 2 && noun.length <= 7) {
-      tokens.push({ form: noun, tag: 'NNG' });
+    if (noun.length >= 2 && noun.length <= 7 && !nonNouns.has(noun)) {
+      nouns.push(noun);
     }
   });
-  return tokens;
+  return nouns;
 };
 
-let newsKeywordCache = {
-  data: null,
-  timestamp: 0
+// 4️⃣ OS 자동 분기 명사 추출 함수
+const extractNouns = (text) => {
+  return new Promise((resolve) => {
+    if (!isWindows && mecab) {
+      // Ubuntu 서버: 고성능 Mecab 사용
+      mecab.nouns(text, (err, nouns) => {
+        if (err) {
+          console.error('Mecab 에러, Fallback으로 전환:', err);
+          resolve(fallbackTokenizeForNouns(text));
+        } else {
+          resolve(nouns);
+        }
+      });
+    } else {
+      // Windows 로컬: 자체 개발 로직 사용
+      resolve(fallbackTokenizeForNouns(text));
+    }
+  });
 };
+
+
+let newsKeywordCache = {};
 
 const updateNewsKeywords = async () => {
   try {
     console.log("🔄 [Background] 뉴스 키워드 업데이트 시작...");
     
-    const categories = ['korea', 'business', 'tech', 'world'];
-    const fetchPromises = categories.map(cat => exports.getNewsByCategory(cat));
-    const results = await Promise.all(fetchPromises);
+    const categories = ['korea', 'business', 'tech', 'world', 'entertainment', 'sports'];
     
-    const allTitles = results.flat().map(news => news.title);
-    if (allTitles.length === 0) return;
-
-    const keywordMap = {};
     const stopWords = new Set(['뉴스', '오늘', '내일', '종합', '단독', '속보', '무단', '배포', '금지', 
                               '기자', '재배포', '연합뉴스', '오전', '오후', '대한민국', '한겨레', '조선일보', '중앙일보', '동아일보',
-                            '경향신문', '공격', '매일경제', '디지털투데', '확대', '10']);
+                            '경향신문', '공격', '매일경제', '디지털투데', '확대', '10', '뉴스1', '경향신문', 'MBC뉴스', '부산경남', '맑아져',
+                            '경남북서내륙', 'knn', 'co', 'kr', '흔들리', '말아먹', '보수냐']);
 
-    allTitles.forEach(title => {
-      // Kiwi가 있으면 Kiwi를 쓰고, 없으면 fallbackTokenize 사용
-      const tokens = fallbackTokenize(title);
+    for (const category of categories) {
+      const newsList = await exports.getNewsByCategory(category);
+      const titles = newsList.map(news => news.title);
       
-      tokens.forEach(token => {
-        if (token.tag === 'NNG' || token.tag === 'NNP') {
-          if (token.form.length >= 2 && !stopWords.has(token.form)) {
-            keywordMap[token.form] = (keywordMap[token.form] || 0) + 1;
+      if (titles.length === 0) continue;
+
+      const keywordMap = {};
+
+      for (const title of titles) {
+        // 제목에서 실제 '명사'만 추출
+        const nouns = await extractNouns(title);
+        
+        nouns.forEach(noun => {
+          // 2글자 이상이며, 불용어 사전에 없는 명사만 카운트
+          if (noun.length >= 2 && !stopWords.has(noun)) {
+            keywordMap[noun] = (keywordMap[noun] || 0) + 1;
           }
-        }
-      });
-    });
+        });
+      }
 
     const formattedData = Object.entries(keywordMap)
-      .map(([keyword, count]) => ({ keyword, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
-      .map((item, index) => ({
-        rank: index + 1,
-        keyword: item.keyword,
-        change: 'NEW' 
-      }));
+        .map(([keyword, count]) => ({ keyword, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5)
+        .map((item, index) => ({
+          rank: index + 1,
+          keyword: item.keyword,
+          change: 'NEW' 
+        }));
 
-    newsKeywordCache = { data: formattedData, timestamp: Date.now() };
-    console.log("✅ [Background] 뉴스 키워드 업데이트 완료");
+      // 카테고리를 키 값으로 하여 캐시 저장
+      newsKeywordCache[category] = { data: formattedData, timestamp: Date.now() };
+    }
+    
+    console.log("✅ [Background] 카테고리별 뉴스 키워드 업데이트 완료");
   } catch (error) {
     console.error('❌ [Background] 업데이트 실패:', error.message);
   }
@@ -290,11 +326,27 @@ exports.getNews = async (keyword, startDate, endDate) => {
     const feed = await parser.parseURL(feedUrl);
 
     const normalizedKeyword = keyword.replace(/\s+/g, '').toLowerCase();
-    
+    const excludeKeywords = ['인벤', 'inven', '루리웹', 'ruliweb', '디시인사이드', 'dcinside'];
+
     // 1. 최신글이 최상단에 오도록 pubDate 기준으로 내림차순 정렬
     const sortedItems = feed.items
       .filter(item => {
         if (!item.title) return false;
+
+        // 출처(publisher) 파악
+        let publisher = '';
+        if (item.newsSource) {
+          if (typeof item.newsSource === 'string') publisher = item.newsSource.toLowerCase();
+          else if (item.newsSource._) publisher = item.newsSource._.toLowerCase();
+        }
+
+        // [추가] 링크나 출처에 제외 키워드가 있는지 확인
+        const link = (item.link || '').toLowerCase();
+        const isExcluded = excludeKeywords.some(ex => publisher.includes(ex) || link.includes(ex));
+        
+        // 커뮤니티 사이트면 뉴스 목록에서 제외
+        if (isExcluded) return false;
+
         // 기사 제목에서 띄어쓰기를 다 없애버림
         const normalizedTitle = item.title.replace(/\s+/g, '').toLowerCase();
         // 띄어쓰기가 제거된 상태에서 키워드가 포함되어 있는지 확인
@@ -370,10 +422,12 @@ exports.getNewsByCategory = async (category) => {
 };
 
 // 뉴스 키워드 추출용 함수
-exports.getNewsKeywordRankings = async () => {
-  // 캐시가 아직 없다면(서버 초기화 중) 급한 대로 빈 배열 대신 업데이트 시도
-  if (!newsKeywordCache.data) {
+exports.getNewsKeywordRankings = async (category = 'korea') => {
+  // 요청한 카테고리의 캐시가 아직 없다면 업데이트 시도
+  if (!newsKeywordCache[category] || !newsKeywordCache[category].data) {
     await updateNewsKeywords();
   }
-  return newsKeywordCache.data || [];
+  
+  // 해당 카테고리의 데이터를 반환하거나 없으면 빈 배열 반환
+  return newsKeywordCache[category]?.data || [];
 };

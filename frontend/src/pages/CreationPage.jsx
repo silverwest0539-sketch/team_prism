@@ -7,8 +7,6 @@ import ResultPanel from '../components/creation/ResultPanel';
 import { showToast } from '../utils/toast';
 import { getStoredUser } from '../utils/authStorage';
 import { toApiUrl } from '../utils/apiClient';
-import { getTemplateMeta } from '../utils/promptTemplates';
-import { upsertAccountSavedPrompt } from '../utils/promptStorage';
 
 const CreationPage = () => {
   const navigate = useNavigate();
@@ -150,6 +148,7 @@ const handleGenerate = async (inputData) => {
     const currentUser = getStoredUser();
     const userEmail = String(currentUser?.email || '').trim();
 
+    // 1. 유효성 검사
     if (!normalizedPrompt) {
       showToast('저장할 프롬프트가 없습니다.', { type: 'warning' });
       return false;
@@ -160,30 +159,46 @@ const handleGenerate = async (inputData) => {
       return false;
     }
 
-    const templateKey = String(lastPayload?.promptTemplate || '').trim();
-    const templateMeta = templateKey ? getTemplateMeta(templateKey) : null;
+    // 2. 백엔드 API 호출
+    try {
+      // prompt.routes.js에 설정한 엔드포인트 호출
+      const fullUrl = toApiUrl('/save'); 
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${window.localStorage.getItem('token')}` // 생성(generate) 때와 동일하게 토큰 전달
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          type: lastPayload?.type || '기본', // lastPayload에서 타겟 타입 추출
+          content: normalizedPrompt,
+          keyword: lastPayload?.keyword || '',
+        }),
+      });
 
-    const result = upsertAccountSavedPrompt(userEmail, {
-      prompt: normalizedPrompt,
-      keyword: lastPayload?.keyword || '',
-      templateKey,
-      templateName: templateMeta?.name || '',
-      type: lastPayload?.type || '',
-      industry: lastPayload?.industry || '',
-    });
+      // 3. 응답 처리
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || '서버 오류');
+      }
 
-    if (!result.ok) {
-      showToast('프롬프트 저장에 실패했습니다.', { type: 'error' });
+      const result = await response.json();
+
+      if (result.success) {
+        showToast('마이페이지에 프롬프트를 저장했습니다.', { type: 'success' });
+        return true;
+      } else {
+        showToast(result.error || '프롬프트 저장에 실패했습니다.', { type: 'error' });
+        return false;
+      }
+
+    } catch (error) {
+      console.error('[Save Prompt Error]:', error);
+      showToast('프롬프트 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.', { type: 'error' });
       return false;
     }
-
-    showToast(
-      result.duplicated
-        ? '같은 프롬프트가 있어 최신 내용으로 갱신했습니다.'
-        : '마이페이지에 프롬프트를 저장했습니다.',
-      { type: 'success' },
-    );
-    return true;
   };
 
   if (!authChecked) {

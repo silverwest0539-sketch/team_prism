@@ -514,3 +514,93 @@ ${config.structureGuide}
 
   return fullContent;
 };
+
+exports.saveGeneratedPrompt = async (userEmail, outputType, content, keyword) => {
+  const connection = await pool.getConnection(); // 안전한 다중 저장을 위한 커넥션 획득
+  
+  try {
+    await connection.beginTransaction(); // 트랜잭션 시작
+
+    // 1. MARKETING_OUTPUT에 프롬프트 저장
+    const outputQuery = `
+      INSERT INTO MARKETING_OUTPUT (user_email, output_type, content, created_at)
+      VALUES (?, ?, ?, NOW())
+    `;
+    const [outputResult] = await connection.query(outputQuery, [userEmail, outputType, content]);
+    const outputId = outputResult.insertId;
+
+    if (keyword && keyword.trim() !== '') {
+      const cleanKeyword = keyword.trim();
+      
+      // ✨ 핵심: 공백 차이로 못 찾는 경우를 방지하기 위해 띄어쓰기 무시하고 비교
+      const keywordQuery = `
+        SELECT keyword_id 
+        FROM TREND_KEYWORD 
+        WHERE REPLACE(keyword_name, ' ', '') = REPLACE(?, ' ', '') 
+        LIMIT 1
+      `;
+      const [keywordRows] = await connection.query(keywordQuery, [cleanKeyword]);
+      
+      // DB에 일치하는 키워드가 있을 때만 매핑 (새로 생성하지 않음)
+      if (keywordRows.length > 0) {
+        const keywordId = keywordRows[0].keyword_id;
+        
+        const mappingQuery = `INSERT INTO KEYWORD_OUTPUT (output_id, keyword_id) VALUES (?, ?)`;
+        await connection.query(mappingQuery, [outputId, keywordId]);
+      }
+    }
+
+    await connection.commit(); // 트랜잭션 완료
+    return outputId;
+
+  } catch (error) {
+    await connection.rollback(); // 에러 발생 시 롤백 (데이터 꼬임 방지)
+    throw error;
+  } finally {
+    connection.release(); // 커넥션 반환
+  }
+};
+
+// 2️⃣ 마이페이지용 프롬프트 목록 조회 (JOIN 추가)
+exports.getPromptsByUserEmail = async (userEmail) => {
+  // LEFT JOIN을 사용해 키워드가 없는 경우에도 프롬프트가 조회되도록 처리
+  const query = `
+    SELECT 
+      m.output_id AS id, 
+      m.output_type AS type, 
+      m.content AS prompt, 
+      m.created_at AS savedAt,
+      k.keyword_name AS keyword  -- ✨ 키워드명 추가 조회
+    FROM MARKETING_OUTPUT m
+    LEFT JOIN KEYWORD_OUTPUT ko ON m.output_id = ko.output_id
+    LEFT JOIN TREND_KEYWORD k ON ko.keyword_id = k.keyword_id
+    WHERE m.user_email = ? 
+    ORDER BY m.created_at DESC
+  `;
+  const [rows] = await pool.query(query, [userEmail]);
+  return rows;
+};
+
+// 프롬프트 삭제
+exports.deletePromptById = async (outputId, userEmail) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction(); // 트랜잭션 시작
+    
+    // ✨ 핵심 1: 자식 테이블(KEYWORD_OUTPUT)에서 매핑된 데이터를 먼저 삭제
+    await connection.query(`DELETE FROM KEYWORD_OUTPUT WHERE output_id = ?`, [outputId]);
+    
+    // ✨ 핵심 2: 부모 테이블(MARKETING_OUTPUT)에서 프롬프트 삭제
+    const deleteQuery = `DELETE FROM MARKETING_OUTPUT WHERE output_id = ? AND user_email = ?`;
+    const [result] = await connection.query(deleteQuery, [outputId, userEmail]);
+    
+    await connection.commit(); // 트랜잭션 성공
+    return result.affectedRows > 0;
+    
+  } catch (error) {
+    await connection.rollback(); // 에러 시 롤백
+    throw error;
+  } finally {
+    connection.release(); // 커넥션 반환
+  }
+};

@@ -13,7 +13,7 @@ const LoginPage = () => {
   const handleKakaoLogin = () => {
     // 환경변수(REACT_APP_...)에 카카오 REST API 키를 넣어야 합니다.
     const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
-    const REDIRECT_URI = "http://localhost:5173/oauth/callback/kakao";
+    const REDIRECT_URI = `${window.location.origin}/oauth/callback/kakao`;
     const kakaoURL = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`;
     
     window.location.href = kakaoURL;
@@ -21,7 +21,7 @@ const LoginPage = () => {
 
   const handleNaverLogin = () => {
     const NAVER_CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID;
-    const REDIRECT_URI = "http://localhost:5173/oauth/callback/naver";
+    const REDIRECT_URI = `${window.location.origin}/oauth/callback/naver`;
     const state = Math.random().toString(36).substring(3, 14); // 보안용 임의 문자열
     const naverURL = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${state}`;
     

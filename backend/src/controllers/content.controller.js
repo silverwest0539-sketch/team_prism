@@ -55,9 +55,14 @@ exports.getNewsByCategory = async (req, res) => {
 
 exports.getNewsKeywords = async (req, res) => {
   try {
-    const keywords = await contentService.getNewsKeywordRankings();
+    // 1. 프론트엔드에서 보낸 category 값을 쿼리에서 추출
+    const { category } = req.query; 
+    
+    // 2. 서비스 함수에 category 파라미터 전달
+    const keywords = await contentService.getNewsKeywordRankings(category);
     res.json(keywords);
   } catch (error) {
+    console.error("❌ /api/news/keywords 에러:", error); // 에러 로깅 추가 추천
     res.status(500).json([]);
   }
 };

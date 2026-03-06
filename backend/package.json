@@ -22,5 +22,8 @@
     "nodemailer": "^8.0.1",
     "openai": "^6.25.0",
     "rss-parser": "^3.13.0"
+  },
+  "optionalDependencies": {
+    "mecab-ya": "^0.1.1"
   }
 }

@@ -52,3 +52,62 @@ exports.generatePrompt = async (req, res) => {
     res.end();
   }
 };
+
+exports.savePrompt = async (req, res) => {
+  try {
+    const { email, type, content, keyword } = req.body;
+
+    if (!email || !content) {
+      return res.status(400).json({ success: false, error: '필수 데이터가 누락되었습니다.' });
+    }
+
+    const insertId = await promptService.saveGeneratedPrompt(email, type, content, keyword);
+    
+    res.status(200).json({ 
+      success: true, 
+      message: '프롬프트가 성공적으로 저장되었습니다.',
+      data: { id: insertId }
+    });
+
+  } catch (error) {
+    console.error('[Save Prompt Error]:', error);
+    res.status(500).json({ success: false, error: '저장 중 서버 오류가 발생했습니다.' });
+  }
+};
+
+exports.getPrompts = async (req, res) => {
+  try {
+    const { email } = req.query; // GET 요청이므로 query에서 email 추출
+    if (!email) {
+      return res.status(400).json({ success: false, error: '이메일 정보가 필요합니다.' });
+    }
+
+    const prompts = await promptService.getPromptsByUserEmail(email);
+    res.status(200).json({ success: true, data: prompts });
+  } catch (error) {
+    console.error('[Get Prompts Error]:', error);
+    res.status(500).json({ success: false, error: '목록을 불러오는 중 오류가 발생했습니다.' });
+  }
+};
+
+exports.deletePrompt = async (req, res) => {
+  try {
+    const { id } = req.params; // URL 파라미터에서 id 추출
+    const { email } = req.body; // 권한 확인을 위한 이메일
+
+    if (!id || !email) {
+      return res.status(400).json({ success: false, error: '삭제할 데이터 또는 유저 정보가 없습니다.' });
+    }
+
+    const isDeleted = await promptService.deletePromptById(id, email);
+    
+    if (isDeleted) {
+      res.status(200).json({ success: true, message: '삭제 완료' });
+    } else {
+      res.status(404).json({ success: false, error: '삭제할 데이터를 찾을 수 없거나 권한이 없습니다.' });
+    }
+  } catch (error) {
+    console.error('[Delete Prompt Error]:', error);
+    res.status(500).json({ success: false, error: '삭제 중 오류가 발생했습니다.' });
+  }
+};
