@@ -12,6 +12,7 @@ export const PROMPT_TEMPLATE_OPTIONS = [
 - 업종: {{industry}}
 - 목적: {{purpose}}
 - 타겟: {{target}}
+- 필수 정보: {{essentialDetails}}
 - 기타 요청: {{otherRequests}}
 
 [프롬프트 설계 지시]
@@ -37,6 +38,7 @@ export const PROMPT_TEMPLATE_OPTIONS = [
 - 업종: {{industry}}
 - 목적: {{purpose}}
 - 타겟: {{target}}
+- 필수 정보: {{essentialDetails}}
 - 기타 요청: {{otherRequests}}
 
 [프롬프트 설계 지시]
@@ -62,6 +64,7 @@ export const PROMPT_TEMPLATE_OPTIONS = [
 - 업종: {{industry}}
 - 목적: {{purpose}}
 - 타겟: {{target}}
+- 필수 정보: {{essentialDetails}}
 - 기타 요청: {{otherRequests}}
 
 [프롬프트 설계 지시]
@@ -87,6 +90,7 @@ export const PROMPT_TEMPLATE_OPTIONS = [
 - 업종: {{industry}}
 - 목적: {{purpose}}
 - 타겟: {{target}}
+- 필수 정보: {{essentialDetails}}
 - 기타 요청: {{otherRequests}}
 
 [프롬프트 설계 지시]
@@ -112,6 +116,7 @@ export const PROMPT_TEMPLATE_OPTIONS = [
 - 업종: {{industry}}
 - 목적: {{purpose}}
 - 타겟: {{target}}
+- 필수 정보: {{essentialDetails}}
 - 기타 요청: {{otherRequests}}
 
 [프롬프트 설계 지시]
@@ -133,9 +138,10 @@ export const recommendPromptTemplate = ({
   type = '',
   industry = '',
   context = '',
+  essentialDetails = '',
   otherRequests = '',
 }) => {
-  const merged = `${keyword} ${type} ${industry} ${context} ${otherRequests}`.toLowerCase();
+  const merged = `${keyword} ${type} ${industry} ${context} ${essentialDetails} ${otherRequests}`.toLowerCase();
 
   if (containsAny(merged, ['할인', '세일', '특가', '이벤트', '쿠폰', '증정', '런칭', '오픈'])) {
     return {
@@ -191,7 +197,7 @@ export const recommendPromptTemplate = ({
 export const getTemplateMeta = (key) =>
   PROMPT_TEMPLATE_OPTIONS.find((item) => item.key === key) || PROMPT_TEMPLATE_OPTIONS[0];
 
-const PLACEHOLDER_KEYS = ['keyword', 'type', 'industry', 'purpose', 'target', 'otherRequests'];
+const PLACEHOLDER_KEYS = ['keyword', 'type', 'industry', 'purpose', 'target', 'essentialDetails', 'otherRequests'];
 
 export const interpolatePromptTemplate = (templateText, values = {}) => {
   const safeValues = PLACEHOLDER_KEYS.reduce((acc, key) => {
@@ -199,6 +205,8 @@ export const interpolatePromptTemplate = (templateText, values = {}) => {
     const fallback =
       key === 'otherRequests'
         ? '없음'
+        : key === 'essentialDetails'
+          ? '없음'
         : key === 'keyword'
           ? '주제 키워드'
           : key === 'type'

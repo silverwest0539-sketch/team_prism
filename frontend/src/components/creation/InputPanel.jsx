@@ -17,6 +17,7 @@ const InputPanel = ({
     industry,
     purpose,
     target,
+    essentialDetails,
     otherRequests,
     contentTypes,
     industries,
@@ -25,6 +26,7 @@ const InputPanel = ({
     setIndustry,
     setPurpose,
     setTarget,
+    setEssentialDetails,
     setOtherRequests,
     buildSubmitPayload,
   } = useCreationForm({ initialKeyword });
@@ -71,8 +73,10 @@ const InputPanel = ({
         <div className="order-3">
           <CreationTargetSection
             target={target}
+            essentialDetails={essentialDetails}
             otherRequests={otherRequests}
             onChangeTarget={setTarget}
+            onChangeEssentialDetails={setEssentialDetails}
             onChangeOtherRequests={setOtherRequests}
           />
         </div>

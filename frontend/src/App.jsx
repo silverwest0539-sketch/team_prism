@@ -15,6 +15,7 @@ const AnalysisPage = lazy(() => import('./pages/AnalysisPage'));
 const CreationPage = lazy(() => import('./pages/CreationPage'));
 const ScrapPage = lazy(() => import('./components/mypage/ScrapPage'));
 const MyPage = lazy(() => import('./pages/MyPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 const PageFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 text-sm text-gray-500">
@@ -43,6 +44,8 @@ function App() {
           <Route path="/creation" element={withLayout(<CreationPage />)} />
           <Route path="/scrap" element={withLayout(<ScrapPage />)} />
           <Route path="/mypage" element={withLayout(<MyPage />)} />
+          <Route path="/404" element={<NotFoundPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

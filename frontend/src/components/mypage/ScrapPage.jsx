@@ -9,8 +9,6 @@ import {
     Export, Checks
 } from '@phosphor-icons/react';
 import { reorderScraps } from '../../utils/storage';
-// formatDate는 아래에서 직접 구현한 로직으로 대체하므로 사용하지 않지만, import 에러 방지를 위해 유지하거나 제거해도 됩니다.
-import { formatDate } from '../../utils/formatters'; 
 import SummaryModal from '../home/SummaryModal';
 import apiClient from '../../utils/apiClient';
 import { getStoredUserEmail } from '../../utils/authStorage';
@@ -74,7 +72,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
     const [isSortOpen, setIsSortOpen] = useState(false);
 
     // 뷰 모드 (grid / list) - (수정사항 2번: 기본형식 고정을 위해 grid 유지)
-    const [viewMode, setViewMode] = useState('grid');
+    const [viewMode] = useState('grid');
 
     // 다중 선택 삭제
     const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -297,34 +295,6 @@ const ScrapPage = ({ isEmbedded = false }) => {
         setDragOverIndex(null);
     };
     const handleDragEnd = () => { setDragIndex(null); setDragOverIndex(null); };
-
-    // ─── CSV 내보내기 ───
-    const handleExport = () => {
-        const data = processedScraps;
-        if (data.length === 0) return;
-
-        const BOM = '\uFEFF';
-        const headers = ['키워드', '순위', '타입', '저장일'];
-        const rows = data.map(item => [
-            item.keyword,
-            item.rank || '?',
-            item.type || 'trend',
-            item.savedAt ? new Date(item.savedAt).toLocaleDateString('ko-KR') : ''
-        ]);
-
-        const csv = BOM + [
-            headers.join(','),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-        ].join('\n');
-
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `스크랩_키워드_${new Date().toISOString().slice(0, 10)}.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
-    };
 
     // ─── 모드 진입/해제 ───
     const enterDeleteMode = () => {

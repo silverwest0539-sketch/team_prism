@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, LogOut, Moon, Settings, Sun, X } from 'lucide-react';
+import { LogOut, Moon, Settings, Sun, X } from 'lucide-react';
 import { getStoredUser } from '../../utils/authStorage';
-import { showToast } from '../../utils/toast';
 import { THEMES, getStoredTheme, applyTheme, saveTheme, toggleTheme, resetThemeToLight } from '../../utils/theme';
 
 const MAIN_MENUS = [

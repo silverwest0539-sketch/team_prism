@@ -49,7 +49,7 @@ const InitialCommunityModal = ({ isOpen, onSubmit }) => {
                 className={`
                   relative flex items-center justify-center p-4 rounded-xl border-2 transition-all duration-200
                   ${isSelected 
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold shadow-md' 
+                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold' 
                     : isSkip 
                       ? 'border-dashed border-gray-300 bg-gray-50 text-gray-500 hover:border-gray-400 hover:bg-gray-100 font-medium' // '다음에 선택하기' 전용 스타일
                       : 'border-gray-100 bg-white text-gray-600 hover:border-indigo-200 hover:bg-gray-50 font-medium'
@@ -75,7 +75,7 @@ const InitialCommunityModal = ({ isOpen, onSubmit }) => {
           className={`
             w-full py-3.5 rounded-xl font-bold text-white text-lg transition-all
             ${selected 
-              ? 'bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-indigo-200' 
+              ? 'bg-indigo-600 hover:bg-indigo-700' 
               : 'bg-gray-300 cursor-not-allowed'
             }
           `}

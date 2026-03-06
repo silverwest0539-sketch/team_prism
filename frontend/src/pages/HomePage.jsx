@@ -9,20 +9,32 @@ import InitialCommunityModal from '../components/home/InitialCommunityModal'; //
 import { formatViews, formatDate } from '../utils/formatters';
 import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
+import { getAccountPreferredCommunity } from '../utils/platformPreferenceStorage';
+import { getAccountPreferredNewsCategory } from '../utils/newsCategoryPreferenceStorage';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 import { Question } from '@phosphor-icons/react'; 
 
-const HomePage = () => {
-  const userInfo = getStoredUser();
-  const defaultCommunity = userInfo?.preferredCommunity || 'theqoo';
-  const ALLdefaultCommunity = userInfo?.preferredCommunity || 'youtube';
-  const navigate = useNavigate();
+const prioritizeOptions = (options, preferredValue) => {
+  const preferred = String(preferredValue || '').trim();
+  if (!preferred) return options;
 
+  const matched = options.find((option) => option.value === preferred);
+  if (!matched) return options;
+
+  return [matched, ...options.filter((option) => option.value !== preferred)];
+};
+
+const HomePage = () => {
+  const navigate = useNavigate();
+  const storedUser = getStoredUser();
+  const userInfo = storedUser;
+  const preferredCommunity = getAccountPreferredCommunity(storedUser?.email || '');
+  const preferredNewsCategory = getAccountPreferredNewsCategory(storedUser?.email || '');
   
   // --- 상태 관리 (State) ---
   const [risingKeywords, setRisingKeywords] = useState([]); 
   const [risingPlatforms, setRisingPlatforms] = useState([]); 
-  const [selectedPlatform, setSelectedPlatform] = useState(ALLdefaultCommunity);
+  const [selectedPlatform, setSelectedPlatform] = useState(() => preferredCommunity || 'youtube');
   
   // 툴팁 통합 상태 ('trend', 'platform', 'news', null)
   const [activeTooltip, setActiveTooltip] = useState(null);
@@ -33,7 +45,7 @@ const HomePage = () => {
 
   // [뉴스 키워드 (상단)]
   const [newsKeywords, setNewsKeywords] = useState([]);
-  const [selectedNewsTopCategory, setSelectedNewsTopCategory] = useState('korea'); // 상단 뉴스 카테고리 상태
+  const [selectedNewsTopCategory, setSelectedNewsTopCategory] = useState(() => preferredNewsCategory || 'korea'); // 상단 뉴스 카테고리 상태
   const [isNewsDropdownOpen, setIsNewsDropdownOpen] = useState(false); // 상단 뉴스 드롭다운 상태
 
   // [유튜브]
@@ -42,7 +54,7 @@ const HomePage = () => {
   
   // [UI 상태]
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [userName] = useState(() => getStoredUser()?.nickname || '사용자');
+  const [userName] = useState(() => storedUser?.nickname || '사용자');
   
   // [모달 상태]
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,11 +64,11 @@ const HomePage = () => {
 
   // [커뮤니티 상태 (하단)]
   const [communityPosts, setCommunityPosts] = useState([]);
-  const [selectedComm, setSelectedComm] = useState(defaultCommunity);
+  const [selectedComm, setSelectedComm] = useState(() => preferredCommunity || 'theqoo');
   const [visibleCommunityCount, setVisibleCommunityCount] = useState(5); // [추가] 커뮤니티 더보기 카운트
 
   // [뉴스 상태 (하단)]
-  const [selectedNewsCategory, setSelectedNewsCategory] = useState('korea');
+  const [selectedNewsCategory, setSelectedNewsCategory] = useState(() => preferredNewsCategory || 'korea');
   const [todayNews, setTodayNews] = useState([]);
   const [visibleNewsCount, setVisibleNewsCount] = useState(5); // [추가] 뉴스 더보기 카운트
 
@@ -101,6 +113,10 @@ const HomePage = () => {
     { label: 'FM코리아', value: 'fmkorea' },
   ];
 
+  const prioritizedCommunityOptions = prioritizeOptions(COMMUNITY_OPTIONS, preferredCommunity);
+  const prioritizedMainPlatformOptions = prioritizeOptions(MAIN_PLATFORM_OPTIONS, preferredCommunity);
+  const prioritizedNewsCategoryOptions = prioritizeOptions(NEWS_CATEGORY_OPTIONS, preferredNewsCategory);
+
   const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '브이로그'];
 
   // --- 핸들러 함수 ---
@@ -138,7 +154,7 @@ const HomePage = () => {
     });
   };
 
-  const getCategoryBadgeClass = (category) => 'bg-blue-100 text-blue-700';
+  const getCategoryBadgeClass = () => 'bg-blue-100 text-blue-700';
 
   // 초기 모달 제출 핸들러
   const handleInitialCommunitySubmit = async (communityValue) => {
@@ -351,13 +367,13 @@ const HomePage = () => {
                   }`}
                 >
                   <span className="font-medium text-xs">
-                    {MAIN_PLATFORM_OPTIONS.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
+                    {prioritizedMainPlatformOptions.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
                   </span>
                   <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isDropdownOpen && (
                   <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
-                    {MAIN_PLATFORM_OPTIONS.map((option) => (
+                    {prioritizedMainPlatformOptions.map((option) => (
                       <button
                         key={option.value}
                         onClick={() => { setSelectedPlatform(option.value); setIsDropdownOpen(false); }}
@@ -419,13 +435,13 @@ const HomePage = () => {
                   }`}
                 >
                   <span className="font-medium text-xs">
-                    {NEWS_CATEGORY_OPTIONS.find(opt => opt.value === selectedNewsTopCategory)?.label || '대한민국'}
+                    {prioritizedNewsCategoryOptions.find(opt => opt.value === selectedNewsTopCategory)?.label || '대한민국'}
                   </span>
                   <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isNewsDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isNewsDropdownOpen && (
                   <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
-                    {NEWS_CATEGORY_OPTIONS.map((option) => (
+                    {prioritizedNewsCategoryOptions.map((option) => (
                       <button
                         key={option.value}
                         onClick={() => { setSelectedNewsTopCategory(option.value); setIsNewsDropdownOpen(false); }}
@@ -522,7 +538,7 @@ const HomePage = () => {
             <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">커뮤니티 인기글</h2>
           </div>
           <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
-            {COMMUNITY_OPTIONS.map((comm) => (
+            {prioritizedCommunityOptions.map((comm) => (
               <button
                 key={comm.value} onClick={() => setSelectedComm(comm.value)}
                 className={`chip ${selectedComm === comm.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
@@ -582,7 +598,7 @@ const HomePage = () => {
             <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1 flex items-center gap-2">오늘의 뉴스</h2>
           </div>
           <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
-            {NEWS_CATEGORY_OPTIONS.map((cat) => (
+            {prioritizedNewsCategoryOptions.map((cat) => (
               <button
                 key={cat.value} onClick={() => setSelectedNewsCategory(cat.value)}
                 className={`chip ${selectedNewsCategory === cat.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
@@ -687,17 +703,6 @@ const HomePage = () => {
           </div>
         </div>
       )}
-
-            {/* 개발용 임시 버튼 (나중에 지우세요!) */}
-      <button 
-        onClick={() => {
-          localStorage.removeItem('hasSelectedCommunity'); // 저장된 기록 삭제
-          setIsInitialModalOpen(true); // 모달 바로 열기
-        }}
-        className="fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-full shadow-lg z-50 text-xs"
-      >
-        모달 테스트 열기
-      </button>
 
       {/* [추가] 최초 로그인 시 커뮤니티 선택 모달 */}
       <InitialCommunityModal 

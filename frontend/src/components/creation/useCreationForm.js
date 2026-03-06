@@ -17,6 +17,7 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
   const [industry, setIndustry] = useState(INDUSTRIES[0]);
   const [purpose, setPurpose] = useState('');
   const [target, setTarget] = useState('');
+  const [essentialDetails, setEssentialDetails] = useState('');
   const [otherRequests, setOtherRequests] = useState('');
   const [selectedPromptTemplate, setSelectedPromptTemplate] = useState('trend_reaction');
   const [promptTemplateText, setPromptTemplateText] = useState('');
@@ -30,9 +31,10 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
         type: selectedType,
         industry,
         context: purpose,
+        essentialDetails,
         otherRequests,
       }),
-    [keyword, selectedType, industry, purpose, otherRequests],
+    [keyword, selectedType, industry, purpose, essentialDetails, otherRequests],
   );
 
   const recommendedTemplateMeta = useMemo(
@@ -53,9 +55,10 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
         industry,
         purpose,
         target,
+        essentialDetails,
         otherRequests,
       }),
-    [selectedTemplateMeta, keyword, selectedType, industry, purpose, target, otherRequests],
+    [selectedTemplateMeta, keyword, selectedType, industry, purpose, target, essentialDetails, otherRequests],
   );
 
   useEffect(() => {
@@ -63,6 +66,7 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
     setKeyword(normalizedInitialKeyword);
     setPurpose('');
     setTarget('');
+    setEssentialDetails('');
   }, [normalizedInitialKeyword]);
 
   useEffect(() => {
@@ -105,6 +109,7 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
     industry,
     context: purpose,
     target,
+    essentialDetails,
     otherRequests,
     promptTemplate: selectedPromptTemplate || recommendedTemplate.key,
     promptTemplateText: (promptTemplateText || generatedTemplatePrompt).trim(),
@@ -116,6 +121,7 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
     industry,
     purpose,
     target,
+    essentialDetails,
     otherRequests,
     selectedPromptTemplate,
     promptTemplateText,
@@ -129,6 +135,7 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
     setIndustry,
     setPurpose,
     setTarget,
+    setEssentialDetails,
     setOtherRequests,
     applyRecommendedTemplate,
     handlePromptTemplateChange,
