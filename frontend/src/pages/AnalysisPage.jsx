@@ -93,6 +93,20 @@ const AnalysisPage = () => {
   const [sentimentModalConfig, setSentimentModalConfig] = useState({ isOpen: false, sentiment: null });
   const [isNegativeRevealed, setIsNegativeRevealed] = useState(false);
 
+  // ==========================================
+  // [추가] 개별 댓글 반응용 동의 상태 관리 (Set)
+  // ==========================================
+  const [revealedCommentIds, setRevealedCommentIds] = useState(new Set());
+
+  const handleRevealComment = useCallback((commentId) => {
+    setRevealedCommentIds((prev) => {
+      const next = new Set(prev);
+      next.add(commentId);
+      return next;
+    });
+  }, []);
+  // ==========================================
+
   // 페이지네이션
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
@@ -171,6 +185,9 @@ const AnalysisPage = () => {
     setIsAiLoading(true);
     setShowScoreTooltip(false);
     
+    // 키워드가 변경되면 개별 댓글 동의 상태도 초기화
+    setRevealedCommentIds(new Set());
+    
     const todayDate = getFormattedDate(new Date());
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -211,7 +228,6 @@ const AnalysisPage = () => {
   };
 
   const handleDateApply = () => {
-    // 조회 버튼 클릭 시에만 적용 날짜 상태를 업데이트
     setAppliedStartDate(inputStartDate);
     setAppliedEndDate(inputEndDate);
     fetchData(inputStartDate, inputEndDate);
@@ -329,13 +345,10 @@ const AnalysisPage = () => {
 
   const handleGoToNamuwiki = () => {
     if (!keyword) return;
-    // 나무위키 검색 결과 페이지 URL
     const namuwikiUrl = `https://namu.wiki/w/${encodeURIComponent(keyword)}`;
-    // 새 창(새 탭)에서 열기
     window.open(namuwikiUrl, '_blank', 'noopener,noreferrer');
   };
 
-  // 데이터 필터링 시 적용 날짜(applied) 기준 사용
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
     const chartDataKey = selectedPlatform === 'all' ? 'mentions' : selectedPlatform;
@@ -521,8 +534,8 @@ const AnalysisPage = () => {
           !keyword ? 'blur-disabled' : 'blur-enabled'
         }`}
       >
+        {/* 상단 키워드 및 컨트롤 영역 생략 (기존과 동일) */}
         <div className="flex flex-row items-start sm:items-center justify-between gap-2 mb-2 w-full">
-          
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-1">
             <button
               onClick={handleScrapToggle}
@@ -809,16 +822,28 @@ const AnalysisPage = () => {
             <div className="card h-fit flex flex-col">
               <div ref={commentsTopRef} />
 
+              {/* ================================================== */}
+              {/* [수정] 메인 리스트: 개별 필터 적용 Props 전달 부분 */}
+              {/* ================================================== */}
               <div className="space-y-4 flex-1">
                 {currentUsageExamples?.length > 0 ? (
                   currentUsageExamples.map((comment, i) => {
                     const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
+                    // 고유 ID가 없을 경우 인덱스 조합을 ID로 사용
+                    const uniqueId = comment.id || `comment-${globalIndex}`;
+                    const isRevealed = revealedCommentIds.has(uniqueId);
+
                     return (
                       <CommentItem 
                         key={i} 
                         comment={comment} 
                         globalIndex={globalIndex}
-                        keyword={keyword} 
+                        keyword={keyword}
+                        // 하위 컴포넌트(CommentItem)를 제어하기 위한 Props 전달
+                        isIndividualFilter={true} 
+                        isPersonKeyword={isPersonKeyword}
+                        isRevealed={isRevealed}
+                        onReveal={() => handleRevealComment(uniqueId)}
                       />
                     );
                   })
@@ -826,6 +851,7 @@ const AnalysisPage = () => {
                   <div className="text-center py-10 text-gray-400">데이터가 없습니다.</div>
                 )}
               </div>
+              {/* ================================================== */}
 
               {totalPages > 1 && (
                 <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
@@ -1092,7 +1118,6 @@ const AnalysisPage = () => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden relative">
             
-            {/* 모달 헤더 */}
             <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-white z-20">
               <div className="flex items-baseline gap-3">
                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -1107,7 +1132,7 @@ const AnalysisPage = () => {
               </div>
               
               <div className="flex items-center gap-3">
-                {/* 비인물 부정 댓글일 경우 동의 버튼 */}
+                {/* 모달에서의 일괄 제어 버튼 (인물이 아닐 때만 렌더링) */}
                 {sentimentModalConfig.sentiment === 'negative' && !isPersonKeyword && (
                   <button
                     onClick={() => setIsNegativeRevealed(!isNegativeRevealed)}
@@ -1117,7 +1142,7 @@ const AnalysisPage = () => {
                         : 'bg-white text-gray-500 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
                     }`}
                   >
-                    {isNegativeRevealed ? '부정 댓글 가리기' : '부정 댓글 보기 동의'}
+                    {isNegativeRevealed ? '부정 댓글 가리기' : '부정 댓글 전체 보기 동의'}
                   </button>
                 )}
 
@@ -1130,10 +1155,9 @@ const AnalysisPage = () => {
               </div>
             </div>
 
-            {/* 내용 영역 */}
             <div className="flex-1 p-5 overflow-y-auto bg-gray-50/50 relative">
               
-              {/* 케이스 1: 인물에 대한 부정 댓글 (차단) */}
+              {/* 케이스 1: 인물에 대한 부정 댓글 (아예 차단) */}
               {sentimentModalConfig.sentiment === 'negative' && isPersonKeyword ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center h-full">
                   <LockKey size={48} className="mb-4 text-gray-300" weight="fill" />
@@ -1146,7 +1170,7 @@ const AnalysisPage = () => {
                 /* 케이스 2: 긍정/중립 이거나, 인물이 아닌 부정 댓글 */
                 <div className="relative h-full">
                   
-                  {/* 동의 전 블러 상태에서 띄울 안내 박스 */}
+                  {/* 동의 전 블러 상태에서 띄울 중앙 안내 박스 */}
                   {sentimentModalConfig.sentiment === 'negative' && !isPersonKeyword && !isNegativeRevealed && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pt-10">
                       <span className="bg-white/90 backdrop-blur-sm px-5 py-2.5 rounded-full text-sm font-medium text-gray-600 shadow-sm border border-gray-200">
@@ -1155,7 +1179,7 @@ const AnalysisPage = () => {
                     </div>
                   )}
 
-                  {/* 실제 댓글 리스트 */}
+                  {/* 모달 안의 댓글 리스트 (여기선 기존의 일괄 모달 블러 효과를 유지) */}
                   <div className={`space-y-4 transition-all duration-300 ${
                     sentimentModalConfig.sentiment === 'negative' && !isNegativeRevealed 
                       ? 'pointer-events-none select-none opacity-40 blur-[3px]' 
@@ -1179,7 +1203,6 @@ const AnalysisPage = () => {
                   </div>
                 </div>
               )}
-
             </div>
           </div>
         </div>
