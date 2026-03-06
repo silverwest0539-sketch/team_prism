@@ -12,7 +12,7 @@ const LandingPage = () => {
       <div className="mb-12">
         <p className="text-gray-500 font-bold text-lg mb-4">데이터 속 숨겨진 인사이트를 찾다</p>
         <h1 className="text-5xl sm:text-6xl font-extrabold text-indigo-600 mb-6 tracking-tight">
-          Prism
+          PicKey
         </h1>
         <p className="text-gray-600 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto">
           빅데이터 분석과 AI 예측으로<br />

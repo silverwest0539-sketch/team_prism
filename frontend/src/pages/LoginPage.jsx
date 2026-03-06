@@ -65,7 +65,7 @@ const LoginPage = () => {
             title={`Prism 홈으로 이동`}
             aria-label="Prism 로고"
           >
-            Prism
+            PicKey
           </h1>
           <p className="text-gray-600 font-medium">서비스 이용을 위해 로그인해주세요</p>
         </div>

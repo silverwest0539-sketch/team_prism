@@ -452,7 +452,7 @@ const SignupPage = () => {
             title="Prism"
             aria-label="Prism 로고"
           >
-            Prism
+            PicKey
           </h1>
           <p className="text-gray-600 font-medium">지금 시작, Prism과 함께하세요</p>
         </div>

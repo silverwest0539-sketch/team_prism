@@ -40,7 +40,7 @@ const InitialCommunityModal = ({ isOpen, onSubmit }) => {
         <div className="grid grid-cols-2 gap-3">
           {COMMUNITY_OPTIONS.map((comm) => {
             const isSelected = selected === comm.value;
-            const isSkip = comm.value === 'skip';
+            // [수정됨] isSkip 관련 특별 스타일링(점선 등)을 삭제하고 동일한 스타일 적용
 
             return (
               <button
@@ -50,9 +50,7 @@ const InitialCommunityModal = ({ isOpen, onSubmit }) => {
                   relative flex items-center justify-center p-4 rounded-xl border-2 transition-all duration-200
                   ${isSelected 
                     ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold' 
-                    : isSkip 
-                      ? 'border-dashed border-gray-300 bg-gray-50 text-gray-500 hover:border-gray-400 hover:bg-gray-100 font-medium' // '다음에 선택하기' 전용 스타일
-                      : 'border-gray-100 bg-white text-gray-600 hover:border-indigo-200 hover:bg-gray-50 font-medium'
+                    : 'border-gray-100 bg-white text-gray-600 hover:border-indigo-200 hover:bg-gray-50 font-medium'
                   }
                 `}
               >
@@ -80,7 +78,8 @@ const InitialCommunityModal = ({ isOpen, onSubmit }) => {
             }
           `}
         >
-          {selected === 'skip' ? '건너뛰기' : 'Prism 시작하기'}
+          {/* [수정됨] 조건문(건너뛰기/Prism)을 지우고 "PicKey 시작하기"로 고정 */}
+          PicKey 시작하기
         </button>
       </div>
     </div>

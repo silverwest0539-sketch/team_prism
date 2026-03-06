@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 // [수정] 더보기를 위한 ChevronDown 아이콘 추가
-import { PlayCircle, ChevronLeft, ChevronRight, ChevronDown, Plus, X, Newspaper } from 'lucide-react'; 
+import { PlayCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, X, Newspaper } from 'lucide-react';  
 import SearchBar from '../components/common/SearchBar';
 import SummaryModal from '../components/home/SummaryModal';
 import InitialCommunityModal from '../components/home/InitialCommunityModal'; // [추가] 초기 커뮤니티 모달
@@ -34,7 +34,15 @@ const HomePage = () => {
   // --- 상태 관리 (State) ---
   const [risingKeywords, setRisingKeywords] = useState([]); 
   const [risingPlatforms, setRisingPlatforms] = useState([]); 
-  const [selectedPlatform, setSelectedPlatform] = useState(() => preferredCommunity || 'youtube');
+  // [수정] 상단 플랫폼: 팀원이 수정한 user 객체 안에서 값을 찾도록 수정
+  const [selectedPlatform, setSelectedPlatform] = useState(() => {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const saved = user?.preferredCommunity || localStorage.getItem('preferredCommunity');
+    
+    return (saved && saved !== 'skip') ? saved : 'youtube';
+  });
+  
   
   // 툴팁 통합 상태 ('trend', 'platform', 'news', null)
   const [activeTooltip, setActiveTooltip] = useState(null);
@@ -64,7 +72,14 @@ const HomePage = () => {
 
   // [커뮤니티 상태 (하단)]
   const [communityPosts, setCommunityPosts] = useState([]);
-  const [selectedComm, setSelectedComm] = useState(() => preferredCommunity || 'theqoo');
+  // [수정] 하단 커뮤니티: 팀원이 수정한 user 객체 안에서 값을 찾도록 수정
+  const [selectedComm, setSelectedComm] = useState(() => {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const saved = user?.preferredCommunity || localStorage.getItem('preferredCommunity');
+    
+    return (saved && saved !== 'skip') ? saved : 'theqoo';
+  });
   const [visibleCommunityCount, setVisibleCommunityCount] = useState(5); // [추가] 커뮤니티 더보기 카운트
 
   // [뉴스 상태 (하단)]
@@ -159,19 +174,24 @@ const HomePage = () => {
   // 초기 모달 제출 핸들러
   const handleInitialCommunitySubmit = async (communityValue) => {
     if (communityValue !== 'skip') {
-      setSelectedComm(communityValue); // 상단 플랫폼(selectedPlatform)은 변경하지 않음
+      // ✅ 질문자님 요청사항: 하단뿐만 아니라 상단 플랫폼도 동시 변경!
+      setSelectedComm(communityValue); 
+      setSelectedPlatform(communityValue); 
       
       try {
         if (userInfo?.email) {
-          // 1. 백엔드에 선택 정보 저장
+          // 1. 백엔드에 선택 정보 저장 (팀원 코드 유지)
           await apiClient.post('/auth/update-preference', { 
             email: userInfo.email,
             preferredCommunity: communityValue 
           });
 
-          // 2. 로컬 스토리지의 유저 정보 업데이트 (다음에 로그인 안 해도 유지되도록)
+          // 2. 로컬 스토리지의 유저 정보 업데이트 (팀원 코드 유지)
           const updatedUser = { ...userInfo, preferredCommunity: communityValue };
           localStorage.setItem('user', JSON.stringify(updatedUser));
+        } else {
+          // 혹시 로그인 정보가 없을 때를 대비한 안전장치
+          localStorage.setItem('preferredCommunity', communityValue);
         }
       } catch (error) {
         console.error('커뮤니티 설정 저장 실패:', error);
@@ -575,12 +595,18 @@ const HomePage = () => {
                   );
                 })}
                 {/* [추가] 숨겨진 데이터가 있을 때 더보기 버튼 표시 */}
-                {communityPosts.length > visibleCommunityCount && (
+                {/* [수정] 전체 데이터가 5개 초과일 때만 토글 버튼 표시 */}
+                {communityPosts.length > 5 && (
                   <button 
-                    onClick={() => setVisibleCommunityCount(communityPosts.length)}
+                    // 5개면 전체 길이로, 전체 길이면 다시 5개로 토글
+                    onClick={() => setVisibleCommunityCount(prev => prev === 5 ? communityPosts.length : 5)}
                     className="w-full mt-1 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium rounded-xl text-sm transition-colors border border-gray-100 flex items-center justify-center gap-1"
                   >
-                    더보기 <ChevronDown className="w-4 h-4" />
+                    {visibleCommunityCount === 5 ? (
+                      <>더보기 <ChevronDown className="w-4 h-4" /></>
+                    ) : (
+                      <>접기 <ChevronUp className="w-4 h-4" /></>
+                    )}
                   </button>
                 )}
               </>
@@ -629,13 +655,18 @@ const HomePage = () => {
                     </a>
                   );
                 })}
-                {/* [추가] 숨겨진 데이터가 있을 때 더보기 버튼 표시 */}
-                {todayNews.length > visibleNewsCount && (
+                {/* [수정] 전체 데이터가 5개 초과일 때만 토글 버튼 표시 */}
+                {todayNews.length > 5 && (
                   <button 
-                    onClick={() => setVisibleNewsCount(todayNews.length)}
+                    // 5개면 전체 길이로, 전체 길이면 다시 5개로 토글
+                    onClick={() => setVisibleNewsCount(prev => prev === 5 ? todayNews.length : 5)}
                     className="w-full mt-1 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium rounded-xl text-sm transition-colors border border-gray-100 flex items-center justify-center gap-1"
                   >
-                    더보기 <ChevronDown className="w-4 h-4" />
+                    {visibleNewsCount === 5 ? (
+                      <>더보기 <ChevronDown className="w-4 h-4" /></>
+                    ) : (
+                      <>접기 <ChevronUp className="w-4 h-4" /></>
+                    )}
                   </button>
                 )}
               </>
@@ -703,6 +734,23 @@ const HomePage = () => {
           </div>
         </div>
       )}
+
+
+            {/* 개발용 임시 버튼 (나중에 지우세요!) */}
+      <button 
+        onClick={() => {
+          localStorage.removeItem('hasSelectedCommunity'); // 저장된 기록 삭제
+          setIsInitialModalOpen(true); // 모달 바로 열기
+        }}
+        className="fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-full shadow-lg z-50 text-xs"
+      >
+        모달 테스트 열기
+      </button>
+
+
+
+
+
 
       {/* [추가] 최초 로그인 시 커뮤니티 선택 모달 */}
       <InitialCommunityModal 

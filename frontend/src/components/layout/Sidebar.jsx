@@ -99,7 +99,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
           className="text-2xl font-bold text-blue-600 mb-10 cursor-pointer"
           onClick={() => handleNavigate('/home')}
         >
-          Prism
+          PicKey
         </h1>
 
         <nav className="flex-1 space-y-2">
