@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { PlayCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, X, Newspaper } from 'lucide-react';  
 import SearchBar from '../components/common/SearchBar';
 import SummaryModal from '../components/home/SummaryModal';
+import InitialWizardModal from '../components/home/InitialWizardModal';
 import InitialCommunityModal from '../components/home/InitialCommunityModal'; // [추가] 초기 커뮤니티 모달
 import { formatViews, formatDate } from '../utils/formatters';
 import apiClient from '../utils/apiClient';
@@ -53,7 +54,12 @@ const HomePage = () => {
 
   // [뉴스 키워드 (상단)]
   const [newsKeywords, setNewsKeywords] = useState([]);
-  const [selectedNewsTopCategory, setSelectedNewsTopCategory] = useState(() => preferredNewsCategory || 'korea'); // 상단 뉴스 카테고리 상태
+    const [selectedNewsTopCategory, setSelectedNewsTopCategory] = useState(() => {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const saved = user?.preferredNews || localStorage.getItem('preferredNews');
+    return (saved && saved !== 'skip') ? saved : 'korea';
+  });
   const [isNewsDropdownOpen, setIsNewsDropdownOpen] = useState(false); // 상단 뉴스 드롭다운 상태
 
   // [유튜브]
@@ -83,7 +89,12 @@ const HomePage = () => {
   const [visibleCommunityCount, setVisibleCommunityCount] = useState(5); // [추가] 커뮤니티 더보기 카운트
 
   // [뉴스 상태 (하단)]
-  const [selectedNewsCategory, setSelectedNewsCategory] = useState(() => preferredNewsCategory || 'korea');
+    const [selectedNewsCategory, setSelectedNewsCategory] = useState(() => {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const saved = user?.preferredNews || localStorage.getItem('preferredNews');
+    return (saved && saved !== 'skip') ? saved : 'korea';
+  });
   const [todayNews, setTodayNews] = useState([]);
   const [visibleNewsCount, setVisibleNewsCount] = useState(5); // [추가] 뉴스 더보기 카운트
 
@@ -171,34 +182,38 @@ const HomePage = () => {
 
   const getCategoryBadgeClass = () => 'bg-blue-100 text-blue-700';
 
-  // 초기 모달 제출 핸들러
-  const handleInitialCommunitySubmit = async (communityValue) => {
-    if (communityValue !== 'skip') {
-      // ✅ 질문자님 요청사항: 하단뿐만 아니라 상단 플랫폼도 동시 변경!
-      setSelectedComm(communityValue); 
-      setSelectedPlatform(communityValue); 
-      
-      try {
-        if (userInfo?.email) {
-          // 1. 백엔드에 선택 정보 저장 (팀원 코드 유지)
-          await apiClient.post('/auth/update-preference', { 
-            email: userInfo.email,
-            preferredCommunity: communityValue 
-          });
-
-          // 2. 로컬 스토리지의 유저 정보 업데이트 (팀원 코드 유지)
-          const updatedUser = { ...userInfo, preferredCommunity: communityValue };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        } else {
-          // 혹시 로그인 정보가 없을 때를 대비한 안전장치
-          localStorage.setItem('preferredCommunity', communityValue);
-        }
-      } catch (error) {
-        console.error('커뮤니티 설정 저장 실패:', error);
-      }
+  // [수정] 2단계 마법사 모달 제출 핸들러
+  const handleInitialPreferencesSubmit = async ({ community, news }) => {
+    // 1. 커뮤니티 상태 적용
+    if (community !== 'skip') {
+      setSelectedComm(community); 
+      setSelectedPlatform(community); 
+    }
+    // 2. 뉴스 상태 적용
+    if (news !== 'skip') {
+      setSelectedNewsTopCategory(news);
+      setSelectedNewsCategory(news);
     }
     
-    // 이 브라우저에서는 다시 모달을 띄우지 않도록 기록
+    try {
+      if (userInfo?.email) {
+        // [백엔드 연동] - 팀원 분의 API가 업데이트 되었다고 가정 (news 필드 추가 등)
+        await apiClient.post('/auth/update-preference', { 
+          email: userInfo.email,
+          preferredCommunity: community,
+          preferredNews: news // 뉴스 필드 추가
+        });
+
+        const updatedUser = { ...userInfo, preferredCommunity: community, preferredNews: news };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } else {
+        localStorage.setItem('preferredCommunity', community);
+        localStorage.setItem('preferredNews', news);
+      }
+    } catch (error) {
+      console.error('취향 설정 저장 실패:', error);
+    }
+    
     localStorage.setItem('hasSelectedCommunity', 'true');
     setIsInitialModalOpen(false);
   };
@@ -736,11 +751,23 @@ const HomePage = () => {
       )}
 
 
+            {/* 개발용 임시 버튼 (나중에 지우기!) */}
+      <button 
+        onClick={() => {
+          localStorage.removeItem('hasSelectedCommunity'); // 저장된 기록 삭제
+          setIsInitialModalOpen(true); // 모달 바로 열기
+        }}
+        className="fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-full shadow-lg z-50 text-xs"
+      >
+        모달 테스트 열기
+      </button>
 
-      {/* [추가] 최초 로그인 시 커뮤니티 선택 모달 */}
-      <InitialCommunityModal 
+
+
+      {/* 교체된 마법사 모달 */}
+      <InitialWizardModal 
         isOpen={isInitialModalOpen} 
-        onSubmit={handleInitialCommunitySubmit} 
+        onComplete={handleInitialPreferencesSubmit} 
       />
 
     </div>
