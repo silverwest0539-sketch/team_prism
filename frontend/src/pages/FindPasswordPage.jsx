@@ -32,7 +32,7 @@ const FindPasswordPage = () => {
           className="block mx-auto mb-6 text-3xl font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
           aria-label="홈으로 이동"
         >
-          Prism
+          PicKey
         </button>
 
         <div className="card-soft w-full shadow-lg">
@@ -45,7 +45,7 @@ const FindPasswordPage = () => {
             <input
               type="email"
               className="form-input"
-              placeholder="example@prism.com"
+              placeholder="example@pickey.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

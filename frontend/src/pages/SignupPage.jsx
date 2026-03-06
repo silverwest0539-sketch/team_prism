@@ -25,7 +25,7 @@ const POLICY_CONTENT = {
     title: '서비스 이용약관',
     body: `
 제1조 (목적)
-본 약관은 Prism 서비스 운영자(이하 "회사")가 제공하는 Prism 서비스(이하 "서비스")의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
+본 약관은 PicKey 서비스 운영자(이하 "회사")가 제공하는 PicKey 서비스(이하 "서비스")의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
 
 제2조 (정의)
 1. "회원"이란 본 약관에 동의하고 회사와 이용계약을 체결하여 서비스를 이용하는 자를 말합니다.
@@ -119,7 +119,7 @@ const POLICY_CONTENT = {
     title: '개인정보 수집·이용 동의',
     body: `
 1. 개인정보 수집·이용 주체
-- Prism 서비스 운영자(이하 "회사")
+- PicKey 서비스 운영자(이하 "회사")
 
 2. 수집하는 개인정보 항목
 - 필수 항목: 이메일 주소, 닉네임, 비밀번호(암호화 저장)
@@ -449,12 +449,12 @@ const SignupPage = () => {
               }
             }}
             className="text-3xl font-bold text-indigo-600 mb-2 cursor-pointer hover:text-indigo-700"
-            title="Prism"
-            aria-label="Prism 로고"
+            title="PicKey"
+            aria-label="PicKey 로고"
           >
             PicKey
           </h1>
-          <p className="text-gray-600 font-medium">지금 시작, Prism과 함께하세요</p>
+          <p className="text-gray-600 font-medium">지금 시작, PicKey와 함께하세요</p>
         </div>
 
         <form onSubmit={handleSignup} className="space-y-5">
@@ -469,7 +469,7 @@ const SignupPage = () => {
                 inputMode="email"
                 spellCheck={false}
                 maxLength={254}
-                placeholder="example@prism.com"
+                placeholder="example@pickey.com"
                 className={inputClass(Boolean(formErrors.email))}
               />
               <button

@@ -78,7 +78,7 @@ const InitialCommunityModal = ({ isOpen, onSubmit }) => {
             }
           `}
         >
-          {/* [수정됨] 조건문(건너뛰기/Prism)을 지우고 "PicKey 시작하기"로 고정 */}
+          {/* [수정됨] 조건문(건너뛰기/PicKey)을 지우고 "PicKey 시작하기"로 고정 */}
           PicKey 시작하기
         </button>
       </div>

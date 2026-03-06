@@ -44,7 +44,6 @@ function App() {
           <Route path="/creation" element={withLayout(<CreationPage />)} />
           <Route path="/scrap" element={withLayout(<ScrapPage />)} />
           <Route path="/mypage" element={withLayout(<MyPage />)} />
-          <Route path="/404" element={<NotFoundPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

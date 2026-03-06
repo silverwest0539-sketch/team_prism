@@ -62,8 +62,8 @@ const LoginPage = () => {
             tabIndex={0}
             onClick={handleLogoClick}
             className={`text-4xl font-bold mb-2 transition-all duration-500 cursor-pointer select-none`}
-            title={`Prism 홈으로 이동`}
-            aria-label="Prism 로고"
+            title={`PicKey 홈으로 이동`}
+            aria-label="PicKey 로고"
           >
             PicKey
           </h1>

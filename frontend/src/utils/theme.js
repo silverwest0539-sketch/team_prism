@@ -1,4 +1,5 @@
-const THEME_STORAGE_KEY = 'prism_theme';
+const THEME_STORAGE_KEY = 'pickey_theme';
+const LEGACY_THEME_STORAGE_KEY = 'prism_theme';
 const TOKEN_STORAGE_KEY = 'token';
 const USER_STORAGE_KEY = 'user';
 
@@ -13,7 +14,9 @@ export const normalizeTheme = (value) => (
 
 export const getStoredTheme = () => {
   if (typeof window === 'undefined') return THEMES.LIGHT;
-  const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
+  const raw =
+    window.localStorage.getItem(THEME_STORAGE_KEY) ??
+    window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
   return normalizeTheme(raw);
 };
 
@@ -29,6 +32,7 @@ export const applyTheme = (theme) => {
 export const saveTheme = (theme) => {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(THEME_STORAGE_KEY, normalizeTheme(theme));
+  window.localStorage.removeItem(LEGACY_THEME_STORAGE_KEY);
 };
 
 const hasAuthenticatedSession = () => {

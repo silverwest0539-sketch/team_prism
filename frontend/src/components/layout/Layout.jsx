@@ -28,7 +28,7 @@ const Layout = ({ children }) => {
         >
           <Menu size={20} />
         </button>
-        <span className="text-lg font-bold text-blue-600">Prism</span>
+        <span className="text-lg font-bold text-blue-600">PicKey</span>
         <div className="w-9" />
       </header>
 

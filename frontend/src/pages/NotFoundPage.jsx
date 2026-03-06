@@ -4,20 +4,27 @@ import { Link, useNavigate } from 'react-router-dom';
 const NotFoundPage = () => {
   const navigate = useNavigate();
 
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate('/home');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <section className="w-full max-w-xl bg-white border border-gray-200 rounded-2xl p-8 sm:p-10 text-center">
-        <p className="text-indigo-600 text-sm font-semibold tracking-wide">ERROR 404</p>
-        <h1 className="mt-2 text-3xl sm:text-4xl font-extrabold text-gray-900">
-          페이지를 찾을 수 없습니다
-        </h1>
-        <p className="mt-4 text-gray-600 leading-relaxed">
-          요청하신 경로가 잘못되었거나 이동되었습니다.
-          <br />
-          아래 버튼을 통해 홈으로 이동하거나 이전 페이지로 돌아가세요.
-        </p>
+      <section className="w-full max-w-xl rounded-3xl border border-gray-200 bg-white p-6 sm:p-8 text-center shadow-sm">
+        <div className="overflow-hidden rounded-2xl bg-gray-50 p-3">
+          <img
+            src="/pickey_404.png"
+            alt="PicKey 404 illustration"
+            className="w-full rounded-xl object-cover"
+          />
+        </div>
 
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             to="/home"
             className="inline-flex items-center justify-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
@@ -26,7 +33,7 @@ const NotFoundPage = () => {
           </Link>
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={handleGoBack}
             className="inline-flex items-center justify-center px-5 py-3 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
           >
             이전 페이지

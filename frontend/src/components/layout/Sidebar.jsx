@@ -198,7 +198,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
               className="text-2xl font-bold text-blue-600 cursor-pointer"
               onClick={() => handleNavigate('/home')}
             >
-              Prism
+              PicKey
             </h1>
             <button
               type="button"
