@@ -736,21 +736,6 @@ const HomePage = () => {
       )}
 
 
-            {/* 개발용 임시 버튼 (나중에 지우세요!) */}
-      <button 
-        onClick={() => {
-          localStorage.removeItem('hasSelectedCommunity'); // 저장된 기록 삭제
-          setIsInitialModalOpen(true); // 모달 바로 열기
-        }}
-        className="fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-full shadow-lg z-50 text-xs"
-      >
-        모달 테스트 열기
-      </button>
-
-
-
-
-
 
       {/* [추가] 최초 로그인 시 커뮤니티 선택 모달 */}
       <InitialCommunityModal 
