@@ -67,7 +67,7 @@ const updateNewsKeywords = async () => {
                               '기자', '재배포', '연합뉴스', '오전', '오후', '대한민국', '한겨레', '조선일보', '중앙일보', '동아일보',
                             '경향신문', '공격', '매일경제', '디지털투데', '확대', '10', '뉴스1', '경향신문', 'MBC뉴스', '부산경남', '맑아져',
                             '경남북서내륙', 'knn', 'co', 'kr', '흔들리', '말아먹', '보수냐', 'bntnews', '한국경제', '남자', '22', '그냥',
-                            '끼어', '돌아', '여행하']);
+                            '끼어', '돌아', '여행하', 'vs', '다시']);
 
     for (const category of categories) {
       const newsList = await exports.getNewsByCategory(category);

@@ -124,6 +124,12 @@ exports.kakaoLogin = async (req, res) => {
     res.json({ success: true, ...result });
 
   } catch (error) {
+    if (error.message === "EMAIL_ALREADY_EXISTS") {
+      return res.status(409).json({ 
+        success: false, 
+        message: "이미 해당 이메일로 가입된 계정이 있습니다. 이메일로 로그인 후 마이페이지에서 소셜 연동을 진행해주세요." 
+      });
+    }
     console.error('Kakao login error:', error.response?.data || error.message);
     res.status(500).json({ success: false, message: '카카오 로그인에 실패했습니다.' });
   }
@@ -160,6 +166,12 @@ exports.naverLogin = async (req, res) => {
     res.json({ success: true, ...result });
 
   } catch (error) {
+    if (error.message === "EMAIL_ALREADY_EXISTS") {
+      return res.status(409).json({ 
+        success: false, 
+        message: "이미 해당 이메일로 가입된 계정이 있습니다. 이메일로 로그인 후 마이페이지에서 소셜 연동을 진행해주세요." 
+      });
+    }
     console.error('Naver login error:', error.response?.data || error.message);
     res.status(500).json({ success: false, message: '네이버 로그인에 실패했습니다.' });
   }
@@ -192,5 +204,147 @@ exports.getPreferences = async (req, res) => {
   } catch (error) {
     console.error("취향 조회 에러:", error);
     res.status(500).json({ success: false, message: "서버 에러가 발생했습니다." });
+  }
+};
+
+exports.linkKakao = async (req, res) => {
+  const { email, code } = req.body; 
+
+  if (!email || !code) {
+    return res.status(400).json({ success: false, message: "이메일과 인가 코드가 필요합니다." });
+  }
+
+  try {
+    const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', null, {
+      params: {
+        grant_type: 'authorization_code',
+        client_id: process.env.KAKAO_CLIENT_ID,
+        client_secret: process.env.KAKAO_CLIENT_SECRET,
+        redirect_uri: process.env.KAKAO_REDIRECT_URI, // 카카오 디벨로퍼스에 등록된 redirect URI
+        code: code,
+      },
+      headers: { 'Content-type': 'application/x-www-form-urlencoded;charset=utf-8' }
+    });
+
+    const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
+      headers: {
+        Authorization: `Bearer ${tokenResponse.data.access_token}`,
+        'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
+      }
+    });
+
+    const kakaoUser = userResponse.data;
+    const userInfo = { sns_id: String(kakaoUser.id) };
+
+    // 작성하신 연동 서비스 호출
+    await authService.linkSocialAccount(email, userInfo, 'kakao');
+    const [dbUser] = await require('../database').execute('SELECT * FROM USERS WHERE user_email = ?', [email]);
+    const user = dbUser[0];
+
+    res.json({ 
+      success: true, 
+      message: "카카오 계정이 성공적으로 연동되었습니다.",
+      user: { // 프론트엔드 MyPage.jsx의 필드명에 맞춤
+        email: user.user_email,
+        nickname: user.nickname,
+        provider: user.provider,
+        hasPassword: !!user.password,
+        kakaoId: user.kakao_id,
+        naverId: user.naver_id,
+        preferredCommunity: user.preferred_community,
+        preferredNews: user.preferred_newscategory
+      }
+    });
+
+  } catch (error) {
+    console.error('Kakao link error:', error.response?.data || error.message);
+    res.status(500).json({ success: false, message: '카카오 연동에 실패했습니다.' });
+  }
+};
+
+exports.linkNaver = async (req, res) => {
+  // 프론트엔드에서 현재 로그인된 유저의 이메일과 네이버 인가 코드, state 값을 함께 보냅니다.
+  const { email, code, state } = req.body; 
+
+  if (!email || !code || !state) {
+    return res.status(400).json({ success: false, message: "이메일, 인가 코드, 상태(state) 값이 모두 필요합니다." });
+  }
+
+  try {
+    // 1. 네이버 서버로 Access Token 요청
+    const tokenResponse = await axios.get('https://nid.naver.com/oauth2.0/token', {
+      params: {
+        grant_type: 'authorization_code',
+        client_id: process.env.NAVER_CLIENT_ID,
+        client_secret: process.env.NAVER_CLIENT_SECRET,
+        code: code,
+        state: state
+      }
+    });
+
+    // 2. Access Token으로 네이버 유저 정보 요청
+    const userResponse = await axios.get('https://openapi.naver.com/v1/nid/me', {
+      headers: { Authorization: `Bearer ${tokenResponse.data.access_token}` }
+    });
+
+    const naverUser = userResponse.data.response;
+    // 연동이 목적이므로 고유 식별자(id)만 추출합니다.
+    const userInfo = { sns_id: String(naverUser.id) };
+
+    // 3. 서비스 로직 호출하여 데이터베이스에 연동(통합) 반영
+    await authService.linkSocialAccount(email, userInfo, 'naver');
+    
+    const [dbUser] = await require('../database').execute('SELECT * FROM USERS WHERE user_email = ?', [email]);
+    const user = dbUser[0];
+
+    res.json({ 
+      success: true, 
+      message: "네이버 계정이 성공적으로 연동되었습니다.",
+      user: { // 프론트엔드 MyPage.jsx의 필드명에 맞춤
+        email: user.user_email,
+        nickname: user.nickname,
+        provider: user.provider,
+        hasPassword: !!user.password,
+        kakaoId: user.kakao_id,
+        naverId: user.naver_id,
+        preferredCommunity: user.preferred_community,
+        preferredNews: user.preferred_newscategory
+      }
+    });
+  } catch (error) {
+    console.error('Naver link error:', error.response?.data || error.message);
+    res.status(500).json({ success: false, message: '네이버 연동에 실패했습니다.' });
+  }
+};
+
+exports.unlinkSocial = async (req, res) => {
+  // 프론트엔드에서 연동 해제할 소셜 종류(provider)와 이메일을 보냅니다.
+  const { email, provider } = req.body; 
+
+  if (!email || !provider) {
+    return res.status(400).json({ success: false, message: "이메일과 연동 해제할 소셜 정보가 필요합니다." });
+  }
+
+  try {
+    await authService.unlinkSocialAccount(email, provider);
+    
+    const providerName = provider === 'kakao' ? '카카오' : '네이버';
+    res.json({ success: true, message: `${providerName} 계정 연동이 해제되었습니다.` });
+
+  } catch (error) {
+    // 💡 서비스에서 던진 안전장치 에러 처리
+    if (error.message === "CANNOT_UNLINK_ONLY_METHOD") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "유일한 로그인 수단은 해제할 수 없습니다. 먼저 비밀번호를 설정하거나 다른 소셜 계정을 연동해 주세요." 
+      });
+    }
+
+    if (error.message === "NOT_FOUND") {
+      return res.status(404).json({ success: false, message: "유저 정보를 찾을 수 없습니다." });
+    }
+
+    console.error('Unlink error:', error);
+    res.status(500).json({ success: false, message: "연동 해제 중 오류가 발생했습니다." });
   }
 };

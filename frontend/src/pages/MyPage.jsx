@@ -28,6 +28,8 @@ const API_ENDPOINT = Object.freeze({
   CHANGE_PASSWORD: '/auth/change-password',
   WITHDRAW: '/auth/withdraw',
   UPDATE_PREFERENCE: '/auth/update-preference',
+  LINK_KAKAO: '/auth/link/kakao',
+  LINK_NAVER: '/auth/link/naver'
 });
 
 const STORAGE_KEY = Object.freeze({
@@ -43,11 +45,13 @@ const TOAST_MESSAGE = Object.freeze({
   PASSWORD_CHANGE_ERROR: '비밀번호 변경에 실패했습니다.',
   WITHDRAW_SUCCESS: '회원 탈퇴가 완료되었습니다.',
   WITHDRAW_ERROR: '회원 탈퇴 중 오류가 발생했습니다.',
-  COMMUNITY_UPDATE_SUCCESS: '선호 커뮤니티가 변경되었습니다.', 
-  COMMUNITY_UPDATE_ERROR: '선호 커뮤니티 변경 중 오류가 발생했습니다.',
+  COMMUNITY_UPDATE_SUCCESS: '선호 플랫폼이 변경되었습니다.', 
+  COMMUNITY_UPDATE_ERROR: '선호 플랫폼 변경 중 오류가 발생했습니다.',
 });
 
+// [수정 완료] 선호 플랫폼 목록에 '유튜브' 추가
 const COMMUNITY_OPTIONS = [
+  { label: '유튜브', value: 'youtube' },
   { label: '더쿠', value: 'theqoo' },
   { label: '디시인사이드', value: 'dcinside' },
   { label: '루리웹', value: 'ruliweb' },
@@ -114,6 +118,73 @@ const MyPage = () => {
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
   };
 
+  // ==========================================
+  // [추가된 부분] SNS 연동 여부 확인 및 핸들러
+  // ==========================================
+  
+  // 💡 백엔드에서 주는 userInfo 데이터 구조에 맞게 수정하세요. 
+  // (예: userInfo.provider === 'kakao' 또는 userInfo.kakaoId 가 존재하는지 등으로 판단)
+  const isKakaoLinked = userInfo?.provider === 'kakao' || !!userInfo?.kakaoId;
+  const isNaverLinked = userInfo?.provider === 'naver' || !!userInfo?.naverId;
+
+  // 카카오 버튼 클릭 핸들러
+  const handleKakaoToggle = async () => {
+    if (isKakaoLinked) {
+      // 💡 [추가] 유일한 로그인 수단인지 확인 (비밀번호 없고 다른 소셜도 없을 때)
+      const isOnlyMethod = !userInfo.hasPassword && !userInfo.naverId;
+      if (isOnlyMethod) {
+        alert('유일한 로그인 수단은 해제할 수 없습니다. 탈퇴를 원하시면 회원탈퇴를 이용해주세요.');
+        return;
+      }
+
+      if (window.confirm('카카오 계정 연동을 해제하시겠습니까?')) {
+        try {
+          // ✅ 백엔드 연동 해제 API 호출
+          await apiClient.post('/auth/unlink', { email: userInfo.email, provider: 'kakao' });
+          showToast('카카오 연동이 해제되었습니다.', { type: 'success' });
+          
+          // 상태 업데이트 (백엔드 필드명에 맞춰 수정: kakao_id -> kakaoId)
+          setUserInfo({ ...userInfo, kakaoId: null });
+        } catch (error) {
+          showToast('연동 해제에 실패했습니다.', { type: 'error' });
+        }
+      }
+    } else {
+      // 연동 안 되어 있을 때 -> 카카오 인증 페이지로 이동 (이동 후 위 Callback 컴포넌트가 실행됨)
+      const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
+      const REDIRECT_URI = `${window.location.origin}/oauth/callback/kakao`;
+      window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+    }
+  };
+
+  // 네이버 버튼 클릭 핸들러
+  const handleNaverToggle = async () => {
+    if (isNaverLinked) {
+      const isOnlyMethod = !userInfo.hasPassword && !userInfo.kakaoId;
+      if (isOnlyMethod) {
+        alert('유일한 로그인 수단은 해제할 수 없습니다. 탈퇴를 원하시면 회원탈퇴를 이용해주세요.');
+        return;
+      }
+      // 연동되어 있을 때 -> 해제 안내창
+      if (window.confirm('네이버 계정 연동을 해제하시겠습니까?')) {
+        try {
+          await apiClient.post('/auth/unlink', { email: userInfo.email, provider: 'naver' });
+          showToast('네이버 연동이 해제되었습니다.', { type: 'success' });
+          setUserInfo({ ...userInfo, naverId: null });
+        } catch (error) {
+          showToast('연동 해제에 실패했습니다.', { type: 'error' });
+        }
+      }
+    } else {
+      // 연동 안 되어 있을 때 -> 네이버 인증 페이지로 이동
+      const NAVER_CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID;
+      const REDIRECT_URI = `${window.location.origin}/oauth/callback/naver`;
+      const state = Math.random().toString(36).substring(3, 14);
+      window.location.href = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${state}`;
+    }
+  };
+  // ==========================================
+
 
   // 닉네임 수정 함수
   const handleSaveProfile = async () => {
@@ -178,6 +249,7 @@ const MyPage = () => {
     }
   };
 
+  // 취향 설정 저장 (기존)
   const handlePreferenceSubmit = async (value) => {
     if (value === 'skip') {
       setPrefModalType(null);
@@ -185,7 +257,6 @@ const MyPage = () => {
     }
 
     try {
-      // 💡 핵심: 현재 열린 모달 타입에 따라 변경할 값 딱 하나만 payload에 담습니다.
       const payload = { email: userInfo.email };
       if (prefModalType === 'community') payload.preferredCommunity = value;
       if (prefModalType === 'news') payload.preferredNews = value;
@@ -193,7 +264,6 @@ const MyPage = () => {
       const response = await apiClient.post(API_ENDPOINT.UPDATE_PREFERENCE, payload);
 
       if (response.data.success) {
-        // 로컬 상태(userInfo)에도 변경된 값만 업데이트
         const updatedUser = { ...userInfo };
         if (prefModalType === 'community') updatedUser.preferredCommunity = value;
         if (prefModalType === 'news') updatedUser.preferredNews = value;
@@ -201,11 +271,38 @@ const MyPage = () => {
         setUserInfo(updatedUser);
         localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         
-        showToast(TOAST_MESSAGE.PREFERENCE_UPDATE_SUCCESS, { type: 'success' });
+        showToast('설정이 성공적으로 변경되었습니다.', { type: 'success' });
         setPrefModalType(null);
       }
     } catch (error){
-      showToast(TOAST_MESSAGE.PREFERENCE_UPDATE_ERROR, { type: 'error' });
+      showToast(TOAST_MESSAGE.COMMUNITY_UPDATE_ERROR, { type: 'error' });
+    }
+  };
+
+  // ★★★ [추가 완료] DB의 값을 비워주고 모달을 닫는 '초기화' 함수 ★★★
+  const handlePreferenceReset = async () => {
+    try {
+      const payload = { email: userInfo.email };
+      // 초기화하므로 빈 문자열 전송
+      if (prefModalType === 'community') payload.preferredCommunity = '';
+      if (prefModalType === 'news') payload.preferredNews = '';
+
+      const response = await apiClient.post(API_ENDPOINT.UPDATE_PREFERENCE, payload);
+
+      if (response.data.success) {
+        const updatedUser = { ...userInfo };
+        if (prefModalType === 'community') updatedUser.preferredCommunity = '';
+        if (prefModalType === 'news') updatedUser.preferredNews = '';
+
+        setUserInfo(updatedUser);
+        localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
+        
+        // 토스트 띄우고 창 닫기
+        showToast('설정이 초기화되었습니다.', { type: 'success' });
+        setPrefModalType(null);
+      }
+    } catch (error) {
+      showToast('초기화 중 오류가 발생했습니다.', { type: 'error' });
     }
   };
 
@@ -243,7 +340,7 @@ const MyPage = () => {
             >
               <div>
                 <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">계정 정보</h3>
-                <p className="text-xs text-gray-400 mt-1">프로필 편집, 비밀번호 변경</p>
+                <p className="text-xs text-gray-400 mt-1">프로필 편집, 비밀번호 변경, SNS 연동</p>
               </div>
               <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
@@ -308,13 +405,12 @@ const MyPage = () => {
 
 
       {/* =========================================
-          [MODAL AREA] - 모달 내용은 기존 코드 유지
+          [MODAL AREA] 
          ========================================= */}
       {activeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]">
             
-            {/* 모달 헤더 */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900">
                 {activeModal === MODAL.ACCOUNT && '계정 정보 설정'}
@@ -325,10 +421,7 @@ const MyPage = () => {
               </button>
             </div>
 
-            {/* 모달 본문 */}
             <div className="p-4 sm:p-6 overflow-y-auto">
-              
-              {/* 1. 계정 정보 */}
               {activeModal === MODAL.ACCOUNT && (
                 <div className="space-y-8">
                   <div className="flex flex-col items-center">
@@ -339,7 +432,7 @@ const MyPage = () => {
                        <label className="block text-sm font-medium text-gray-700 mb-1">이름</label>
                        <input 
                           type="text" 
-                          value={editNickname} // defaultValue 대신 value 사용
+                          value={editNickname} 
                           onChange={(e) => setEditNickname(e.target.value)} 
                           className="w-full border rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-200"
                         />
@@ -353,7 +446,38 @@ const MyPage = () => {
                     </div>
                   </div>
                   <div className="border-t pt-6">
-                    <h4 className="font-bold mb-4 flex items-center gap-2"><Shield size={18} className="text-green-600"/> 보안 설정</h4>
+                    <h4 className="font-bold mb-4 flex items-center gap-2">
+                      <Shield size={18} className="text-green-600"/> 보안 설정
+                    </h4>
+                    
+                    {/* ========================================== */}
+                    {/* [추가된 부분] 카카오, 네이버 연동 버튼 영역 */}
+                    {/* ========================================== */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <button
+                        type="button"
+                        onClick={handleKakaoToggle}
+                        className={`py-3 rounded-lg text-sm font-bold transition-all flex justify-center items-center ${
+                          isKakaoLinked
+                            ? 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
+                            : 'bg-[#FEE500] text-[#000000] hover:brightness-95'
+                        }`}
+                      >
+                        {isKakaoLinked ? '카카오 연동 해제' : '카카오 연동하기'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleNaverToggle}
+                        className={`py-3 rounded-lg text-sm font-bold transition-all flex justify-center items-center ${
+                          isNaverLinked
+                            ? 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
+                            : 'bg-[#03C75A] text-white hover:brightness-95'
+                        }`}
+                      >
+                        {isNaverLinked ? '네이버 연동 해제' : '네이버 연동하기'}
+                      </button>
+                    </div>
                     <div className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <span className="text-sm font-medium">비밀번호 변경</span>
@@ -364,7 +488,6 @@ const MyPage = () => {
                 </div>
               )}
 
-              {/* 비밀번호 변경 모달 */}
               {activeModal === MODAL.PASSWORD && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                   <div className="bg-white rounded-2xl w-full max-w-md p-6 relative">
@@ -394,7 +517,6 @@ const MyPage = () => {
                 </div>
               )}
 
-              {/* 3. 회원 탈퇴 */}
               {activeModal === MODAL.WITHDRAW && (
                 <div className="text-center">
                   <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><Trash size={32} /></div>
@@ -402,14 +524,12 @@ const MyPage = () => {
                   <p className="text-gray-500 text-sm mb-6">모든 데이터가 삭제되며 복구할 수 없습니다.</p>
                   <div className="flex flex-col sm:flex-row gap-3">
                       <button onClick={closeModal} className="flex-1 py-3 border rounded-lg hover:bg-gray-50">취소</button>
-                      {/* onClick 이벤트 교체 */}
                       <button onClick={handleWithdraw} className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700">탈퇴하기</button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* 저장 버튼 (탈퇴 제외) */}
             {activeModal !== MODAL.WITHDRAW && activeModal !== MODAL.PASSWORD && (
               <div className="p-4 border-t bg-gray-50">
                 <button
@@ -429,15 +549,17 @@ const MyPage = () => {
           </div>
         </div>
       )}
-      {/* [추가] 취향 설정 모달 렌더링 영역 */}
+
+      {/* [수정 완료] 취향 설정 모달 렌더링 영역에 onReset 연결 완료 */}
       {prefModalType === 'community' && (
         <BasePreferenceModal 
           isOpen={true}
-          title="선호 커뮤니티 설정"
-          subtitle="대시보드에서 우선 표시할 커뮤니티를 선택해주세요."
+          title="선호 플랫폼 설정"
+          subtitle="대시보드에서 우선 표시할 플랫폼을 선택해주세요."
           options={COMMUNITY_OPTIONS}
           submitText="변경하기"
           onSubmit={handlePreferenceSubmit}
+          onReset={handlePreferenceReset} // ★ 클릭 시 DB 초기화 후 닫힘!
           onClose={() => setPrefModalType(null)} 
         />
       )}
@@ -450,6 +572,7 @@ const MyPage = () => {
           options={NEWS_OPTIONS}
           submitText="변경하기"
           onSubmit={handlePreferenceSubmit}
+          onReset={handlePreferenceReset} // ★ 클릭 시 DB 초기화 후 닫힘!
           onClose={() => setPrefModalType(null)}
         />
       )}

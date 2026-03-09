@@ -7,32 +7,31 @@ const BasePreferenceModal = ({
   title, 
   subtitle, 
   options, 
-  hasSkip = false, // '다음에 선택하기' 포함 여부
   submitText = '저장하기', 
   onSubmit,
-  onClose // 마이페이지용 닫기 버튼 (옵션)
+  onReset, // [추가] 초기화 버튼 핸들러
+  onClose 
 }) => {
   const [selected, setSelected] = useState(null);
 
   if (!isOpen) return null;
 
-  // '다음에 선택하기'가 필요한 경우 옵션 배열 끝에 추가
-  const displayOptions = hasSkip 
-    ? [...options, { label: '다음에 선택하기', value: 'skip' }] 
-    : options;
-
   const handleSubmit = () => {
     if (selected) {
       onSubmit(selected);
-      setSelected(null); // 제출 후 초기화
+      setSelected(null); 
     }
+  };
+
+  const handleReset = () => {
+    setSelected(null); // 모달 내 선택 해제
+    if (onReset) onReset(); // 부모 컴포넌트에 초기화 동작 전달
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 flex flex-col gap-6 relative">
         
-        {/* 마이페이지 등에서 모달을 닫아야 할 때 (onClose가 있을 때만 렌더링) */}
         {onClose && (
           <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
             ✕
@@ -44,12 +43,10 @@ const BasePreferenceModal = ({
           <p className="text-sm text-gray-500">{subtitle}</p>
         </div>
 
-        {/* 선택 버튼 영역 (자동 균형 그리드) */}
         <div className="grid grid-cols-2 gap-3">
-          {displayOptions.map((opt, idx) => {
+          {options.map((opt, idx) => {
             const isSelected = selected === opt.value;
-            // 🔥 핵심: 전체 개수가 홀수이고, 현재 요소가 마지막 요소이면 2칸을 차지함
-            const isLastOdd = idx === displayOptions.length - 1 && displayOptions.length % 2 !== 0;
+            const isLastOdd = idx === options.length - 1 && options.length % 2 !== 0;
 
             return (
               <button
@@ -71,16 +68,26 @@ const BasePreferenceModal = ({
           })}
         </div>
 
-        <button
-          onClick={handleSubmit}
-          disabled={!selected}
-          className={`
-            w-full py-3.5 rounded-xl font-bold text-white text-lg transition-all
-            ${selected ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'}
-          `}
-        >
-          {submitText}
-        </button>
+        {/* 🔥 핵심: 3대7 비율의 초기화 및 저장 버튼 */}
+        <div className="flex gap-3 w-full mt-2">
+          <button
+            onClick={handleReset}
+            className="w-[30%] py-3.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all text-sm sm:text-base"
+          >
+            초기화
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!selected}
+            className={`
+              w-[70%] py-3.5 rounded-xl font-bold text-white transition-all text-sm sm:text-base
+              ${selected ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'}
+            `}
+          >
+            {submitText}
+          </button>
+        </div>
+
       </div>
     </div>
   );

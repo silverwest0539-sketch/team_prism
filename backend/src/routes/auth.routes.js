@@ -11,6 +11,9 @@ router.post('/change-password', authController.changePassword);
 router.delete('/withdraw', authController.withdraw);
 router.post('/kakao', authController.kakaoLogin);
 router.post('/naver', authController.naverLogin);
+router.post('/link/kakao', authController.linkKakao);
+router.post('/link/naver', authController.linkNaver);
+router.post('/unlink', authController.unlinkSocial);
 router.post('/update-preference', authController.updatePreference);
 router.get('/preferences', authController.getPreferences);
 
