@@ -161,51 +161,118 @@ exports.withdraw = async (email) => {
 exports.socialLogin = async (userInfo, provider) => {
   const { sns_id, email, nickname } = userInfo;
 
-  // 1. 이미 가입된 소셜 유저인지 확인
+  // 1. 요청된 소셜 타입에 따라 컬럼명(kakao_id 또는 naver_id) 지정
+  const idColumn = provider === 'kakao' ? 'kakao_id' : 'naver_id';
+
+  // 2. 동적 컬럼명으로 유저 검색
   const [rows] = await db.execute(
-    'SELECT * FROM USERS WHERE sns_id = ? AND provider = ?', 
-    [sns_id, provider]
+    `SELECT * FROM USERS WHERE ${idColumn} = ?`, 
+    [sns_id]
   );
   
   let user = rows[0];
 
-  // 2. 신규 유저라면 자동 회원가입 진행
+  // 3. 신규 유저라면 자동 회원가입 진행
   if (!user) {
-    let finalEmail = email;
-
-    // 소셜에서 이메일을 주지 않았을 경우 가짜 이메일 생성
-    if (!finalEmail) {
-      finalEmail = `${provider}_${sns_id}@prism.local`;
-    } else {
-      // 이메일을 줬더라도, 자체 가입(local) 등으로 이미 존재하는지 체크
-      const [existingEmail] = await db.execute(
-        'SELECT user_email FROM USERS WHERE user_email = ?', 
-        [finalEmail]
-      );
+    // 소셜에서 이메일을 줬다면 기존 로컬 가입 여부 확인
+    if (email) {
+      const [existingEmail] = await db.execute('SELECT * FROM USERS WHERE user_email = ?', [email]);
       if (existingEmail.length > 0) {
-        finalEmail = `${provider}_${sns_id}@prism.local`;
+        throw new Error("EMAIL_ALREADY_EXISTS"); // 컨트롤러에서 409 에러로 처리
       }
     }
 
-    // 닉네임이 없을 경우 랜덤 닉네임 부여
+    const finalEmail = email || `${provider}_${sns_id}@prism.local`;
     const finalNickname = nickname || `prism_${Math.floor(1000 + Math.random() * 9000)}`;
 
-    const query = `INSERT INTO USERS (user_email, nickname, provider, sns_id) VALUES (?, ?, ?, ?)`;
+    // 삽입 시에도 동적 컬럼 적용 (provider는 가입 출처 기록용으로 남김)
+    const query = `INSERT INTO USERS (user_email, nickname, provider, ${idColumn}) VALUES (?, ?, ?, ?)`;
     await db.execute(query, [finalEmail, finalNickname, provider, sns_id]);
     
-    const [newRows] = await db.execute(
-      'SELECT * FROM USERS WHERE sns_id = ? AND provider = ?', 
-      [sns_id, provider]
-    );
+    const [newRows] = await db.execute(`SELECT * FROM USERS WHERE ${idColumn} = ?`, [sns_id]);
     user = newRows[0];
   }
 
-  // 3. JWT 토큰 발급
+  // 4. JWT 토큰 발급
   const token = jwt.sign(
     { email: user.user_email, nickname: user.nickname, provider: user.provider },
     process.env.JWT_SECRET,
     { expiresIn: '2h' }
   );
 
-  return { token, user: { email: user.user_email, nickname: user.nickname, provider: user.provider, preferredCommunity: user.preferred_community, preferredNews: user.preferred_newscategory } };
+  return { 
+    token, 
+    user: { 
+      email: user.user_email, 
+      nickname: user.nickname, 
+      provider: user.provider, 
+      preferredCommunity: user.preferred_community, 
+      preferredNews: user.preferred_newscategory,
+      hasPassword: !!user.password,      
+      kakaoId: user.kakao_id, 
+      naverId: user.naver_id 
+    } 
+  };
+};
+
+exports.linkSocialAccount = async (email, userInfo, provider) => {
+  const { sns_id } = userInfo;
+  const idColumn = provider === 'kakao' ? 'kakao_id' : 'naver_id';
+  const conn = await db.getConnection(); 
+
+  try {
+    await conn.beginTransaction();
+
+    // 1. 해당 소셜 ID가 이미 다른 계정으로 존재하는지 확인
+    const [existing] = await conn.execute(`SELECT user_email FROM USERS WHERE ${idColumn} = ?`, [sns_id]);
+
+    if (existing.length > 0) {
+      const oldEmail = existing[0].user_email;
+
+      // 2. 다른 이메일(껍데기 계정)이라면 데이터 통합(Merge) 후 기존 계정 삭제
+      if (oldEmail !== email) {
+        // [키워드 스크랩 이전]
+        await conn.execute('UPDATE IGNORE USER_KEYWORD_SCRAP SET user_email = ? WHERE user_email = ?', [email, oldEmail]);
+        
+        // [프롬프트 생성 기록 이전]
+        await conn.execute('UPDATE IGNORE MARKETING_OUTPUT SET user_email = ? WHERE user_email = ?', [email, oldEmail]);
+
+        // 기존 껍데기 소셜 계정 삭제
+        await conn.execute('DELETE FROM USERS WHERE user_email = ?', [oldEmail]);
+      }
+    }
+
+    // 3. 현재 접속 중인 계정에 소셜 ID 연동 (기존 provider 출처는 덮어쓰지 않음)
+    await conn.execute(`UPDATE USERS SET ${idColumn} = ? WHERE user_email = ?`, [sns_id, email]);
+
+    await conn.commit(); 
+  } catch (error) {
+    await conn.rollback(); 
+    throw error; 
+  } finally {
+    conn.release(); 
+  }
+};
+
+exports.unlinkSocialAccount = async (email, provider) => {
+  const idColumn = provider === 'kakao' ? 'kakao_id' : 'naver_id';
+
+  // 1. 유저 정보 조회
+  const [rows] = await db.execute('SELECT * FROM USERS WHERE user_email = ?', [email]);
+  if (rows.length === 0) throw new Error("NOT_FOUND");
+
+  const user = rows[0];
+
+  // 2. 안전 장치: 비밀번호도 없고, 다른 소셜 연동도 없는데 현재 소셜을 끊으려고 하는지 검사
+  const hasPassword = user.password !== null && user.password !== '';
+  // 해제하려는 provider 말고, 다른 provider에 ID가 존재하는지 확인
+  const hasOtherSocial = (provider === 'kakao' && user.naver_id) || (provider === 'naver' && user.kakao_id);
+
+  if (!hasPassword && !hasOtherSocial) {
+    // 유일한 로그인 수단을 끊으려고 하므로 차단!
+    throw new Error("CANNOT_UNLINK_ONLY_METHOD"); 
+  }
+
+  // 3. 안전하다면 해당 소셜 ID를 NULL로 업데이트하여 연동 해제
+  await db.execute(`UPDATE USERS SET ${idColumn} = NULL WHERE user_email = ?`, [email]);
 };

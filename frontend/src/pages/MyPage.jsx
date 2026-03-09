@@ -28,6 +28,8 @@ const API_ENDPOINT = Object.freeze({
   CHANGE_PASSWORD: '/auth/change-password',
   WITHDRAW: '/auth/withdraw',
   UPDATE_PREFERENCE: '/auth/update-preference',
+  LINK_KAKAO: '/auth/link/kakao',
+  LINK_NAVER: '/auth/link/naver'
 });
 
 const STORAGE_KEY = Object.freeze({
@@ -121,29 +123,35 @@ const MyPage = () => {
   // [추가된 부분] SNS 연동 여부 확인 및 핸들러
   // ==========================================
   
-  // 💡 백엔드에서 주는 userInfo 데이터 구조에 맞게 수정하세요. 
-  // (예: userInfo.provider === 'kakao' 또는 userInfo.kakaoId 가 존재하는지 등으로 판단)
-  const isKakaoLinked = userInfo?.provider === 'kakao' || !!userInfo?.kakaoId;
-  const isNaverLinked = userInfo?.provider === 'naver' || !!userInfo?.naverId;
+  // provider는 가입 출처로 유지되므로, 현재 연동 상태는 소셜 ID 존재 여부로만 판단한다.
+  const isKakaoLinked = !!userInfo?.kakaoId;
+  const isNaverLinked = !!userInfo?.naverId;
 
   // 카카오 버튼 클릭 핸들러
   const handleKakaoToggle = async () => {
     if (isKakaoLinked) {
-      // 연동되어 있을 때 -> 해제 안내창
+      // 💡 [추가] 유일한 로그인 수단인지 확인 (비밀번호 없고 다른 소셜도 없을 때)
+      const isOnlyMethod = !userInfo.hasPassword && !userInfo.naverId;
+      if (isOnlyMethod) {
+        alert('유일한 로그인 수단은 해제할 수 없습니다. 탈퇴를 원하시면 회원탈퇴를 이용해주세요.');
+        return;
+      }
+
       if (window.confirm('카카오 계정 연동을 해제하시겠습니까?')) {
         try {
-          // 백엔드 연동 해제 API 호출 (엔드포인트는 백엔드와 맞춰주세요)
-          // await apiClient.post('/auth/disconnect', { email: userInfo.email, provider: 'kakao' });
+          // ✅ 백엔드 연동 해제 API 호출
+          await apiClient.post('/auth/unlink', { email: userInfo.email, provider: 'kakao' });
           showToast('카카오 연동이 해제되었습니다.', { type: 'success' });
           
-          // 임시 로컬 상태 업데이트 (실제로는 API 응답 후 처리)
-          setUserInfo({ ...userInfo, provider: null, kakaoId: null });
+          const updatedUser = { ...userInfo, kakaoId: null };
+          setUserInfo(updatedUser);
+          localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         } catch {
           showToast('연동 해제에 실패했습니다.', { type: 'error' });
         }
       }
     } else {
-      // 연동 안 되어 있을 때 -> 카카오 인증 페이지로 이동
+      // 연동 안 되어 있을 때 -> 카카오 인증 페이지로 이동 (이동 후 위 Callback 컴포넌트가 실행됨)
       const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
       const REDIRECT_URI = `${window.location.origin}/oauth/callback/kakao`;
       window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`;
@@ -153,12 +161,19 @@ const MyPage = () => {
   // 네이버 버튼 클릭 핸들러
   const handleNaverToggle = async () => {
     if (isNaverLinked) {
+      const isOnlyMethod = !userInfo.hasPassword && !userInfo.kakaoId;
+      if (isOnlyMethod) {
+        alert('유일한 로그인 수단은 해제할 수 없습니다. 탈퇴를 원하시면 회원탈퇴를 이용해주세요.');
+        return;
+      }
       // 연동되어 있을 때 -> 해제 안내창
       if (window.confirm('네이버 계정 연동을 해제하시겠습니까?')) {
         try {
-          // await apiClient.post('/auth/disconnect', { email: userInfo.email, provider: 'naver' });
+          await apiClient.post('/auth/unlink', { email: userInfo.email, provider: 'naver' });
           showToast('네이버 연동이 해제되었습니다.', { type: 'success' });
-          setUserInfo({ ...userInfo, provider: null, naverId: null });
+          const updatedUser = { ...userInfo, naverId: null };
+          setUserInfo(updatedUser);
+          localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         } catch {
           showToast('연동 해제에 실패했습니다.', { type: 'error' });
         }
