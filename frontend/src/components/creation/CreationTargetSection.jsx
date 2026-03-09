@@ -10,8 +10,13 @@ const CreationTargetSection = ({
 }) => {
   return (
     <div className="bg-gray-50 p-3 2xl:p-2.5 rounded-xl border border-gray-100 mb-3 sm:mb-4 2xl:mb-2.5">
+      <div className="flex justify-end mb-2 2xl:mb-1.5">
+        <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-500">
+          선택 항목
+        </span>
+      </div>
       <label className="block text-sm font-bold text-gray-700 mb-2 2xl:mb-1.5">
-        상세 타겟 설정 <span className="text-xs font-normal text-gray-500">(선택)</span>
+        상세 타겟 설정
       </label>
       <input
         type="text"
@@ -22,7 +27,7 @@ const CreationTargetSection = ({
       />
 
       <label className="block text-sm font-bold text-gray-700 mb-2 2xl:mb-1.5">
-        필수 정보
+        꼭 포함할 정보
       </label>
       <textarea
         className="w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-sm mb-3 2xl:mb-2"

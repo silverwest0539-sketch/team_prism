@@ -4,12 +4,18 @@ import CreationProfileSection from './CreationProfileSection';
 import CreationTargetSection from './CreationTargetSection';
 import { useCreationForm } from './useCreationForm';
 
+const INPUT_REQUIRED_MESSAGE = '주제 키워드를 입력해 주세요.';
+const PURPOSE_REQUIRED_MESSAGE = '목적을 입력해 주세요.';
+const GENERATING_LABEL = '생성 중...';
+const GENERATE_LABEL = '생성';
+
 const InputPanel = ({
   onGenerate,
   isLoading,
   initialKeyword = '',
 }) => {
   const [keywordError, setKeywordError] = useState('');
+  const [purposeError, setPurposeError] = useState('');
 
   const {
     keyword,
@@ -33,12 +39,24 @@ const InputPanel = ({
 
   const handleSubmit = () => {
     const payload = buildSubmitPayload();
+    let hasError = false;
+
     if (!payload.keyword) {
-      setKeywordError('주제 키워드를 입력해 주세요.');
-      return;
+      setKeywordError(INPUT_REQUIRED_MESSAGE);
+      hasError = true;
+    } else {
+      setKeywordError('');
     }
 
-    setKeywordError('');
+    if (!String(payload.context || '').trim()) {
+      setPurposeError(PURPOSE_REQUIRED_MESSAGE);
+      hasError = true;
+    } else {
+      setPurposeError('');
+    }
+
+    if (hasError) return;
+
     onGenerate(payload);
   };
 
@@ -66,7 +84,11 @@ const InputPanel = ({
             industry={industry}
             onChangeIndustry={setIndustry}
             purpose={purpose}
-            onChangePurpose={setPurpose}
+            onChangePurpose={(value) => {
+              setPurpose(value);
+              if (purposeError && value.trim()) setPurposeError('');
+            }}
+            purposeError={purposeError}
           />
         </div>
 
@@ -90,11 +112,10 @@ const InputPanel = ({
           isLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
         }`}
       >
-        {isLoading ? '생성 중...' : '생성'}
+        {isLoading ? GENERATING_LABEL : GENERATE_LABEL}
       </button>
     </div>
   );
 };
 
 export default InputPanel;
-
