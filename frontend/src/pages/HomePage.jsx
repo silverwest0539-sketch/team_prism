@@ -1,7 +1,6 @@
 // src/pages/HomePage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-// [수정] 더보기를 위한 ChevronDown 아이콘 추가
 import { PlayCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, X, Newspaper } from 'lucide-react';  
 import SearchBar from '../components/common/SearchBar';
 import SummaryModal from '../components/home/SummaryModal';
@@ -12,15 +11,7 @@ import { getStoredUser } from '../utils/authStorage';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 import { Question } from '@phosphor-icons/react'; 
 
-const prioritizeOptions = (options, preferredValue) => {
-  const preferred = String(preferredValue || '').trim();
-  if (!preferred) return options;
-
-  const matched = options.find((option) => option.value === preferred);
-  if (!matched) return options;
-
-  return [matched, ...options.filter((option) => option.value !== preferred)];
-};
+// [수정사항] 선택한 옵션을 최상단으로 올리던 prioritizeOptions 함수 삭제 완료
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -31,7 +22,6 @@ const HomePage = () => {
   const [risingKeywords, setRisingKeywords] = useState([]); 
   const [risingPlatforms, setRisingPlatforms] = useState([]); 
   const [selectedPlatform, setSelectedPlatform] = useState('youtube');
-  
   
   // 툴팁 통합 상태 ('trend', 'platform', 'news', null)
   const [activeTooltip, setActiveTooltip] = useState(null);
@@ -57,16 +47,16 @@ const HomePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState(null);
   const [isTrendModalOpen, setIsTrendModalOpen] = useState(false);
-  const [isInitialModalOpen, setIsInitialModalOpen] = useState(false); // [추가] 최초 진입 모달 상태
+  const [isInitialModalOpen, setIsInitialModalOpen] = useState(false); 
 
   // [커뮤니티 상태 (하단)]
   const [communityPosts, setCommunityPosts] = useState([]);
   const [selectedComm, setSelectedComm] = useState('theqoo');
-  const [visibleCommunityCount, setVisibleCommunityCount] = useState(5); // [추가] 커뮤니티 더보기 카운트
+  const [visibleCommunityCount, setVisibleCommunityCount] = useState(5); 
 
   const [selectedNewsCategory, setSelectedNewsCategory] = useState('korea');
   const [todayNews, setTodayNews] = useState([]);
-  const [visibleNewsCount, setVisibleNewsCount] = useState(5); // [추가] 뉴스 더보기 카운트
+  const [visibleNewsCount, setVisibleNewsCount] = useState(5); 
 
   // 읽음 처리 상태
   const [readLinks, setReadLinks] = useState(new Set());
@@ -75,7 +65,7 @@ const HomePage = () => {
   const scrollRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // --- 상수 정의 ---
+  // --- 상수 정의 (순서 고정용) ---
   const COMMUNITY_OPTIONS = [
     { label: '더쿠', value: 'theqoo' },
     { label: '디시인사이드', value: 'dcinside' },
@@ -101,11 +91,6 @@ const HomePage = () => {
     { label: '네이트판', value: 'natepan' },
     { label: 'FM코리아', value: 'fmkorea' },
   ];
-
-  // 수정 전의 preferredCommunity 변수 대신 State 값 사용
-  const prioritizedCommunityOptions = prioritizeOptions(COMMUNITY_OPTIONS, selectedComm);
-  const prioritizedMainPlatformOptions = prioritizeOptions(MAIN_PLATFORM_OPTIONS, selectedPlatform);
-  const prioritizedNewsCategoryOptions = prioritizeOptions(NEWS_CATEGORY_OPTIONS, selectedNewsTopCategory);
 
   const CATEGORY_TABS = ['전체', '음악', '엔터테인먼트', '게임', '뉴스', '스포츠', '브이로그'];
 
@@ -138,7 +123,6 @@ const HomePage = () => {
 
   const getCategoryBadgeClass = () => 'bg-blue-100 text-blue-700';
 
-  // [수정] 2단계 마법사 모달 제출 핸들러
   const handleInitialPreferencesSubmit = async ({ community, news }) => {
     if (community !== 'skip') {
       setSelectedComm(community); 
@@ -161,11 +145,10 @@ const HomePage = () => {
       console.error('취향 설정 저장 실패:', error);
     }
     
-    // ❌ 로컬스토리지 저장 삭제 (localStorage.setItem('hasSelectedCommunity', 'true');)
     setIsInitialModalOpen(false);
   };
-  // --- API 호출 (useEffect) ---
 
+  // --- API 호출 (useEffect) ---
 
   // [탭 변경 시] 더보기 카운트 초기화
   useEffect(() => setVisibleCommunityCount(5), [selectedComm]);
@@ -250,11 +233,9 @@ const HomePage = () => {
           if (res.data.success) {
             const { preferredCommunity, preferredNews } = res.data;
             
-            // 💡 핵심: DB에 값이 하나라도 없다면 취향 설정 모달을 띄웁니다.
             if (!preferredCommunity || !preferredNews) {
               setIsInitialModalOpen(true);
             } else {
-              // DB에 값이 있으면 해당 값으로 화면 세팅
               setSelectedPlatform(preferredCommunity);
               setSelectedComm(preferredCommunity);
               setSelectedNewsTopCategory(preferredNews);
@@ -263,13 +244,10 @@ const HomePage = () => {
           }
         } catch (error) {
           console.error('유저 취향 정보를 불러오지 못했습니다:', error);
-          // 에러 발생 시 안전하게 모달을 띄워 설정하게 유도할 수 있습니다.
           setIsInitialModalOpen(true); 
         }
-      } else {
-        // 비로그인 상태일 때도 최초 진입 모달을 띄우고 싶다면 추가
-        setIsInitialModalOpen(true);
-      }
+      } 
+      // [수정사항] 비로그인 상태일 때 모달을 띄우는 else 블록을 삭제하여 로그인 전에는 모달이 뜨지 않도록 함
     };
 
     fetchUserPreferences();
@@ -370,6 +348,7 @@ const HomePage = () => {
             </div>
             <div className="tab-wrap" onClick={(e) => e.stopPropagation()}>
               <div className="relative">
+                {/* [수정사항] MAIN_PLATFORM_OPTIONS로 변경 (순서 고정) */}
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`tab-btn flex items-center gap-1 ${
@@ -377,13 +356,13 @@ const HomePage = () => {
                   }`}
                 >
                   <span className="font-medium text-xs">
-                    {prioritizedMainPlatformOptions.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
+                    {MAIN_PLATFORM_OPTIONS.find(opt => opt.value === selectedPlatform)?.label || '커뮤니티'}
                   </span>
                   <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isDropdownOpen && (
                   <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
-                    {prioritizedMainPlatformOptions.map((option) => (
+                    {MAIN_PLATFORM_OPTIONS.map((option) => (
                       <button
                         key={option.value}
                         onClick={() => { setSelectedPlatform(option.value); setIsDropdownOpen(false); }}
@@ -435,9 +414,9 @@ const HomePage = () => {
               )}
             </div>
 
-            {/* [추가] 뉴스 키워드 드롭다운 */}
             <div className="tab-wrap" onClick={(e) => e.stopPropagation()}>
               <div className="relative">
+                {/* [수정사항] NEWS_CATEGORY_OPTIONS로 변경 (순서 고정) */}
                 <button
                   onClick={() => setIsNewsDropdownOpen(!isNewsDropdownOpen)}
                   className={`tab-btn flex items-center gap-1 ${
@@ -445,13 +424,13 @@ const HomePage = () => {
                   }`}
                 >
                   <span className="font-medium text-xs">
-                    {prioritizedNewsCategoryOptions.find(opt => opt.value === selectedNewsTopCategory)?.label || '대한민국'}
+                    {NEWS_CATEGORY_OPTIONS.find(opt => opt.value === selectedNewsTopCategory)?.label || '대한민국'}
                   </span>
                   <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isNewsDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isNewsDropdownOpen && (
                   <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
-                    {prioritizedNewsCategoryOptions.map((option) => (
+                    {NEWS_CATEGORY_OPTIONS.map((option) => (
                       <button
                         key={option.value}
                         onClick={() => { setSelectedNewsTopCategory(option.value); setIsNewsDropdownOpen(false); }}
@@ -548,7 +527,8 @@ const HomePage = () => {
             <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">커뮤니티 인기글</h2>
           </div>
           <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
-            {prioritizedCommunityOptions.map((comm) => (
+            {/* [수정사항] COMMUNITY_OPTIONS로 변경 (순서 고정) */}
+            {COMMUNITY_OPTIONS.map((comm) => (
               <button
                 key={comm.value} onClick={() => setSelectedComm(comm.value)}
                 className={`chip ${selectedComm === comm.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
@@ -561,7 +541,6 @@ const HomePage = () => {
           <div className="flex flex-col gap-3">
             {communityPosts.length > 0 ? (
               <>
-                {/* [수정] 5개까지만 노출 (더보기 클릭 시 전체 노출) */}
                 {communityPosts.slice(0, visibleCommunityCount).map((post) => {
                   const isRead = readLinks.has(post.link);
                   return (
@@ -584,11 +563,8 @@ const HomePage = () => {
                     </a>
                   );
                 })}
-                {/* [추가] 숨겨진 데이터가 있을 때 더보기 버튼 표시 */}
-                {/* [수정] 전체 데이터가 5개 초과일 때만 토글 버튼 표시 */}
                 {communityPosts.length > 5 && (
                   <button 
-                    // 5개면 전체 길이로, 전체 길이면 다시 5개로 토글
                     onClick={() => setVisibleCommunityCount(prev => prev === 5 ? communityPosts.length : 5)}
                     className="w-full mt-1 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium rounded-xl text-sm transition-colors border border-gray-100 flex items-center justify-center gap-1"
                   >
@@ -614,7 +590,8 @@ const HomePage = () => {
             <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1 flex items-center gap-2">오늘의 뉴스</h2>
           </div>
           <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
-            {prioritizedNewsCategoryOptions.map((cat) => (
+             {/* [수정사항] NEWS_CATEGORY_OPTIONS로 변경 (순서 고정) */}
+            {NEWS_CATEGORY_OPTIONS.map((cat) => (
               <button
                 key={cat.value} onClick={() => setSelectedNewsCategory(cat.value)}
                 className={`chip ${selectedNewsCategory === cat.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
@@ -627,7 +604,6 @@ const HomePage = () => {
           <div className="flex flex-col gap-3">
             {todayNews.length > 0 ? (
               <>
-                {/* [수정] 5개까지만 노출 (더보기 클릭 시 전체 노출) */}
                 {todayNews.slice(0, visibleNewsCount).map((news, idx) => {
                   const isRead = readNewsLinks.has(news.link);
                   return (
@@ -645,10 +621,8 @@ const HomePage = () => {
                     </a>
                   );
                 })}
-                {/* [수정] 전체 데이터가 5개 초과일 때만 토글 버튼 표시 */}
                 {todayNews.length > 5 && (
                   <button 
-                    // 5개면 전체 길이로, 전체 길이면 다시 5개로 토글
                     onClick={() => setVisibleNewsCount(prev => prev === 5 ? todayNews.length : 5)}
                     className="w-full mt-1 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium rounded-xl text-sm transition-colors border border-gray-100 flex items-center justify-center gap-1"
                   >
@@ -724,20 +698,6 @@ const HomePage = () => {
           </div>
         </div>
       )}
-
-
-            {/* 개발용 임시 버튼 (나중에 지우기!) */}
-      {/* <button 
-        onClick={() => {
-          localStorage.removeItem('hasSelectedCommunity'); // 저장된 기록 삭제
-          setIsInitialModalOpen(true); // 모달 바로 열기
-        }}
-        className="fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-full shadow-lg z-50 text-xs"
-      >
-        모달 테스트 열기
-      </button> */}
-
-
 
       {/* 교체된 마법사 모달 */}
       <InitialWizardModal 
