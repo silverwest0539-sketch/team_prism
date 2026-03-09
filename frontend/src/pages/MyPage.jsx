@@ -36,6 +36,7 @@ const STORAGE_KEY = Object.freeze({
 });
 
 const TOAST_MESSAGE = Object.freeze({
+  NOTIFICATION_UNAVAILABLE: '알림 설정은 아직 지원하지 않습니다.',
   PROFILE_UPDATE_SUCCESS: '프로필이 저장되었습니다.',
   PROFILE_UPDATE_ERROR: '이름 수정 중 오류가 발생했습니다.',
   PASSWORD_MISMATCH: '새 비밀번호 확인이 일치하지 않습니다.',
@@ -137,7 +138,7 @@ const MyPage = () => {
           
           // 임시 로컬 상태 업데이트 (실제로는 API 응답 후 처리)
           setUserInfo({ ...userInfo, provider: null, kakaoId: null });
-        } catch (error) {
+        } catch {
           showToast('연동 해제에 실패했습니다.', { type: 'error' });
         }
       }
@@ -158,7 +159,7 @@ const MyPage = () => {
           // await apiClient.post('/auth/disconnect', { email: userInfo.email, provider: 'naver' });
           showToast('네이버 연동이 해제되었습니다.', { type: 'success' });
           setUserInfo({ ...userInfo, provider: null, naverId: null });
-        } catch (error) {
+        } catch {
           showToast('연동 해제에 실패했습니다.', { type: 'error' });
         }
       }
@@ -261,7 +262,7 @@ const MyPage = () => {
         showToast('설정이 성공적으로 변경되었습니다.', { type: 'success' });
         setPrefModalType(null);
       }
-    } catch (error){
+    } catch {
       showToast(TOAST_MESSAGE.COMMUNITY_UPDATE_ERROR, { type: 'error' });
     }
   };
@@ -288,7 +289,7 @@ const MyPage = () => {
         showToast('설정이 초기화되었습니다.', { type: 'success' });
         setPrefModalType(null);
       }
-    } catch (error) {
+    } catch {
       showToast('초기화 중 오류가 발생했습니다.', { type: 'error' });
     }
   };

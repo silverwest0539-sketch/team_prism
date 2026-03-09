@@ -154,7 +154,7 @@ const AnalysisPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [keyword]);
+  }, [keyword]); 
 
   const fetchAiSummary = useCallback(async (targetKeyword, start, end) => {
     setIsAiLoading(true);
@@ -209,7 +209,7 @@ const AnalysisPage = () => {
     fetchData(yesterdayDate, todayDate);
     fetchAiSummary(keyword, yesterdayDate, todayDate);
 
-  }, [keyword]); 
+  }, [keyword, fetchAiSummary, fetchData]); 
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
