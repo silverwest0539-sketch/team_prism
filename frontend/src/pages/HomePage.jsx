@@ -39,7 +39,7 @@ const HomePage = () => {
   const [isInitialModalOpen, setIsInitialModalOpen] = useState(false); 
 
   const [communityPosts, setCommunityPosts] = useState([]);
-  const [selectedComm, setSelectedComm] = useState('all'); // 기본값을 'all'로
+  const [selectedComm, setSelectedComm] = useState('theqoo'); 
   const [visibleCommunityCount, setVisibleCommunityCount] = useState(5); 
 
   const [selectedNewsCategory, setSelectedNewsCategory] = useState('korea');
@@ -54,7 +54,6 @@ const HomePage = () => {
 
   // [수정] 커뮤니티 옵션에 '전체(all)' 추가
   const COMMUNITY_OPTIONS = [
-    { label: '전체', value: 'all' }, 
     { label: '더쿠', value: 'theqoo' },
     { label: '디시인사이드', value: 'dcinside' },
     { label: '루리웹', value: 'ruliweb' },
@@ -101,10 +100,11 @@ const HomePage = () => {
   const handleInitialPreferencesSubmit = async ({ community, news }) => {
     if (community && community !== 'skip') {
       setSelectedPlatform(community); 
-      setSelectedComm(community === 'youtube' ? 'all' : community);
+      // ★ 유튜브일 경우 'theqoo' 연동
+      setSelectedComm(community === 'youtube' ? 'theqoo' : community);
     } else {
       setSelectedPlatform('youtube');
-      setSelectedComm('all');
+      setSelectedComm('theqoo'); // ★ 기본값
     }
     
     if (news && news !== 'skip') {
@@ -176,29 +176,10 @@ const HomePage = () => {
   useEffect(() => {
     const fetchCommunityPosts = async () => {
       try {
-        if (selectedComm === 'all') {
-          const communities = ['theqoo', 'dcinside', 'ruliweb', 'natepan', 'fmkorea'];
-          const requests = communities.map(comm => 
-            apiClient.get('/community/posts', { params: { platform: comm } })
-          );
-          const responses = await Promise.all(requests);
-          
-          let allPosts = [];
-          responses.forEach(res => {
-            if (res.data && Array.isArray(res.data)) {
-              allPosts = [...allPosts, ...res.data];
-            }
-          });
-
-          // 순위(rank) 기준으로 정렬해서 섞기
-          allPosts.sort((a, b) => (a.rank || 99) - (b.rank || 99));
-          setCommunityPosts(allPosts.slice(0, 25)); // 상위 25개만 사용
-        } else {
-          const res = await apiClient.get('/community/posts', {
-            params: { platform: selectedComm },
-          });
-          setCommunityPosts(res.data || []);
-        }
+        const res = await apiClient.get('/community/posts', {
+          params: { platform: selectedComm },
+        });
+        setCommunityPosts(res.data || []);
       } catch (error) {
         console.error('커뮤니티 인기글 로드 에러:', error);
         setCommunityPosts([]);
@@ -206,7 +187,6 @@ const HomePage = () => {
     };
     fetchCommunityPosts();
   }, [selectedComm]);
-
   // ★ [수정] 취향 정보 불러오기: hasSeenWizard 확인
   useEffect(() => {
     const fetchUserPreferences = async () => {
@@ -217,13 +197,12 @@ const HomePage = () => {
             const { preferredCommunity, preferredNews } = res.data;
             const hasSeenWizard = localStorage.getItem(`hasSeenWizard_${userInfo.email}`);
 
-            // DB값이 비어있고, 모달을 본 적이 없을 때만 띄움!
             if (!hasSeenWizard && (!preferredCommunity || !preferredNews)) {
               setIsInitialModalOpen(true);
             } else {
-              // 초기화해서 DB값이 비었어도 모달 안띄우고 기본값으로 세팅
               setSelectedPlatform(preferredCommunity || 'youtube');
-              setSelectedComm((preferredCommunity === 'youtube' || !preferredCommunity) ? 'all' : preferredCommunity);
+              // ★ 유튜브이거나 값이 없을 때 'theqoo'로 세팅
+              setSelectedComm((preferredCommunity === 'youtube' || !preferredCommunity) ? 'theqoo' : preferredCommunity);
               setSelectedNewsTopCategory(preferredNews || 'korea');
               setSelectedNewsCategory(preferredNews || 'korea');
             }
