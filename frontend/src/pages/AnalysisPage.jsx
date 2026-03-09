@@ -17,7 +17,8 @@ import {
   ArrowsOutSimple,
   Question, 
   LockKey,
-  Book
+  Book,
+  WarningCircle
 } from '@phosphor-icons/react';
 import {
   LineChart,
@@ -87,6 +88,12 @@ const AnalysisPage = () => {
   // 여론 분석 모달 관련 상태
   const [sentimentModalConfig, setSentimentModalConfig] = useState({ isOpen: false, sentiment: null });
   const [isNegativeRevealed, setIsNegativeRevealed] = useState(false);
+
+  // ==========================================
+  // [추가] 정보 수정 제보 모달 관련 상태
+  // ==========================================
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editRequestText, setEditRequestText] = useState('');
 
   // ==========================================
   // [추가] 개별 댓글 반응용 동의 상태 관리 (Set)
@@ -333,6 +340,22 @@ const AnalysisPage = () => {
     window.open(namuwikiUrl, '_blank', 'noopener,noreferrer');
   };
 
+
+  const handleEditRequestSubmit = (e) => {
+    e.preventDefault();
+    if (!editRequestText.trim()) {
+      showToast('수정이나 추가가 필요한 내용을 입력해주세요.', { type: 'warning' });
+      return;
+    }
+    
+    // TODO: 추후 시간이 남을 때 여기에 API 연동 코드를 추가하세요.
+    // await apiClient.post('/report', { keyword, content: editRequestText });
+
+    showToast('소중한 의견 감사합니다. 검토 후 신속히 반영하겠습니다.', { type: 'success' });
+    setIsEditModalOpen(false);
+    setEditRequestText(''); // 텍스트 초기화
+  };
+
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
     const chartDataKey = selectedPlatform === 'all' ? 'mentions' : selectedPlatform;
@@ -519,8 +542,14 @@ const AnalysisPage = () => {
         }`}
       >
         {/* 상단 키워드 및 컨트롤 영역 생략 (기존과 동일) */}
-        <div className="flex flex-row items-start sm:items-center justify-between gap-2 mb-2 w-full">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-1">
+        {/* ========================================================= */}
+        {/* 상단 키워드 및 컨트롤 영역 (모바일 아래줄 배치 적용) */}
+        {/* flex-row를 flex-col sm:flex-row 로 변경했습니다 */}
+        {/* ========================================================= */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-2 mb-2 sm:mb-4 w-full">
+          
+          {/* 1. 좌측 (또는 위쪽) : 스크랩 별 아이콘 + 키워드명 */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-1 w-full sm:w-auto">
             <button
               onClick={handleScrapToggle}
               className="p-1 hover:scale-110 transition-transform focus:outline-none"
@@ -567,7 +596,7 @@ const AnalysisPage = () => {
                     )}
                   </>
                 ) : (
-                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md mt-1 sm:mt-0">
                     오늘의 트렌드 키워드가 아닙니다
                   </span>
                 )}
@@ -575,23 +604,40 @@ const AnalysisPage = () => {
             </div>
           </div>
           
-          <div className="flex-shrink-0 mt-0.5 sm:mt-0 flex items-center gap-2 sm:gap-3">
+          {/* 2. 우측 (모바일에서는 아래쪽) : 액션 버튼 3개 */}
+          {/* 모바일에서는 왼쪽부터 나란히(justify-start) 배치되게 처리했습니다 */}
+          <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
+             {/* 2️⃣ 정보 수정 제보 (중간) */}
+             <button 
+               onClick={() => setIsEditModalOpen(true)}
+               className="flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-gray-50 text-gray-500 border border-gray-200 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm shadow-sm transition-all hover:-translate-y-1"
+               title="데이터 오류 제보 및 수정 요청"
+             >
+               <WarningCircle size={20} className="sm:w-5 sm:h-5 text-gray-400" />
+               <span className="hidden sm:inline">정보 수정 제보</span>
+               <span className="sm:hidden">수정제보</span>
+             </button>
+ 
+             {/* 1️⃣ 나무위키 검색 (가장 앞) */}
              <button 
                onClick={handleGoToNamuwiki}
-               className="flex items-center gap-1.5 sm:gap-2 bg-white hover:bg-teal-50 text-gray-700 border border-gray-200 px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-sm transition-all hover:-translate-y-1"
+               className="flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-teal-50 text-gray-700 border border-gray-200 px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-sm transition-all hover:-translate-y-1"
                title="나무위키에서 검색"
              >
                <Book size={20} className="sm:w-5 sm:h-5 text-teal-600" weight="bold" />
                <span>나무위키 검색</span>
              </button>
 
+
+             {/* 3️⃣ 콘텐츠 생성 (가장 뒤) */}
              <button 
                onClick={handleGoToCreation}
-               className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base transition-all hover:-translate-y-1"
+               className="flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base transition-all hover:-translate-y-1"
              >
                <Export size={20} className="sm:w-5 sm:h-5" />
                <span>콘텐츠 생성</span>
              </button>
+
           </div>
         </div>
 
@@ -1191,7 +1237,71 @@ const AnalysisPage = () => {
           </div>
         </div>
       )}
-    </div>
+
+      
+      {/* 여론 분석 (긍정/부정/중립) 댓글 모달 (기존 코드) */}
+      {sentimentModalConfig.isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center... ">
+           // ... (기존 여론분석 모달 내용 생략) ...
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* [추가] 정보 수정 제보 모달 */}
+      {/* ========================================== */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative">
+            
+            {/* 모달 헤더 */}
+            <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-white">
+              <h3 className="text-lg font-bold flex items-center gap-2 text-gray-800">
+                <WarningCircle size={24} className="text-orange-500" weight="fill" />
+                정보 수정 제보
+              </h3>
+              <button 
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* 모달 본문 폼 */}
+            <form onSubmit={handleEditRequestSubmit} className="p-5 bg-gray-50/50">
+              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                현재 분석된 <strong className="text-indigo-600">'{keyword}'</strong> 데이터 중 누락되었거나 수정이 필요한 부분이 있다면 편하게 남겨주세요.
+              </p>
+              
+              <textarea
+                value={editRequestText}
+                onChange={(e) => setEditRequestText(e.target.value)}
+                placeholder="예) 특정 커뮤니티의 반응이 키워드와 다릅니다. / 여론 분석이 부정확한 것 같습니다."
+                className="w-full h-32 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-sm resize-none mb-6 bg-white transition-all shadow-inner"
+                autoFocus
+              ></textarea>
+              
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-900 text-white hover:bg-gray-800 transition-colors shadow-md"
+                >
+                  의견 제출하기
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div> // 최상위 page 감싸는 div (기존)
   );
 };
 
