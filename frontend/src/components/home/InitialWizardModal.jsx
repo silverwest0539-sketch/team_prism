@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import BasePreferenceModal from '../common/BasePreferenceModal';
 
-const COMMUNITY_OPTIONS = [
+const PLATFORM_OPTIONS = [
+  { label: '유튜브', value: 'youtube' },
   { label: '더쿠', value: 'theqoo' },
   { label: '디시인사이드', value: 'dcinside' },
   { label: '루리웹', value: 'ruliweb' },
@@ -25,15 +26,12 @@ const InitialWizardModal = ({ isOpen, onComplete }) => {
 
   if (!isOpen) return null;
 
-  // 1단계: 커뮤니티 선택 완료 시
   const handleCommSubmit = (value) => {
     setSelectedComm(value);
-    setStep(2); // 뉴스 선택으로 이동
+    setStep(2); 
   };
 
-  // 2단계: 뉴스 선택 완료 시
   const handleNewsSubmit = (newsValue) => {
-    // 커뮤니티와 뉴스 선택값을 객체로 묶어서 부모(HomePage)로 전달
     onComplete({ community: selectedComm, news: newsValue });
   };
 
@@ -42,12 +40,12 @@ const InitialWizardModal = ({ isOpen, onComplete }) => {
       {step === 1 && (
         <BasePreferenceModal
           isOpen={true}
-          title="관심 커뮤니티를 선택해주세요"
-          subtitle="선택하신 커뮤니티의 인기글을 먼저 보여드릴게요!"
-          options={COMMUNITY_OPTIONS}
-          hasSkip={true}
+          title="관심 플랫폼을 선택해주세요"
+          subtitle="선택하신 플랫폼의 인기글을 먼저 보여드릴게요!"
+          options={PLATFORM_OPTIONS}
           submitText="다음 단계로 (1/2)"
           onSubmit={handleCommSubmit}
+          onReset={() => handleCommSubmit('skip')} // 초기화 클릭 시 스킵
         />
       )}
       
@@ -57,9 +55,9 @@ const InitialWizardModal = ({ isOpen, onComplete }) => {
           title="관심 뉴스를 선택해주세요"
           subtitle="선택하신 분야의 뉴스를 먼저 보여드릴게요!"
           options={NEWS_OPTIONS}
-          hasSkip={true}
           submitText="PicKey 시작하기"
           onSubmit={handleNewsSubmit}
+          onReset={() => handleNewsSubmit('skip')} // 초기화 클릭 시 스킵
         />
       )}
     </>
