@@ -1238,13 +1238,6 @@ const AnalysisPage = () => {
         </div>
       )}
 
-      
-      {/* 여론 분석 (긍정/부정/중립) 댓글 모달 (기존 코드) */}
-      {sentimentModalConfig.isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center... ">
-           // ... (기존 여론분석 모달 내용 생략) ...
-        </div>
-      )}
 
       {/* ========================================== */}
       {/* [추가] 정보 수정 제보 모달 */}
