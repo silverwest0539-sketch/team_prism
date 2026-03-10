@@ -3,6 +3,8 @@ import { MagnifyingGlass } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../utils/apiClient';
 
+const escapeRegExp = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const SearchBar = ({ placeholder, value, onChange, onKeyDown, containerClassName = '' }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -13,6 +15,10 @@ const SearchBar = ({ placeholder, value, onChange, onKeyDown, containerClassName
   const dropdownRef = useRef(null);
   const inputRef = useRef(null); // [추가] 입력창 포커스 제어를 위한 ref
   const navigate = useNavigate();
+  const normalizedValue = String(value || '');
+  const escapedValue = escapeRegExp(normalizedValue);
+  const highlightPattern = escapedValue ? new RegExp(`(${escapedValue})`, 'gi') : null;
+  const lowerValue = normalizedValue.toLowerCase();
 
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
@@ -151,8 +157,8 @@ const SearchBar = ({ placeholder, value, onChange, onKeyDown, containerClassName
               >
                 <MagnifyingGlass size={14} className={isSelected ? "text-indigo-500" : "text-gray-400"} />
                 <span>
-                  {item.split(new RegExp(`(${value})`, 'gi')).map((part, i) =>
-                    part.toLowerCase() === value.toLowerCase() ? (
+                  {(highlightPattern ? String(item || '').split(highlightPattern) : [String(item || '')]).map((part, i) =>
+                    lowerValue && part.toLowerCase() === lowerValue ? (
                       <span key={i} className="font-bold text-indigo-600">{part}</span>
                     ) : (
                       part
