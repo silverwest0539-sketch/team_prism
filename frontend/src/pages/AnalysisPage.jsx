@@ -64,6 +64,17 @@ const AnalysisPage = () => {
   const initialYesterday = new Date(initialToday);
   initialYesterday.setDate(initialYesterday.getDate() - 1);
 
+  // ==========================================
+  // [추가] 로그인 상태 관리
+  // ==========================================
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const savedUser = getStoredUser();
+    setIsLoggedIn(!!savedUser?.email);
+  }, []);
+  // ==========================================
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   
@@ -89,15 +100,11 @@ const AnalysisPage = () => {
   const [sentimentModalConfig, setSentimentModalConfig] = useState({ isOpen: false, sentiment: null });
   const [isNegativeRevealed, setIsNegativeRevealed] = useState(false);
 
-  // ==========================================
-  // [추가] 정보 수정 제보 모달 관련 상태
-  // ==========================================
+  // 정보 수정 제보 모달 관련 상태
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editRequestText, setEditRequestText] = useState('');
 
-  // ==========================================
-  // [추가] 개별 댓글 반응용 동의 상태 관리 (Set)
-  // ==========================================
+  // 개별 댓글 반응용 동의 상태 관리 (Set)
   const [revealedCommentIds, setRevealedCommentIds] = useState(new Set());
 
   const handleRevealComment = useCallback((commentId) => {
@@ -107,7 +114,6 @@ const AnalysisPage = () => {
       return next;
     });
   }, []);
-  // ==========================================
 
   // 페이지네이션
   const [currentPage, setCurrentPage] = useState(1);
@@ -123,7 +129,7 @@ const AnalysisPage = () => {
 
   // 데이터 불러오기
   const fetchData = useCallback(async (currentStart, currentEnd) => {
-    if (!keyword) return;
+    if (!keyword || !isLoggedIn) return; // 로그인 안되어있으면 API 호출 방지 (리소스 절약)
 
     setLoading(true);
 
@@ -161,9 +167,11 @@ const AnalysisPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [keyword]); 
+  }, [keyword, isLoggedIn]); 
 
   const fetchAiSummary = useCallback(async (targetKeyword, start, end) => {
+    if (!isLoggedIn) return; // 비로그인 시 차단
+
     setIsAiLoading(true);
     try {
       const params = { keyword: targetKeyword };
@@ -178,10 +186,10 @@ const AnalysisPage = () => {
     } finally {
       setIsAiLoading(false);
     }
-  }, []);
+  }, [isLoggedIn]);
 
   useEffect(() => {
-    if (!keyword) return;
+    if (!keyword || !isLoggedIn) return;
 
     setAiSummary(null);
     setIsAiLoading(true);
@@ -216,7 +224,7 @@ const AnalysisPage = () => {
     fetchData(yesterdayDate, todayDate);
     fetchAiSummary(keyword, yesterdayDate, todayDate);
 
-  }, [keyword, fetchAiSummary, fetchData]); 
+  }, [keyword, fetchAiSummary, fetchData, isLoggedIn]); 
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
@@ -317,7 +325,6 @@ const AnalysisPage = () => {
     const resolvedKeyword = String(data?.keyword || keyword || '').trim();
     if (!savedUser?.email || !resolvedKeyword) return;
 
-    // ✅ 로컬 체크 로직 삭제, API 호출만 남김
     apiClient
       .get('/scraps/check', {
         params: { email: savedUser.email, keyword: resolvedKeyword },
@@ -327,6 +334,10 @@ const AnalysisPage = () => {
   }, [data?.keyword, keyword]);
 
   const handleGoToCreation = () => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
     if (keyword) {
       navigate(`/creation?keyword=${encodeURIComponent(keyword)}`);
     } else {
@@ -340,7 +351,6 @@ const AnalysisPage = () => {
     window.open(namuwikiUrl, '_blank', 'noopener,noreferrer');
   };
 
-
   const handleEditRequestSubmit = (e) => {
     e.preventDefault();
     if (!editRequestText.trim()) {
@@ -348,12 +358,10 @@ const AnalysisPage = () => {
       return;
     }
     
-    // TODO: 추후 시간이 남을 때 여기에 API 연동 코드를 추가하세요.
-    // await apiClient.post('/report', { keyword, content: editRequestText });
-
+    // TODO: API 연동 코드 추가
     showToast('소중한 의견 감사합니다. 검토 후 신속히 반영하겠습니다.', { type: 'success' });
     setIsEditModalOpen(false);
-    setEditRequestText(''); // 텍스트 초기화
+    setEditRequestText('');
   };
 
   const filteredData = useMemo(() => {
@@ -520,8 +528,8 @@ const AnalysisPage = () => {
 
   // ---------------- Render ----------------
   return (
-    <div className="page space-y-6">
-      <header className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4">
+    <div className="page space-y-6 relative">
+      <header className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4 relative z-10">
         <Link to="/home" className="p-2 bg-white rounded-full text-gray-500 hover:text-indigo-600 shadow-sm transition">
           <CaretLeft size={20} />
         </Link>
@@ -536,19 +544,19 @@ const AnalysisPage = () => {
         </div>
       </header>
 
+      {/* 
+        [수정] 비로그인 상태이거나 키워드가 없을 때 컨텐츠 영역 블러 처리
+        비로그인 시에는 아예 이벤트를 무시(pointer-events-none)하도록 추가 클래스를 부여합니다.
+      */}
       <div
         className={`w-full transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
-          !keyword ? 'blur-disabled' : 'blur-enabled'
+          !isLoggedIn 
+            ? 'opacity-30 blur-[6px] pointer-events-none select-none' 
+            : (!keyword ? 'blur-disabled' : 'blur-enabled')
         }`}
       >
-        {/* 상단 키워드 및 컨트롤 영역 생략 (기존과 동일) */}
-        {/* ========================================================= */}
-        {/* 상단 키워드 및 컨트롤 영역 (모바일 아래줄 배치 적용) */}
-        {/* flex-row를 flex-col sm:flex-row 로 변경했습니다 */}
-        {/* ========================================================= */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-2 mb-2 sm:mb-4 w-full">
           
-          {/* 1. 좌측 (또는 위쪽) : 스크랩 별 아이콘 + 키워드명 */}
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-1 w-full sm:w-auto">
             <button
               onClick={handleScrapToggle}
@@ -604,10 +612,7 @@ const AnalysisPage = () => {
             </div>
           </div>
           
-          {/* 2. 우측 (모바일에서는 아래쪽) : 액션 버튼 3개 */}
-          {/* 모바일에서는 왼쪽부터 나란히(justify-start) 배치되게 처리했습니다 */}
           <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
-             {/* 2️⃣ 정보 수정 제보 (중간) */}
              <button 
                onClick={() => setIsEditModalOpen(true)}
                className="flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-gray-50 text-gray-500 border border-gray-200 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm shadow-sm transition-all hover:-translate-y-1"
@@ -618,7 +623,6 @@ const AnalysisPage = () => {
                <span className="sm:hidden">수정제보</span>
              </button>
  
-             {/* 1️⃣ 나무위키 검색 (가장 앞) */}
              <button 
                onClick={handleGoToNamuwiki}
                className="flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-teal-50 text-gray-700 border border-gray-200 px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-sm transition-all hover:-translate-y-1"
@@ -628,8 +632,6 @@ const AnalysisPage = () => {
                <span>나무위키 검색</span>
              </button>
 
-
-             {/* 3️⃣ 콘텐츠 생성 (가장 뒤) */}
              <button 
                onClick={handleGoToCreation}
                className="flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base transition-all hover:-translate-y-1"
@@ -637,7 +639,6 @@ const AnalysisPage = () => {
                <Export size={20} className="sm:w-5 sm:h-5" />
                <span>콘텐츠 생성</span>
              </button>
-
           </div>
         </div>
 
@@ -826,13 +827,10 @@ const AnalysisPage = () => {
           </div>
         </div>
 
-        {/* 하단 영역 (댓글, 우측: AI/뉴스/유튜브 종합 리포트) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start w-full">
           
-          {/* 좌측: 댓글 반응 영역 */}
           <div className="flex flex-col h-full w-full gap-4">
             
-            {/* 대제목 영역 */}
             <div className="flex justify-between items-end pb-2 border-b-2 border-gray-200 px-1">
               <div>
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
@@ -843,7 +841,6 @@ const AnalysisPage = () => {
                 </p>
               </div>
               
-              {/* 총 개수 뱃지 */}
               <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
                 총 {totalItems}건
               </span>
@@ -852,14 +849,10 @@ const AnalysisPage = () => {
             <div className="card h-fit flex flex-col">
               <div ref={commentsTopRef} />
 
-              {/* ================================================== */}
-              {/* [수정] 메인 리스트: 개별 필터 적용 Props 전달 부분 */}
-              {/* ================================================== */}
               <div className="space-y-4 flex-1">
                 {currentUsageExamples?.length > 0 ? (
                   currentUsageExamples.map((comment, i) => {
                     const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
-                    // 고유 ID가 없을 경우 인덱스 조합을 ID로 사용
                     const uniqueId = comment.id || `comment-${globalIndex}`;
                     const isRevealed = revealedCommentIds.has(uniqueId);
 
@@ -869,7 +862,6 @@ const AnalysisPage = () => {
                         comment={comment} 
                         globalIndex={globalIndex}
                         keyword={keyword}
-                        // 하위 컴포넌트(CommentItem)를 제어하기 위한 Props 전달
                         isIndividualFilter={true} 
                         isPersonKeyword={isPersonKeyword}
                         isRevealed={isRevealed}
@@ -881,7 +873,6 @@ const AnalysisPage = () => {
                   <div className="text-center py-10 text-gray-400">데이터가 없습니다.</div>
                 )}
               </div>
-              {/* ================================================== */}
 
               {totalPages > 1 && (
                 <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
@@ -930,10 +921,8 @@ const AnalysisPage = () => {
             </div>
           </div>
 
-          {/* 우측 컬럼 (종합 트렌드 인사이트) */}
           <div className="flex flex-col h-full w-full gap-4">
             
-            {/* 대제목 영역 */}
             <div className="flex justify-between items-end pb-2 border-b-2 border-gray-200 px-1">
               <div>
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
@@ -944,16 +933,13 @@ const AnalysisPage = () => {
                 </p>
               </div>
               
-              {/* 기준일 뱃지 */}
               <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
                 {baseDateText}
               </span>
             </div>
 
-            {/* 기존 데이터 카드 래퍼 */}
             <div className="card h-fit flex flex-col space-y-8">
               
-              {/* 1. AI 트렌드 요약 */}
               <div>
                 <h3 className="section-title mb-4 pb-2 border-b">
                   AI 트렌드 요약
@@ -985,7 +971,6 @@ const AnalysisPage = () => {
                 </div>
               </div>
 
-              {/* 2. 관련 뉴스 */}
               <div>
                 <h3 className="section-title mb-4 pb-2 border-b">
                   관련 뉴스
@@ -1019,7 +1004,6 @@ const AnalysisPage = () => {
                 </div>
               </div>
 
-              {/* 3. 관련 유튜브 반응 */}
               <div>
                 <h3 className="section-title mb-4 border-b pb-2 flex items-center gap-2">
                   관련 유튜브 반응
@@ -1064,27 +1048,55 @@ const AnalysisPage = () => {
         </div>
       </div>
 
-      {!keyword && (
-        <div className="overlay-center top-20 sm:top-24 px-4">
-          <div className="analysis-empty-state-card p-5 sm:p-8 rounded-3xl border text-center transform sm:translate-y-[-10%] w-full max-w-md">
+      {/* ======================================================= */}
+      {/* [수정] 오버레이 로직 (비로그인, 혹은 키워드 미입력 시 표출) */}
+      {/* ======================================================= */}
+      
+      {!isLoggedIn ? (
+        // 1. 비로그인 상태일 때 나타나는 오버레이 안내창
+        <div className="absolute inset-0 z-50 flex items-start justify-center pt-24 sm:pt-40 px-4">
+          <div className="p-8 sm:p-10 rounded-3xl border border-gray-200 bg-white shadow-2xl text-center max-w-md w-full">
+            <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-5">
+              <LockKey size={32} weight="fill" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">로그인이 필요한 서비스입니다</h2>
+            <p className="text-gray-500 mb-8 leading-relaxed text-sm sm:text-base">
+              키워드 심층 분석 및 상세 데이터는<br />
+              가입 회원에게만 제공되고 있습니다.
+            </p>
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-base sm:text-lg transition-all shadow-md hover:shadow-lg hover:-translate-y-1"
+            >
+              로그인하고 분석결과 보기
+            </button>
+          </div>
+        </div>
+      ) : !keyword ? (
+        // 2. 로그인 상태이면서 키워드를 입력하지 않았을 때 나타나는 오버레이 (위치 상단으로 수정)
+        <div className="absolute left-0 right-0 top-28 sm:top-36 z-50 flex justify-center px-4 pointer-events-none">
+          {/* pointer-events-auto를 추가하여 카드 위에서는 클릭이벤트를 받을 수 있도록 함 */}
+          <div className="analysis-empty-state-card p-5 sm:p-8 rounded-3xl border border-gray-200 bg-white/95 backdrop-blur-sm shadow-xl text-center w-full max-w-md pointer-events-auto animate-fade-in">
             <div className="analysis-empty-icon w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h2 className="analysis-empty-title text-xl sm:text-2xl font-bold text-gray-800 mb-2">분석할 키워드를 입력해주세요</h2>
-            <p className="analysis-empty-desc text-gray-500">
-              상단 검색창에 검색어를 입력하면
+            <h2 className="analysis-empty-title text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+              분석할 키워드를 입력해주세요
+            </h2>
+            <p className="analysis-empty-desc text-gray-500 text-sm sm:text-base">
+              바로 위 상단 검색창에 검색어를 입력하면
               <br />
               빅데이터 분석 리포트가 즉시 생성됩니다.
             </p>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* 차트 확대 모달 */}
       {isChartModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <div>
@@ -1238,9 +1250,8 @@ const AnalysisPage = () => {
         </div>
       )}
 
-
       {/* ========================================== */}
-      {/* [추가] 정보 수정 제보 모달 */}
+      {/* 정보 수정 제보 모달 */}
       {/* ========================================== */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
@@ -1294,7 +1305,7 @@ const AnalysisPage = () => {
         </div>
       )}
 
-    </div> // 최상위 page 감싸는 div (기존)
+    </div> // 최상위 page 감싸는 div
   );
 };
 
