@@ -351,17 +351,27 @@ const AnalysisPage = () => {
     window.open(namuwikiUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const handleEditRequestSubmit = (e) => {
+  const handleEditRequestSubmit = async (e) => {
     e.preventDefault();
     if (!editRequestText.trim()) {
       showToast('수정이나 추가가 필요한 내용을 입력해주세요.', { type: 'warning' });
       return;
     }
     
-    // TODO: API 연동 코드 추가
-    showToast('소중한 의견 감사합니다. 검토 후 신속히 반영하겠습니다.', { type: 'success' });
-    setIsEditModalOpen(false);
-    setEditRequestText('');
+    try {
+      await apiClient.post('/auth/report', {
+        keyword: keyword, // 현재 분석 중인 키워드
+        content: editRequestText, // 사용자가 입력한 제보 내용
+        userEmail: getStoredUser()?.email || '비로그인 사용자' // 필요시 제보자 정보 포함
+      });
+
+      showToast('소중한 의견 감사합니다. 검토 후 신속히 반영하겠습니다.', { type: 'success' });
+      setIsEditModalOpen(false);
+      setEditRequestText('');
+    } catch (error) {
+      console.error('제보 메일 전송 실패:', error);
+      showToast('의견 전송에 실패했습니다. 잠시 후 다시 시도해주세요.', { type: 'error' });
+    }
   };
 
   const filteredData = useMemo(() => {

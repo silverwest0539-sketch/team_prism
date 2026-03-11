@@ -348,3 +348,21 @@ exports.unlinkSocial = async (req, res) => {
     res.status(500).json({ success: false, message: "연동 해제 중 오류가 발생했습니다." });
   }
 };
+
+// 정보 수정 제보 처리
+exports.submitReport = async (req, res) => {
+  const { keyword, content, userEmail } = req.body;
+
+  if (!content) {
+    return res.status(400).json({ success: false, message: "제보 내용이 필요합니다." });
+  }
+
+  try {
+    // auth.service의 sendReportEmail 함수 호출
+    await authService.sendReportEmail(keyword, content, userEmail);
+    res.json({ success: true, message: "제보가 성공적으로 접수되었습니다." });
+  } catch (error) {
+    console.error("제보 메일 전송 에러:", error);
+    res.status(500).json({ success: false, message: "제보 메일 발송 중 서버 에러가 발생했습니다." });
+  }
+};

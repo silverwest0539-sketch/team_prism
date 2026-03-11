@@ -16,5 +16,6 @@ router.post('/link/naver', authController.linkNaver);
 router.post('/unlink', authController.unlinkSocial);
 router.post('/update-preference', authController.updatePreference);
 router.get('/preferences', authController.getPreferences);
+router.post('/report', authController.submitReport);
 
 module.exports = router;

@@ -276,3 +276,21 @@ exports.unlinkSocialAccount = async (email, provider) => {
   // 3. 안전하다면 해당 소셜 ID를 NULL로 업데이트하여 연동 해제
   await db.execute(`UPDATE USERS SET ${idColumn} = NULL WHERE user_email = ?`, [email]);
 };
+
+// 정보 수정 제보 메일 발송
+exports.sendReportEmail = async (keyword, content, userEmail) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER, // 발송자 (서버 이메일)
+    to: process.env.EMAIL_USER,   // 수신자 (관리자 이메일 - 본인 이메일로 받으려면 동일하게 설정)
+    subject: `[PicKey 정보 수정 제보] 키워드: ${keyword}`,
+    text: `
+      ■ 제보 키워드: ${keyword || '없음'}
+      ■ 제보자 이메일: ${userEmail || '비로그인 사용자'}
+      
+      [제보 내용]
+      ${content}
+    `
+  };
+
+  await transporter.sendMail(mailOptions);
+};
