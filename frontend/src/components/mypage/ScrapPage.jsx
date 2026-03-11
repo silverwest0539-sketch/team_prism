@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Trash, ArrowRight, BookmarkSimple,
+    Trash, BookmarkSimple,
     Tag, X,
     DotsSixVertical, Fire, Sparkle,
     MagnifyingGlass, SortAscending, SquaresFour, List,
@@ -35,7 +35,6 @@ const getRelativeDate = (dateString) => {
 
 // ─── 정렬 옵션 ───
 const SORT_OPTIONS = [
-    { label: '정렬', value: 'custom' },
     { label: '최신순', value: 'newest' },
     { label: '오래된순', value: 'oldest' },
     { label: '이름순', value: 'name_asc' },
@@ -52,7 +51,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
     const [searchQuery, setSearchQuery] = useState('');
 
     // 정렬
-    const [sortBy, setSortBy] = useState('custom');
+    const [sortBy, setSortBy] = useState('newest');
     const [isSortOpen, setIsSortOpen] = useState(false);
 
     // 뷰 모드 (grid / list) - (수정사항 2번: 기본형식 고정을 위해 grid 유지)
@@ -298,7 +297,9 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 onDragEnd={handleDragEnd}
                 onClick={() => handleCardClick(item)}
                 className={`group cursor-pointer transition-all duration-300 border relative
-                    ${viewMode === 'grid' ? 'card-soft' : 'card-soft flex items-start gap-4 p-4'}
+                    ${viewMode === 'grid'
+                        ? 'card-soft'
+                        : 'card-soft flex items-start gap-4 p-4'}
                     ${isRemoving ? 'opacity-0 scale-95 -translate-y-2' : 'opacity-100 scale-100'}
                     ${isSelected
                         ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
@@ -340,6 +341,11 @@ const ScrapPage = ({ isEmbedded = false }) => {
                             <h3 className={`font-bold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors ${viewMode === 'list' ? 'text-base' : 'text-lg'}`}>
                                 {item.keyword}
                             </h3>
+                            {!isDeleteMode && (
+                                <span className="mt-1 block text-[11px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    분석 보기
+                                </span>
+                            )}
                         </div>
                         {!isDeleteMode && viewMode === 'grid' && (
                             <button
@@ -352,13 +358,8 @@ const ScrapPage = ({ isEmbedded = false }) => {
                         )}
                     </div>
                     
-                    <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3">
+                    <div className="text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3">
                         <span>{item.savedAt ? getRelativeDate(item.savedAt) : '날짜 정보 없음'} 저장됨</span>
-                        {!isDeleteMode && (
-                            <span className="flex items-center gap-1 text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                                분석 보기 <ArrowRight />
-                            </span>
-                        )}
                     </div>
                 </div>
 
@@ -376,22 +377,25 @@ const ScrapPage = ({ isEmbedded = false }) => {
         );
     };
 
-    const rootClassName = isEmbedded ? 'w-full p-4 sm:p-6 lg:p-8' : 'page';
+    const rootClassName = isEmbedded ? 'w-full p-5 sm:p-6' : 'page';
 
     return (
         <div className={rootClassName} onClick={() => isSortOpen && setIsSortOpen(false)}>
             {/* ─── 헤더 ─── */}
             <div className="mb-5 sm:mb-6">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 xl:pt-7 xl:min-h-[120px]">
                     <div>
                         <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
                             <BookmarkSimple className="text-blue-600" size={32} weight="fill" />
                             내 스크랩
                         </h1>
                         <p className="text-gray-500 text-sm mt-1">
-                            관심 있게 본 트렌드 키워드를 모아두었습니다.
+                            카드를 클릭하면 해당 키워드의 분석 요약 정보를 볼 수 있습니다.
                         </p>
                     </div>
+                    <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3.5 py-1 rounded-full border border-indigo-100 whitespace-nowrap self-start">
+                        {scraps.length}개 키워드 저장됨
+                    </span>
                 </div>
             </div>
 
@@ -417,22 +421,14 @@ const ScrapPage = ({ isEmbedded = false }) => {
                         )}
                     </div>
 
-                    {/* ─── 툴바: 카운트 + 정렬 + (뷰전환 삭제됨) + 모드 토글 ─── */}
+                    {/* ─── 툴바: 정렬 + (뷰전환 삭제됨) + 모드 토글 ─── */}
                     <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-6">
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                            <span className="text-xs text-gray-400">
-                                {processedScraps.length}개 키워드
-                            </span>
-
                             {/* 정렬 드롭다운 */}
                             <div className="relative" onClick={(e) => e.stopPropagation()}>
                                 <button
                                     onClick={() => setIsSortOpen(!isSortOpen)}
-                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all ${
-                                        sortBy !== 'custom'
-                                            ? 'bg-indigo-50 text-indigo-600 border-indigo-200'
-                                            : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-                                    }`}
+                                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all bg-white text-gray-500 border-gray-200 hover:border-gray-400"
                                 >
                                     <SortAscending size={12} />
                                     {SORT_OPTIONS.find(o => o.value === sortBy)?.label}
@@ -445,7 +441,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                                                 key={option.value}
                                                 onClick={() => { setSortBy(option.value); setIsSortOpen(false); }}
                                                 className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                                                    sortBy === option.value ? 'text-indigo-600 font-bold bg-indigo-50' : 'text-gray-600'
+                                                    sortBy === option.value ? 'text-gray-700 font-bold' : 'text-gray-600'
                                                 }`}
                                             >
                                                 {option.label}
@@ -554,7 +550,9 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 // 카드 그리드 (뷰 모드 선택 메뉴가 사라졌으므로 Grid 고정)
                 <div className={
                     viewMode === 'grid'
-                        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
+                        ? (isEmbedded
+                            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3'
+                            : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3')
                         : 'flex flex-col gap-3'
                 }>
                     {processedScraps.map((item, index) => renderCardContent(item, index))}

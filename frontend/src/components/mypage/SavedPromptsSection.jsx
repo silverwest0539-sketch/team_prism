@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { Check, Copy, Trash2, Loader2, AlertCircle, Search, X } from 'lucide-react';
+import { BookmarkSimple, SortAscending } from '@phosphor-icons/react';
 import { showToast } from '../../utils/toast';
 import { toApiUrl } from '../../utils/apiClient';
 
@@ -16,12 +17,46 @@ const formatSavedAt = (value) => {
   });
 };
 
+const SORT_OPTIONS = [
+  { label: '최신순', value: 'newest' },
+  { label: '오래된순', value: 'oldest' },
+  { label: '키워드순', value: 'name_asc' },
+  { label: '키워드 역순', value: 'name_desc' },
+];
+
+const normalizeText = (value = '') => String(value || '').replace(/\s+/g, ' ').trim();
+
+const cleanTargetValue = (value = '') => {
+  const normalized = normalizeText(value);
+  if (!normalized) return '';
+  if (/^(일반\s*대중|없음|없습니다)$/i.test(normalized)) return '';
+  return normalized;
+};
+
+const cleanAdditionalValue = (value = '') => {
+  const normalized = normalizeText(value);
+  if (!normalized) return '';
+  const withoutTemplateSuffix = normalized
+    .replace(/\s*[—-]\s*이\s*요구사항은[\s\S]*$/i, '')
+    .replace(/\s*이\s*요구사항은[\s\S]*$/i, '')
+    .trim();
+  if (!withoutTemplateSuffix) return '';
+  if (/^(없음|없습니다)$/i.test(withoutTemplateSuffix)) return '';
+  return withoutTemplateSuffix;
+};
+
 const SavedPromptsSection = ({ email = '' }) => {
   const [savedPrompts, setSavedPrompts] = useState([]);
   const [copiedId, setCopiedId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [selectedPrompt, setSelectedPrompt] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [selectedPromptIds, setSelectedPromptIds] = useState(new Set());
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
 
   const getPromptKeyword = (item = {}) => {
     const keyword = String(item.keyword || '').trim();
@@ -73,6 +108,45 @@ const SavedPromptsSection = ({ email = '' }) => {
     return '';
   };
 
+  const extractAdditionalRequestsFromPrompt = (prompt = '') => {
+    const text = String(prompt || '').trim();
+    if (!text) return '';
+
+    const byLine = text.match(/(?:^|\n)\s*-?\s*(?:추가\s*요구사항|기타\s*요구사항)\s*[:：]\s*([^\n]+)/i);
+    if (byLine?.[1]) return byLine[1].trim();
+
+    const bySentence = text.match(/추가\s*요구사항(?:은|:)?\s*(.+?)(?:\n|$)/i);
+    if (bySentence?.[1]) return bySentence[1].trim();
+
+    return '';
+  };
+
+  const extractEssentialDetailsFromPrompt = (prompt = '') => {
+    const text = String(prompt || '').trim();
+    if (!text) return '';
+
+    const byLine = text.match(/(?:^|\n)\s*-?\s*(?:꼭\s*포함할\s*정보|필수\s*포함\s*정보|필수\s*정보)\s*[:：]\s*([^\n]+)/i);
+    if (byLine?.[1]) return byLine[1].trim();
+
+    const bySentence = text.match(/꼭\s*포함할\s*정보(?:는|:)?\s*(.+?)(?:\n|$)/i);
+    if (bySentence?.[1]) return bySentence[1].trim();
+
+    return '';
+  };
+
+  const extractOtherRequestsFromPrompt = (prompt = '') => {
+    const text = String(prompt || '').trim();
+    if (!text) return '';
+
+    const byLine = text.match(/(?:^|\n)\s*-?\s*기타\s*요구사항\s*[:：]\s*([^\n]+)/i);
+    if (byLine?.[1]) return byLine[1].trim();
+
+    const bySentence = text.match(/기타\s*요구사항(?:은|:)?\s*(.+?)(?:\n|$)/i);
+    if (bySentence?.[1]) return bySentence[1].trim();
+
+    return '';
+  };
+
   const getPromptIndustry = (item = {}) => {
     const raw = String(item.industry || '').trim();
     if (raw) return raw;
@@ -87,8 +161,26 @@ const SavedPromptsSection = ({ email = '' }) => {
 
   const getPromptTarget = (item = {}) => {
     const raw = String(item.target || '').trim();
-    if (raw) return raw;
-    return extractTargetFromPrompt(item.prompt);
+    if (raw) return cleanTargetValue(raw);
+    return cleanTargetValue(extractTargetFromPrompt(item.prompt));
+  };
+
+  const getPromptAdditionalRequests = (item = {}) => {
+    const raw = String(item.otherRequests || item.additionalRequests || '').trim();
+    if (raw) return cleanAdditionalValue(raw);
+    return cleanAdditionalValue(extractAdditionalRequestsFromPrompt(item.prompt));
+  };
+
+  const getPromptEssentialDetails = (item = {}) => {
+    const raw = String(item.essentialDetails || '').trim();
+    if (raw) return cleanAdditionalValue(raw);
+    return cleanAdditionalValue(extractEssentialDetailsFromPrompt(item.prompt));
+  };
+
+  const getPromptOtherRequests = (item = {}) => {
+    const raw = String(item.otherRequestDetails || '').trim();
+    if (raw) return cleanAdditionalValue(raw);
+    return cleanAdditionalValue(extractOtherRequestsFromPrompt(item.prompt));
   };
 
   useEffect(() => {
@@ -97,6 +189,7 @@ const SavedPromptsSection = ({ email = '' }) => {
     const handleEscape = (event) => {
       if (event.key === 'Escape') {
         setSelectedPrompt(null);
+        setShowOptionalFields(false);
       }
     };
 
@@ -136,7 +229,29 @@ const SavedPromptsSection = ({ email = '' }) => {
   }, [email]);
 
   const hasPrompts = savedPrompts.length > 0;
-  const visiblePrompts = useMemo(() => savedPrompts.slice(0, 20), [savedPrompts]);
+  const processedPrompts = useMemo(() => {
+    let result = [...savedPrompts];
+
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      result = result.filter((item) =>
+        String(item.keyword || '').trim().toLowerCase().includes(query)
+      );
+    }
+
+    if (sortBy === 'newest') {
+      result.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
+    } else if (sortBy === 'oldest') {
+      result.sort((a, b) => new Date(a.savedAt || 0) - new Date(b.savedAt || 0));
+    } else if (sortBy === 'name_asc') {
+      result.sort((a, b) => getPromptKeyword(a).localeCompare(getPromptKeyword(b), 'ko'));
+    } else if (sortBy === 'name_desc') {
+      result.sort((a, b) => getPromptKeyword(b).localeCompare(getPromptKeyword(a), 'ko'));
+    }
+
+    return result;
+  }, [savedPrompts, searchQuery, sortBy]);
+  const isAllVisibleSelected = processedPrompts.length > 0 && selectedPromptIds.size === processedPrompts.length;
 
   const handleCopyPrompt = async (item) => {
     const promptText = String(item?.prompt || '').trim();
@@ -152,6 +267,22 @@ const SavedPromptsSection = ({ email = '' }) => {
     }
   };
 
+  const deletePromptById = async (id) => {
+    const response = await fetch(toApiUrl(`/${id}`), {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || '삭제에 실패했습니다.');
+    }
+  };
+
   const confirmDelete = async () => {
     if (!deleteTargetId || !email) return;
 
@@ -159,41 +290,98 @@ const SavedPromptsSection = ({ email = '' }) => {
     setDeleteTargetId(null); // 모달 먼저 닫기
 
     try {
-      const response = await fetch(toApiUrl(`/${id}`), {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ email }) 
+      await deletePromptById(id);
+      setSavedPrompts((prev) => prev.filter((item) => item.id !== id));
+      setSelectedPromptIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
       });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setSavedPrompts((prev) => prev.filter((item) => item.id !== id));
-        showToast('저장한 프롬프트를 삭제했습니다.', { type: 'info' });
-      } else {
-        showToast(result.error || '삭제에 실패했습니다.', { type: 'error' });
-      }
+      showToast('저장한 프롬프트를 삭제했습니다.', { type: 'info' });
     } catch (error) {
       console.error('프롬프트 삭제 에러:', error);
-      showToast('삭제 중 서버 오류가 발생했습니다.', { type: 'error' });
+      showToast(error.message || '삭제 중 서버 오류가 발생했습니다.', { type: 'error' });
     }
   };
 
+  const handleCardClick = (item) => {
+    if (isDeleteMode) {
+      setSelectedPromptIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(item.id)) next.delete(item.id);
+        else next.add(item.id);
+        return next;
+      });
+      return;
+    }
+    setShowOptionalFields(false);
+    setSelectedPrompt(item);
+  };
+
+  const closePromptModal = () => {
+    setSelectedPrompt(null);
+    setShowOptionalFields(false);
+  };
+
+  const toggleSelectAll = () => {
+    if (isAllVisibleSelected) {
+      setSelectedPromptIds(new Set());
+      return;
+    }
+    setSelectedPromptIds(new Set(processedPrompts.map((item) => item.id)));
+  };
+
+  const enterDeleteMode = () => {
+    setIsDeleteMode(true);
+    setSelectedPromptIds(new Set());
+  };
+
+  const exitDeleteMode = () => {
+    setIsDeleteMode(false);
+    setSelectedPromptIds(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedPromptIds.size === 0 || !email) return;
+
+    const idsToDelete = Array.from(selectedPromptIds);
+    if (!window.confirm(`선택된 ${idsToDelete.length}개의 프롬프트를 삭제하시겠습니까?`)) return;
+
+    const results = await Promise.allSettled(idsToDelete.map((id) => deletePromptById(id)));
+    const successIds = idsToDelete.filter((id, index) => results[index].status === 'fulfilled');
+    const failedCount = idsToDelete.length - successIds.length;
+
+    if (successIds.length > 0) {
+      const successIdSet = new Set(successIds);
+      setSavedPrompts((prev) => prev.filter((item) => !successIdSet.has(item.id)));
+      showToast(`${successIds.length}개의 프롬프트를 삭제했습니다.`, { type: 'info' });
+    }
+
+    if (failedCount > 0) {
+      showToast(`${failedCount}개의 프롬프트 삭제에 실패했습니다.`, { type: 'error' });
+    }
+
+    setSelectedPromptIds(new Set());
+    setIsDeleteMode(false);
+  };
+
   return (
-    <div className="p-5 sm:p-6">
-      <div className="flex items-end justify-between gap-3 mb-4 sm:mb-5">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">저장한 프롬프트</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            콘텐츠 생성 페이지에서 저장한 프롬프트입니다.
-          </p>
+    <div className="p-5 sm:p-6" onClick={() => isSortOpen && setIsSortOpen(false)}>
+      <div className="mb-5 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 xl:pt-7 xl:min-h-[120px]">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <BookmarkSimple className="text-blue-600" size={32} weight="fill" />
+              저장한 프롬프트
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">
+              카드를 클릭하면 전체 프롬프트 내용을 볼 수 있습니다.
+            </p>
+          </div>
+          <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3.5 py-1 rounded-full border border-indigo-100 whitespace-nowrap self-start">
+            {savedPrompts.length}개 프롬프트 저장됨
+          </span>
         </div>
-        <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100 whitespace-nowrap">
-          {savedPrompts.length}개 저장
-        </span>
       </div>
 
       {isLoading ? (
@@ -210,95 +398,227 @@ const SavedPromptsSection = ({ email = '' }) => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {visiblePrompts.map((item) => (
-            <article
-              key={item.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => setSelectedPrompt(item)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  setSelectedPrompt(item);
-                }
-              }}
-              className="group cursor-pointer transition-all duration-300 border border-gray-100 bg-white rounded-xl p-4 hover:border-blue-200 hover:shadow-md"
-            >
-              {(() => {
+        <>
+          <div className="relative mb-4">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="키워드 검색..."
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all bg-white"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                title="검색어 지우기"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-6">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="relative" onClick={(event) => event.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setIsSortOpen(!isSortOpen)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border bg-white text-gray-500 border-gray-200 hover:border-gray-400 transition-all"
+                >
+                  <SortAscending size={12} />
+                  {SORT_OPTIONS.find((option) => option.value === sortBy)?.label}
+                </button>
+                {isSortOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-28 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-10">
+                    {SORT_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setSortBy(option.value);
+                          setIsSortOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                          sortBy === option.value ? 'text-indigo-600 font-bold bg-indigo-50' : 'text-gray-600'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+              {isDeleteMode && (
+                <>
+                  <button
+                    type="button"
+                    onClick={toggleSelectAll}
+                    className="px-2 py-1.5 rounded-lg text-xs font-bold text-gray-500 border border-gray-200 hover:border-gray-400 transition-all"
+                  >
+                    {isAllVisibleSelected ? '전체 해제' : '전체 선택'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkDelete}
+                    disabled={selectedPromptIds.size === 0}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      selectedPromptIds.size > 0
+                        ? 'bg-red-500 text-white hover:bg-red-600 shadow-sm'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    삭제 ({selectedPromptIds.size})
+                  </button>
+                </>
+              )}
+              {!isDeleteMode ? (
+                <button
+                  type="button"
+                  onClick={enterDeleteMode}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-white text-gray-500 border-gray-200 hover:border-red-300 hover:text-red-500"
+                >
+                  선택 삭제
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={exitDeleteMode}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                >
+                  취소
+                </button>
+              )}
+            </div>
+          </div>
+
+          {processedPrompts.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-8 text-center">
+              <p className="text-sm font-semibold text-gray-700">'{searchQuery}' 검색 결과가 없습니다.</p>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="mt-2 text-xs font-bold text-blue-600 hover:underline"
+              >
+                전체 보기
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {processedPrompts.map((item) => {
                 const promptType = getPromptType(item);
                 const promptIndustry = getPromptIndustry(item);
+                const isSelected = selectedPromptIds.has(item.id);
+
                 return (
-                  <>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="text-base font-bold text-gray-900 truncate transition-colors group-hover:text-blue-600">
-                    {getPromptKeyword(item)}
-                  </h3>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleCopyPrompt(item);
+                  <article
+                    key={item.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleCardClick(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleCardClick(item);
+                      }
                     }}
-                    className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                    title="복사"
+                    className={`group cursor-pointer transition-all duration-300 border bg-white rounded-xl p-4 hover:shadow-md relative ${
+                      isSelected
+                        ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
+                        : 'border-gray-100 hover:border-blue-200'
+                    }`}
                   >
-                    {copiedId === item.id ? (
-                      <Check size={16} className="text-green-600" />
-                    ) : (
-                      <Copy size={16} />
+                    {isDeleteMode && (
+                      <div className="absolute top-4 left-4">
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                          isSelected ? 'bg-red-500 border-red-500' : 'border-gray-300 bg-white'
+                        }`}>
+                          {isSelected && (
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
                     )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setDeleteTargetId(item.id);
-                    }}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    title="삭제"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className={`min-w-0 ${isDeleteMode ? 'ml-7' : ''}`}>
+                        <h3 className="text-base font-bold text-gray-900 transition-colors group-hover:text-blue-600 whitespace-normal break-all leading-snug">
+                          {getPromptKeyword(item)}
+                        </h3>
+                        {!isDeleteMode && (
+                          <span className="mt-1 block text-[11px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                            프롬프트 전체보기
+                          </span>
+                        )}
+                      </div>
 
-              <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-                {promptType && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
-                    {promptType}
-                  </span>
-                )}
-                {promptIndustry && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
-                    {promptIndustry}
-                  </span>
-                )}
-              </div>
+                      {!isDeleteMode && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleCopyPrompt(item);
+                            }}
+                            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                            title="복사"
+                          >
+                            {copiedId === item.id ? (
+                              <Check size={16} className="text-green-600" />
+                            ) : (
+                              <Copy size={16} />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setDeleteTargetId(item.id);
+                            }}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            title="삭제"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-              <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3">
-                <span>{formatSavedAt(item.savedAt)} 저장됨</span>
-                <span className="font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                  프롬프트 보기
-                </span>
-              </div>
-                  </>
+                    <div className={`mt-2.5 flex items-center gap-2 flex-wrap ${isDeleteMode ? 'ml-7' : ''}`}>
+                      {promptType && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                          {promptType}
+                        </span>
+                      )}
+                      {promptIndustry && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                          {promptIndustry}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className={`text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3 ${isDeleteMode ? 'ml-7' : ''}`}>
+                      <span>{formatSavedAt(item.savedAt)} 저장됨</span>
+                    </div>
+                  </article>
                 );
-              })()}
-            </article>
-          ))}
-        </div>
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {selectedPrompt && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
           <button
             type="button"
-            onClick={() => setSelectedPrompt(null)}
+            onClick={closePromptModal}
             className="absolute inset-0"
             aria-label="프롬프트 상세 닫기"
           />
@@ -308,68 +628,119 @@ const SavedPromptsSection = ({ email = '' }) => {
               const promptIndustry = getPromptIndustry(selectedPrompt);
               const promptPurpose = getPromptPurpose(selectedPrompt);
               const promptTarget = getPromptTarget(selectedPrompt);
+              const promptEssentialDetails = getPromptEssentialDetails(selectedPrompt);
+              const promptOtherRequests = getPromptOtherRequests(selectedPrompt);
+              const promptAdditionalRequests = getPromptAdditionalRequests(selectedPrompt);
+              const additionalParts = String(promptAdditionalRequests || '')
+                .split(/\s*\/\s*/)
+                .map((part) => part.trim())
+                .filter(Boolean);
+              const fallbackEssentialDetails =
+                !promptEssentialDetails && additionalParts.length >= 2 ? additionalParts[0] : '';
+              const fallbackOtherRequests =
+                !promptOtherRequests && additionalParts.length >= 2 ? additionalParts.slice(1).join(' / ') : '';
+              const fallbackAdditionalRequests =
+                !promptEssentialDetails && !promptOtherRequests && additionalParts.length === 1 ? additionalParts[0] : '';
+              const detailedFields = [
+                { label: '상세 타겟 설정', value: promptTarget },
+                { label: '꼭 포함할 정보', value: promptEssentialDetails || fallbackEssentialDetails },
+                { label: '기타 요구사항', value: promptOtherRequests || fallbackOtherRequests },
+                { label: '추가 요구사항', value: fallbackAdditionalRequests },
+              ].filter((field) => String(field.value || '').trim());
+              const hasOptionalContent = detailedFields.length > 0;
               return (
                 <>
-            <div className="flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
-              <div className="min-w-0">
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 break-words">
-                  {getPromptKeyword(selectedPrompt)}
-                </h3>
-                <p className="text-xs text-gray-400 mt-1">{formatSavedAt(selectedPrompt.savedAt)}</p>
-                {(promptType || promptIndustry) && (
-                  <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    {promptType && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
-                        {promptType}
-                      </span>
-                    )}
-                    {promptIndustry && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
-                        {promptIndustry}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {(promptPurpose || promptTarget) && (
-                  <div className="mt-2 space-y-1">
-                    {promptPurpose && (
-                      <p className="text-xs text-gray-600">
-                        목적: {promptPurpose}
-                      </p>
-                    )}
-                    {promptTarget && (
-                      <p className="text-xs text-gray-600">
-                        타겟: {promptTarget}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleCopyPrompt(selectedPrompt)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap"
-                >
-                  {copiedId === selectedPrompt.id ? (
-                    <>
-                      <Check size={14} className="text-green-600" />
-                      복사됨
-                    </>
-                  ) : (
-                    <>
-                      <Copy size={14} />
-                      전체 복사
-                    </>
+            <div className="pb-3 border-b border-gray-100">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 break-words">
+                    {getPromptKeyword(selectedPrompt)}
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1">{formatSavedAt(selectedPrompt.savedAt)}</p>
+                  {(promptType || promptIndustry) && (
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      {promptType && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                          {promptType}
+                        </span>
+                      )}
+                      {promptIndustry && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                          {promptIndustry}
+                        </span>
+                      )}
+                    </div>
                   )}
-                </button>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyPrompt(selectedPrompt)}
+                    className="inline-flex items-center justify-center gap-1 min-w-[90px] px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap"
+                  >
+                    {copiedId === selectedPrompt.id ? (
+                      <>
+                        <Check size={14} className="text-green-600" />
+                        복사됨
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} />
+                        전체 복사
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closePromptModal}
+                    className="inline-flex items-center justify-center gap-1 min-w-[90px] px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap"
+                  >
+                    <X size={14} />
+                    닫기
+                  </button>
+                </div>
+              </div>
+
+              {promptPurpose && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-600">
+                    목적: {promptPurpose}
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-2">
                 <button
                   type="button"
-                  onClick={() => setSelectedPrompt(null)}
-                  className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  onClick={() => setShowOptionalFields((prev) => !prev)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${
+                    showOptionalFields
+                      ? 'bg-indigo-600 border-indigo-600 text-white'
+                      : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                  }`}
                 >
-                  닫기
+                  {showOptionalFields ? '선택항목 숨기기' : '선택항목 표기'}
                 </button>
+                {showOptionalFields && (
+                  <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-3 max-h-40 overflow-y-auto scrollbar-hide">
+                    {hasOptionalContent ? (
+                      <div className="space-y-2">
+                        {detailedFields.map((field) => (
+                          <div key={field.label}>
+                            <p className="text-[11px] font-semibold text-gray-500">{field.label}</p>
+                            <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">
+                              {field.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500">
+                        입력된 선택항목이 없습니다.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
