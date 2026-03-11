@@ -1,5 +1,6 @@
 // src/pages/AnalysisPage.jsx
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import {
   Bell,
@@ -1063,7 +1064,6 @@ const AnalysisPage = () => {
       {/* ======================================================= */}
       
       {!isLoggedIn ? (
-        // 1. 비로그인 상태일 때 나타나는 오버레이 안내창
         <div className="absolute inset-0 z-50 flex items-start justify-center pt-24 sm:pt-40 px-4">
           <div className="p-8 sm:p-10 rounded-3xl border border-gray-200 bg-white shadow-2xl text-center max-w-md w-full">
             <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-5">
@@ -1083,9 +1083,7 @@ const AnalysisPage = () => {
           </div>
         </div>
       ) : !keyword ? (
-        // 2. 로그인 상태이면서 키워드를 입력하지 않았을 때 나타나는 오버레이 (위치 상단으로 수정)
         <div className="absolute left-0 right-0 top-28 sm:top-36 z-50 flex justify-center px-4 pointer-events-none">
-          {/* pointer-events-auto를 추가하여 카드 위에서는 클릭이벤트를 받을 수 있도록 함 */}
           <div className="analysis-empty-state-card p-5 sm:p-8 rounded-3xl border border-gray-200 bg-white/95 backdrop-blur-sm shadow-xl text-center w-full max-w-md pointer-events-auto animate-fade-in">
             <div className="analysis-empty-icon w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1104,9 +1102,16 @@ const AnalysisPage = () => {
         </div>
       ) : null}
 
-      {/* 차트 확대 모달 */}
-      {isChartModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+      {/* ======================================================= */}
+      {/* 3가지 모달: z-[9999] 및 createPortal 적용으로 여백 문제 해결 */}
+      {/* ======================================================= */}
+      
+      {/* 1. 차트 확대 모달 */}
+      {isChartModalOpen && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' }}
+        >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <div>
@@ -1162,12 +1167,16 @@ const AnalysisPage = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* 여론 분석 (긍정/부정/중립) 댓글 모달 */}
-      {sentimentModalConfig.isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+      {/* 2. 여론 분석 (긍정/부정/중립) 댓글 모달 */}
+      {sentimentModalConfig.isOpen && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' }}
+        >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden relative">
             
             <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-white z-20">
@@ -1184,7 +1193,6 @@ const AnalysisPage = () => {
               </div>
               
               <div className="flex items-center gap-3">
-                {/* 모달에서의 일괄 제어 버튼 (인물이 아닐 때만 렌더링) */}
                 {sentimentModalConfig.sentiment === 'negative' && !isPersonKeyword && (
                   <button
                     onClick={() => setIsNegativeRevealed(!isNegativeRevealed)}
@@ -1209,7 +1217,6 @@ const AnalysisPage = () => {
 
             <div className="flex-1 p-5 overflow-y-auto bg-gray-50/50 relative">
               
-              {/* 케이스 1: 인물에 대한 부정 댓글 (아예 차단) */}
               {sentimentModalConfig.sentiment === 'negative' && isPersonKeyword ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center h-full">
                   <LockKey size={48} className="mb-4 text-gray-300" weight="fill" />
@@ -1219,10 +1226,8 @@ const AnalysisPage = () => {
                   </p>
                 </div>
               ) : (
-                /* 케이스 2: 긍정/중립 이거나, 인물이 아닌 부정 댓글 */
                 <div className="relative h-full">
                   
-                  {/* 동의 전 블러 상태에서 띄울 중앙 안내 박스 */}
                   {sentimentModalConfig.sentiment === 'negative' && !isPersonKeyword && !isNegativeRevealed && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pt-10">
                       <span className="bg-white/90 backdrop-blur-sm px-5 py-2.5 rounded-full text-sm font-medium text-gray-600 shadow-sm border border-gray-200">
@@ -1231,7 +1236,6 @@ const AnalysisPage = () => {
                     </div>
                   )}
 
-                  {/* 모달 안의 댓글 리스트 (여기선 기존의 일괄 모달 블러 효과를 유지) */}
                   <div className={`space-y-4 transition-all duration-300 ${
                     sentimentModalConfig.sentiment === 'negative' && !isNegativeRevealed 
                       ? 'pointer-events-none select-none opacity-40 blur-[3px]' 
@@ -1257,17 +1261,18 @@ const AnalysisPage = () => {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* ========================================== */}
-      {/* 정보 수정 제보 모달 */}
-      {/* ========================================== */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+      {/* 3. 정보 수정 제보 모달 */}
+      {isEditModalOpen && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' }}
+        >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative">
             
-            {/* 모달 헤더 */}
             <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-white">
               <h3 className="text-lg font-bold flex items-center gap-2 text-gray-800">
                 <WarningCircle size={24} className="text-orange-500" weight="fill" />
@@ -1281,7 +1286,6 @@ const AnalysisPage = () => {
               </button>
             </div>
 
-            {/* 모달 본문 폼 */}
             <form onSubmit={handleEditRequestSubmit} className="p-5 bg-gray-50/50">
               <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                 현재 분석된 <strong className="text-indigo-600">'{keyword}'</strong> 데이터 중 누락되었거나 수정이 필요한 부분이 있다면 편하게 남겨주세요.
@@ -1312,7 +1316,8 @@ const AnalysisPage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div> // 최상위 page 감싸는 div
