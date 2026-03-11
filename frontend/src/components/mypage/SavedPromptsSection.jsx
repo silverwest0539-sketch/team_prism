@@ -3,8 +3,6 @@ import { Check, Copy, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { showToast } from '../../utils/toast';
 import { toApiUrl } from '../../utils/apiClient';
 
-const PREVIEW_LIMIT = 220;
-
 const formatSavedAt = (value) => {
   if (!value) return '';
   const date = new Date(value);
@@ -18,17 +16,93 @@ const formatSavedAt = (value) => {
   });
 };
 
-const toPreview = (text = '') => {
-  const normalized = String(text || '').trim();
-  if (normalized.length <= PREVIEW_LIMIT) return normalized;
-  return `${normalized.slice(0, PREVIEW_LIMIT)}...`;
-};
-
 const SavedPromptsSection = ({ email = '' }) => {
   const [savedPrompts, setSavedPrompts] = useState([]);
   const [copiedId, setCopiedId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [selectedPrompt, setSelectedPrompt] = useState(null);
+
+  const getPromptKeyword = (item = {}) => {
+    const keyword = String(item.keyword || '').trim();
+    return keyword || '키워드 없음';
+  };
+
+  const getPromptType = (item = {}) => String(item.type || '').trim();
+
+  const extractIndustryFromPrompt = (prompt = '') => {
+    const text = String(prompt || '').trim();
+    if (!text) return '';
+
+    const byTitleMatch = text.match(/(?:^|\n)\s*-?\s*업종\s*[:：]\s*([^\n]+)/i);
+    if (byTitleMatch?.[1]) {
+      return byTitleMatch[1].trim();
+    }
+
+    const byIntroMatch = text.match(/당신은\s+(.+?)\s+전문\s+카피라이터/i);
+    if (byIntroMatch?.[1]) {
+      return byIntroMatch[1].trim();
+    }
+
+    return '';
+  };
+
+  const extractPurposeFromPrompt = (prompt = '') => {
+    const text = String(prompt || '').trim();
+    if (!text) return '';
+
+    const byLine = text.match(/(?:^|\n)\s*-?\s*(?:제작\s*목적|목적)\s*[:：]\s*([^\n]+)/i);
+    if (byLine?.[1]) return byLine[1].trim();
+
+    const bySentence = text.match(/목적은\s*(.+?)\s*(?:이며|이고|입니다|[.,\n])/);
+    if (bySentence?.[1]) return bySentence[1].trim();
+
+    return '';
+  };
+
+  const extractTargetFromPrompt = (prompt = '') => {
+    const text = String(prompt || '').trim();
+    if (!text) return '';
+
+    const byLine = text.match(/(?:^|\n)\s*-?\s*(?:타겟\s*고객|타겟|대상)\s*[:：]\s*([^\n]+)/i);
+    if (byLine?.[1]) return byLine[1].trim();
+
+    const bySentence = text.match(/타겟은\s*(.+?)\s*(?:이며|이고|입니다|[.,\n])/);
+    if (bySentence?.[1]) return bySentence[1].trim();
+
+    return '';
+  };
+
+  const getPromptIndustry = (item = {}) => {
+    const raw = String(item.industry || '').trim();
+    if (raw) return raw;
+    return extractIndustryFromPrompt(item.prompt);
+  };
+
+  const getPromptPurpose = (item = {}) => {
+    const raw = String(item.purpose || '').trim();
+    if (raw) return raw;
+    return extractPurposeFromPrompt(item.prompt);
+  };
+
+  const getPromptTarget = (item = {}) => {
+    const raw = String(item.target || '').trim();
+    if (raw) return raw;
+    return extractTargetFromPrompt(item.prompt);
+  };
+
+  useEffect(() => {
+    if (!selectedPrompt) return undefined;
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setSelectedPrompt(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [selectedPrompt]);
 
   useEffect(() => {
     if (!email) return;
@@ -136,24 +210,40 @@ const SavedPromptsSection = ({ email = '' }) => {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {visiblePrompts.map((item) => (
-            <article key={item.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <article
+              key={item.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelectedPrompt(item)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setSelectedPrompt(item);
+                }
+              }}
+              className="group cursor-pointer transition-all duration-300 border border-gray-100 bg-white rounded-xl p-4 hover:border-blue-200 hover:shadow-md"
+            >
+              {(() => {
+                const promptType = getPromptType(item);
+                const promptIndustry = getPromptIndustry(item);
+                return (
+                  <>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-gray-900 truncate">
-                    {/* ✨ 키워드가 있으면 [키워드] 타입 프롬프트 형태로 보여주기 */}
-                    {item.keyword 
-                      ? `[${item.keyword}] ${item.type || ''} 프롬프트` 
-                      : (item.type ? `${item.type} 생성 프롬프트` : '저장된 프롬프트')}
+                  <h3 className="text-base font-bold text-gray-900 truncate transition-colors group-hover:text-blue-600">
+                    {getPromptKeyword(item)}
                   </h3>
-                  <p className="text-xs text-gray-400 mt-1">{formatSavedAt(item.savedAt)}</p>
                 </div>
 
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => handleCopyPrompt(item)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleCopyPrompt(item);
+                    }}
                     className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
                     title="복사"
                   >
@@ -165,7 +255,10 @@ const SavedPromptsSection = ({ email = '' }) => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setDeleteTargetId(item.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDeleteTargetId(item.id);
+                    }}
                     className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                     title="삭제"
                   >
@@ -175,18 +268,120 @@ const SavedPromptsSection = ({ email = '' }) => {
               </div>
 
               <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-                {item.type && (
+                {promptType && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
-                    {item.type}
+                    {promptType}
+                  </span>
+                )}
+                {promptIndustry && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                    {promptIndustry}
                   </span>
                 )}
               </div>
 
-              <p className="mt-2.5 text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
-                {toPreview(item.prompt)}
-              </p>
+              <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3">
+                <span>{formatSavedAt(item.savedAt)} 저장됨</span>
+                <span className="font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                  프롬프트 보기
+                </span>
+              </div>
+                  </>
+                );
+              })()}
             </article>
           ))}
+        </div>
+      )}
+
+      {selectedPrompt && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
+          <button
+            type="button"
+            onClick={() => setSelectedPrompt(null)}
+            className="absolute inset-0"
+            aria-label="프롬프트 상세 닫기"
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] p-5 sm:p-6 flex flex-col">
+            {(() => {
+              const promptType = getPromptType(selectedPrompt);
+              const promptIndustry = getPromptIndustry(selectedPrompt);
+              const promptPurpose = getPromptPurpose(selectedPrompt);
+              const promptTarget = getPromptTarget(selectedPrompt);
+              return (
+                <>
+            <div className="flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 break-words">
+                  {getPromptKeyword(selectedPrompt)}
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">{formatSavedAt(selectedPrompt.savedAt)}</p>
+                {(promptType || promptIndustry) && (
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    {promptType && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                        {promptType}
+                      </span>
+                    )}
+                    {promptIndustry && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                        {promptIndustry}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {(promptPurpose || promptTarget) && (
+                  <div className="mt-2 space-y-1">
+                    {promptPurpose && (
+                      <p className="text-xs text-gray-600">
+                        목적: {promptPurpose}
+                      </p>
+                    )}
+                    {promptTarget && (
+                      <p className="text-xs text-gray-600">
+                        타겟: {promptTarget}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCopyPrompt(selectedPrompt)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap"
+                >
+                  {copiedId === selectedPrompt.id ? (
+                    <>
+                      <Check size={14} className="text-green-600" />
+                      복사됨
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={14} />
+                      전체 복사
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPrompt(null)}
+                  className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
+              <p className="text-sm text-gray-800 whitespace-pre-wrap break-words leading-relaxed">
+                {String(selectedPrompt.prompt || '').trim() || '프롬프트 내용이 없습니다.'}
+              </p>
+            </div>
+                </>
+              );
+            })()}
+          </div>
         </div>
       )}
 

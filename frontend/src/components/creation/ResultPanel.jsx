@@ -98,7 +98,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
       {/* 헤더 — 고정 높이 */}
       <div className="flex-shrink-0 flex items-center justify-between p-3 2xl:p-2.5 border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-gray-700">V1. AI 생성 프롬프트</span>
+          <span className="text-sm font-bold text-gray-700">AI 생성 프롬프트</span>
           {v1Content && <span className="w-2 h-2 rounded-full bg-green-500" />}
         </div>
 
