@@ -123,14 +123,11 @@ const MyPage = () => {
   // [추가된 부분] SNS 연동 여부 확인 및 핸들러
   // ==========================================
   
-  // provider는 가입 출처로 유지되므로, 현재 연동 상태는 소셜 ID 존재 여부로만 판단한다.
   const isKakaoLinked = !!userInfo?.kakaoId;
   const isNaverLinked = !!userInfo?.naverId;
 
-  // 카카오 버튼 클릭 핸들러
   const handleKakaoToggle = async () => {
     if (isKakaoLinked) {
-      // 💡 [추가] 유일한 로그인 수단인지 확인 (비밀번호 없고 다른 소셜도 없을 때)
       const isOnlyMethod = !userInfo.hasPassword && !userInfo.naverId;
       if (isOnlyMethod) {
         alert('유일한 로그인 수단은 해제할 수 없습니다. 탈퇴를 원하시면 회원탈퇴를 이용해주세요.');
@@ -139,7 +136,6 @@ const MyPage = () => {
 
       if (window.confirm('카카오 계정 연동을 해제하시겠습니까?')) {
         try {
-          // ✅ 백엔드 연동 해제 API 호출
           await apiClient.post('/auth/unlink', { email: userInfo.email, provider: 'kakao' });
           showToast('카카오 연동이 해제되었습니다.', { type: 'success' });
           
@@ -151,14 +147,12 @@ const MyPage = () => {
         }
       }
     } else {
-      // 연동 안 되어 있을 때 -> 카카오 인증 페이지로 이동 (이동 후 위 Callback 컴포넌트가 실행됨)
       const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
       const REDIRECT_URI = `${window.location.origin}/oauth/callback/kakao`;
       window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`;
     }
   };
 
-  // 네이버 버튼 클릭 핸들러
   const handleNaverToggle = async () => {
     if (isNaverLinked) {
       const isOnlyMethod = !userInfo.hasPassword && !userInfo.kakaoId;
@@ -166,7 +160,6 @@ const MyPage = () => {
         alert('유일한 로그인 수단은 해제할 수 없습니다. 탈퇴를 원하시면 회원탈퇴를 이용해주세요.');
         return;
       }
-      // 연동되어 있을 때 -> 해제 안내창
       if (window.confirm('네이버 계정 연동을 해제하시겠습니까?')) {
         try {
           await apiClient.post('/auth/unlink', { email: userInfo.email, provider: 'naver' });
@@ -179,7 +172,6 @@ const MyPage = () => {
         }
       }
     } else {
-      // 연동 안 되어 있을 때 -> 네이버 인증 페이지로 이동
       const NAVER_CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID;
       const REDIRECT_URI = `${window.location.origin}/oauth/callback/naver`;
       const state = Math.random().toString(36).substring(3, 14);
@@ -188,8 +180,6 @@ const MyPage = () => {
   };
   // ==========================================
 
-
-  // 닉네임 수정 함수
   const handleSaveProfile = async () => {
     try {
       const response = await apiClient.post(API_ENDPOINT.UPDATE_PROFILE, {
@@ -198,23 +188,19 @@ const MyPage = () => {
       });
 
       if (response.data.success) {
-        // 1. 로컬 상태 업데이트
         const updatedUser = { ...userInfo, nickname: editNickname };
         setUserInfo(updatedUser);
-        
-        // 2. localStorage 업데이트 (사이드바 등 반영 위함)
         localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         
         showToast(response.data.message || TOAST_MESSAGE.PROFILE_UPDATE_SUCCESS, { type: 'success' });
         closeModal();
-        window.location.reload(); // 전체 UI 동기화를 위해 새로고침 권장
+        window.location.reload(); 
       }
     } catch {
       showToast(TOAST_MESSAGE.PROFILE_UPDATE_ERROR, { type: 'error' });
     }
   };
 
-  // 비밀번호 변경 함수
   const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       showToast(TOAST_MESSAGE.PASSWORD_MISMATCH, { type: 'warning' });
@@ -236,14 +222,14 @@ const MyPage = () => {
   const handleWithdraw = async () => {
     try {
       const response = await apiClient.delete(API_ENDPOINT.WITHDRAW, {
-        data: { email: userInfo.email } // DELETE 요청 본문
+        data: { email: userInfo.email } 
       });
 
       if (response.data.success) {
         showToast(response.data.message || TOAST_MESSAGE.WITHDRAW_SUCCESS, { type: 'success' });
         localStorage.removeItem(STORAGE_KEY.USER);
         localStorage.removeItem(STORAGE_KEY.TOKEN);
-        window.location.href = ROUTE.LOGIN; // 데이터 파기 후 로그인 페이지로 강제 이동
+        window.location.href = ROUTE.LOGIN; 
       }
     } catch (error) {
       showToast(error.response?.data?.message || TOAST_MESSAGE.WITHDRAW_ERROR, {
@@ -252,7 +238,6 @@ const MyPage = () => {
     }
   };
 
-  // 취향 설정 저장 (기존)
   const handlePreferenceSubmit = async (value) => {
     if (value === 'skip') {
       setPrefModalType(null);
@@ -282,11 +267,9 @@ const MyPage = () => {
     }
   };
 
-  // ★★★ [추가 완료] DB의 값을 비워주고 모달을 닫는 '초기화' 함수 ★★★
   const handlePreferenceReset = async () => {
     try {
       const payload = { email: userInfo.email };
-      // 초기화하므로 빈 문자열 전송
       if (prefModalType === 'community') payload.preferredCommunity = '';
       if (prefModalType === 'news') payload.preferredNews = '';
 
@@ -300,7 +283,6 @@ const MyPage = () => {
         setUserInfo(updatedUser);
         localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         
-        // 토스트 띄우고 창 닫기
         showToast('설정이 초기화되었습니다.', { type: 'success' });
         setPrefModalType(null);
       }
@@ -343,7 +325,8 @@ const MyPage = () => {
             >
               <div>
                 <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">계정 정보</h3>
-                <p className="text-xs text-gray-400 mt-1">프로필 편집, 비밀번호 변경, SNS 연동</p>
+                {/* [수정된 부분] text-xs -> text-sm */}
+                <p className="text-sm text-gray-400 mt-1">프로필 편집, 비밀번호 변경, SNS 연동</p>
               </div>
               <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
@@ -354,7 +337,8 @@ const MyPage = () => {
             >
               <div>
                 <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 플랫폼 설정</h3>
-                <p className="text-xs text-gray-400 mt-1">대시보드에서 우선 표시할 플랫폼 설정</p>
+                {/* [수정된 부분] text-xs -> text-sm */}
+                <p className="text-sm text-gray-400 mt-1">대시보드에서 우선 표시할 플랫폼 설정</p>
               </div>
               <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
@@ -365,7 +349,8 @@ const MyPage = () => {
             >
               <div>
                 <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 뉴스 카테고리 설정</h3>
-                <p className="text-xs text-gray-400 mt-1">대시보드에서 우선 표시할 뉴스 분야 설정</p>
+                {/* [수정된 부분] text-xs -> text-sm */}
+                <p className="text-sm text-gray-400 mt-1">대시보드에서 우선 표시할 뉴스 분야 설정</p>
               </div>
               <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
             </div>
@@ -376,7 +361,8 @@ const MyPage = () => {
             >
               <div>
                 <h3 className="text-base font-bold text-gray-900 group-hover:text-red-600 transition">회원 탈퇴</h3>
-                <p className="text-xs text-gray-400 mt-1">계정 삭제 및 데이터 영구 파기</p>
+                {/* [수정된 부분] text-xs -> text-sm */}
+                <p className="text-sm text-gray-400 mt-1">계정 삭제 및 데이터 영구 파기</p>
               </div>
               <ChevronRight size={20} className="text-gray-300 group-hover:text-red-600 transition" />
             </div>
@@ -453,9 +439,6 @@ const MyPage = () => {
                       <Shield size={18} className="text-green-600"/> 보안 설정
                     </h4>
                     
-                    {/* ========================================== */}
-                    {/* [추가된 부분] 카카오, 네이버 연동 버튼 영역 */}
-                    {/* ========================================== */}
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <button
                         type="button"
@@ -553,7 +536,6 @@ const MyPage = () => {
         </div>
       )}
 
-      {/* [수정 완료] 취향 설정 모달 렌더링 영역에 onReset 연결 완료 */}
       {prefModalType === 'community' && (
         <BasePreferenceModal 
           isOpen={true}
@@ -562,7 +544,7 @@ const MyPage = () => {
           options={COMMUNITY_OPTIONS}
           submitText="변경하기"
           onSubmit={handlePreferenceSubmit}
-          onReset={handlePreferenceReset} // ★ 클릭 시 DB 초기화 후 닫힘!
+          onReset={handlePreferenceReset} 
           onClose={() => setPrefModalType(null)} 
         />
       )}
@@ -575,7 +557,7 @@ const MyPage = () => {
           options={NEWS_OPTIONS}
           submitText="변경하기"
           onSubmit={handlePreferenceSubmit}
-          onReset={handlePreferenceReset} // ★ 클릭 시 DB 초기화 후 닫힘!
+          onReset={handlePreferenceReset} 
           onClose={() => setPrefModalType(null)}
         />
       )}

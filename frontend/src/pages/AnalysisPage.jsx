@@ -46,7 +46,7 @@ import { showToast } from '../utils/toast';
 import SimpleWordCloud from '../components/analysis/SimpleWordCloud';
 import CommentItem from '../components/analysis/CommentItem';
 import { DUMMY_DATA, PLATFORM_OPTIONS, SENTIMENT_DATA } from '../constants/analysisConstants';
-import { DOTS, getPaginationItems } from '../utils/analysisPagination';
+// DOTS, getPaginationItems 등 기존 방식은 더 이상 사용하지 않아도 되지만 그대로 두셔도 무방합니다.
 
 const getFormattedDate = (date) => {
   const year = date.getFullYear();
@@ -510,11 +510,6 @@ const AnalysisPage = () => {
     return usageExamples.slice(startIndex, endIndex);
   }, [usageExamples, currentPage]);
 
-  const paginationItems = useMemo(
-    () => getPaginationItems(currentPage, totalPages, 1),
-    [currentPage, totalPages]
-  );
-
   const goToPage = (p) => {
     setCurrentPage(p);
     requestAnimationFrame(() => {
@@ -536,6 +531,23 @@ const AnalysisPage = () => {
   const todayStr = getFormattedDate(new Date()).replace(/-/g, '');
   const todayData = filteredData?.history?.find(h => h.date === todayStr);
   const todayScore = Math.round(todayData?.score || 0);
+
+  // ==========================================
+  // [추가 및 변경] 10단위 그룹 페이지네이션 로직
+  // ==========================================
+  const PAGE_GROUP_SIZE = 10;
+  const currentGroup = Math.floor((currentPage - 1) / PAGE_GROUP_SIZE);
+  const startPage = currentGroup * PAGE_GROUP_SIZE + 1;
+  const endPage = Math.min(startPage + PAGE_GROUP_SIZE - 1, totalPages);
+
+  const visiblePages = Array.from(
+    { length: endPage - startPage + 1 },
+    (_, i) => startPage + i
+  );
+
+  const hasPrevGroup = startPage > 1;
+  const hasNextGroup = endPage < totalPages;
+  // ==========================================
 
   // ---------------- Render ----------------
   return (
@@ -620,7 +632,7 @@ const AnalysisPage = () => {
                   </>
                 ) : (
                   <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md mt-1 sm:mt-0">
-                    오늘의 트렌드 키워드가 아닙니다
+                    오늘의 트렌드 키워닙니다
                   </span>
                 )}
               </div>
@@ -889,48 +901,45 @@ const AnalysisPage = () => {
                 )}
               </div>
 
+              {/* 변경된 페이지네이션 영역 */}
               {totalPages > 1 && (
-                <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
-                  <button
-                    onClick={() => goToPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent"
-                    aria-label="이전 페이지"
-                  >
-                    <CaretLeft size={16} weight="bold" />
-                  </button>
+                <div className="flex flex-wrap justify-center items-center gap-2 mt-6 pt-4 border-t border-gray-100">
+                  {/* 이전 보기 텍스트 버튼 (첫번째 그룹이 아닐 때만 노출) */}
+                  {hasPrevGroup && (
+                    <button
+                      onClick={() => goToPage(startPage - PAGE_GROUP_SIZE)}
+                      className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    >
+                      이전 보기
+                    </button>
+                  )}
 
-                  {paginationItems.map((it, idx) => {
-                    if (it === DOTS) {
+                  <div className="flex items-center gap-1.5 mx-2">
+                    {visiblePages.map((pageNum) => {
+                      const isActive = pageNum === currentPage;
                       return (
-                        <span key={`dots-${idx}`} className="px-2 text-xs text-gray-400 select-none">
-                          ...
-                        </span>
+                        <button
+                          key={pageNum}
+                          onClick={() => goToPage(pageNum)}
+                          className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-medium transition-all
+                            ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-indigo-600'}`}
+                          aria-current={isActive ? 'page' : undefined}
+                        >
+                          {pageNum}
+                        </button>
                       );
-                    }
-                    const pageNum = it;
-                    const isActive = pageNum === currentPage;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => goToPage(pageNum)}
-                        className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-medium transition-all
-                          ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-indigo-600'}`}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+                    })}
+                  </div>
 
-                  <button
-                    onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent"
-                    aria-label="다음 페이지"
-                  >
-                    <CaretRight size={16} weight="bold" />
-                  </button>
+                  {/* 더보기 텍스트 버튼 (마지막 그룹이 아닐 때만 노출) */}
+                  {hasNextGroup && (
+                    <button
+                      onClick={() => goToPage(startPage + PAGE_GROUP_SIZE)}
+                      className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    >
+                      더보기
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1198,7 +1207,7 @@ const AnalysisPage = () => {
                     onClick={() => setIsNegativeRevealed(!isNegativeRevealed)}
                     className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all border ${
                       isNegativeRevealed 
-                        ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
+                         ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
                         : 'bg-white text-gray-500 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
                     }`}
                   >
