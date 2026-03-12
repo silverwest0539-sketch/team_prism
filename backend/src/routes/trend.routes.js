@@ -7,5 +7,6 @@ router.get('/trends/rising', trendController.getRisingTrends);
 router.get('/trends/platform', trendController.getPlatformTrends);
 router.get('/trends', trendController.getAllTrends);
 router.get('/analysis', trendController.getAnalysis);
+router.get('/analysis/comments', trendController.getMoreComments);
 
 module.exports = router;

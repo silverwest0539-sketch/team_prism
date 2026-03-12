@@ -56,3 +56,16 @@ exports.getAutocomplete = async (req, res) => {
     res.status(500).json({ error: '자동완성 조회 실패' });
   }
 };
+
+exports.getMoreComments = async (req, res) => {
+  try {
+    const { keyword, startDate, endDate, offset } = req.query;
+    if (!keyword) return res.status(400).json({ error: 'Keyword required' });
+
+    const comments = await trendService.getMoreComments(keyword, startDate, endDate, offset);
+    res.json({ comments });
+  } catch (error) {
+    console.error("API Error (/analysis/comments):", error);
+    res.status(500).json({ error: 'Server Error' });
+  }
+};

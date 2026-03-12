@@ -213,15 +213,34 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
   });
 
   // ── 3. 댓글 예시 ─────────────────────────────────────
+  let countSql = `
+    SELECT COUNT(*) as total
+    FROM USAGE_EXAMPLE u
+    JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
+    WHERE ke.keyword_id = ?
+  `;
+
+  const countParams = [keywordId];
+
+  // 프론트엔드에서 넘겨준 날짜로 댓글도 필터링
+  if (startDate) {
+    countSql += ` AND u.collected_date >= ?`;
+    countParams.push(startDate);
+  }
+  if (endDate) {
+    countSql += ` AND u.collected_date <= ?`;
+    countParams.push(endDate);
+  }
+  const [[{ total: totalCommentCount }]] = await db.execute(countSql, countParams);
+
   let commentsSql = `
       SELECT u.platform, u.url, u.content, u.collected_date, u.sentiment_label
       FROM USAGE_EXAMPLE u
       JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
       WHERE ke.keyword_id = ?
-    `;
+  `;
   const commentsParams = [keywordId];
 
-  // 프론트엔드에서 넘겨준 날짜로 댓글도 필터링
   if (startDate) {
     commentsSql += ` AND u.collected_date >= ?`;
     commentsParams.push(startDate);
@@ -232,7 +251,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
   }
 
   // 최신순 정렬
-  commentsSql += ` ORDER BY u.collected_date DESC LIMIT 100`;
+  commentsSql += ` ORDER BY u.collected_date DESC LIMIT 70`;
 
   const [exampleRows] = await db.execute(commentsSql, commentsParams);
 
@@ -332,6 +351,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
     neutral_score: neutralScore,
     negative_score: negativeScore,
     history,
+    totalCommentCount,
     comments: parsedComments,
     wordCloud: wordCloudData,
     videos: relatedVideos,
@@ -359,4 +379,52 @@ exports.getAutocomplete = async (prefix) => {
   );
 
   return rows.map(row => row.keyword_name);
+};
+
+exports.getMoreComments = async (keyword, startDate, endDate, offset = 70) => {
+  const [kwRows] = await db.execute(
+    `SELECT keyword_id FROM TREND_KEYWORD WHERE keyword_name = ?`, [keyword]
+  );
+  if (kwRows.length === 0) return [];
+
+  const keywordId = kwRows[0].keyword_id;
+  let commentsSql = `
+      SELECT u.platform, u.url, u.content, u.collected_date, u.sentiment_label
+      FROM USAGE_EXAMPLE u
+      JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
+      WHERE ke.keyword_id = ?
+  `;
+  const commentsParams = [keywordId];
+
+  if (startDate) {
+    commentsSql += ` AND u.collected_date >= ?`;
+    commentsParams.push(startDate);
+  }
+  if (endDate) {
+    commentsSql += ` AND u.collected_date <= ?`;
+    commentsParams.push(endDate);
+  }
+
+  commentsSql += ` ORDER BY u.collected_date DESC LIMIT 70 OFFSET ?`;
+  commentsParams.push(Number(offset));
+
+  const [exampleRows] = await db.execute(commentsSql, commentsParams);
+
+  return exampleRows.map(row => {
+    let formattedDate = null;
+    if (row.collected_date) {
+      const dateObj = new Date(row.collected_date);
+      if (!isNaN(dateObj)) {
+        const offsetMs = dateObj.getTimezoneOffset() * 60000;
+        formattedDate = new Date(dateObj.getTime() - offsetMs).toISOString().split('T')[0];
+      }
+    }
+    return {
+      source: row.platform,
+      text: row.content,
+      link: row.url,
+      date: formattedDate,
+      sentiment: row.sentiment_label || 'neutral',
+    };
+  });
 };
