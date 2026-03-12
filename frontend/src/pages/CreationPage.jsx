@@ -44,37 +44,20 @@ const CreationPage = () => {
         '프롬프트 생성 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.'
       );
     }
-
     const status = error?.response?.status;
     const apiError = String(error?.response?.data?.error || fallbackMessage || '').trim();
 
-    if (status === 400) {
-      return apiError || '입력 정보를 확인한 뒤 다시 시도해 주세요.';
-    }
-    if (status === 401 || status === 403) {
-      return '로그인 상태가 만료되었어요. 다시 로그인 후 시도해 주세요.';
-    }
-    if (status === 429) {
-      return '요청이 몰려 잠시 지연되고 있어요. 잠시 후 다시 시도해 주세요.';
-    }
-    if (status >= 500) {
-      return '서버가 일시적으로 불안정합니다. 잠시 후 다시 시도해 주세요.';
-    }
-    if (error?.code === 'ECONNABORTED') {
-      return '요청 시간이 초과되었어요. 네트워크 상태를 확인하고 다시 시도해 주세요.';
-    }
-    if (!error?.response) {
-      return '서버에 연결하지 못했어요. 백엔드 실행 상태를 확인해 주세요.';
-    }
+    if (status === 400) return apiError || '입력 정보를 확인한 뒤 다시 시도해 주세요.';
+    if (status === 401 || status === 403) return '로그인 상태가 만료되었어요. 다시 로그인 후 시도해 주세요.';
+    if (status === 429) return '요청이 몰려 잠시 지연되고 있어요. 잠시 후 다시 시도해 주세요.';
+    if (status >= 500) return '서버가 일시적으로 불안정합니다. 잠시 후 다시 시도해 주세요.';
+    if (error?.code === 'ECONNABORTED') return '요청 시간이 초과되었어요. 네트워크 상태를 확인하고 다시 시도해 주세요.';
+    if (!error?.response) return '서버에 연결하지 못했어요. 백엔드 실행 상태를 확인해 주세요.';
     return apiError || '프롬프트 생성 중 오류가 발생했어요. 다시 시도해 주세요.';
   };
 
-const handleGenerate = async (inputData) => {
-    // 2. apiClient의 유틸리티 함수를 사용하여 안전하게 URL 생성
-    // prompt.routes.js가 /api 밑에 붙어 있으므로 '/generate'만 넘기면 됩니다.
+  const handleGenerate = async (inputData) => {
     const fullUrl = toApiUrl('/generate');
-    
-    console.log("Request URL:", fullUrl); 
     setLastPayload(inputData);
     setGenerationError('');
     setGeneratedResult('');
@@ -85,7 +68,6 @@ const handleGenerate = async (inputData) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // apiClient.js와 동일한 방식으로 토큰 추출
           'Authorization': `Bearer ${window.localStorage.getItem('token')}` 
         },
         body: JSON.stringify(inputData),
@@ -111,7 +93,6 @@ const handleGenerate = async (inputData) => {
           if (!line.startsWith('data: ')) continue;
           const dataStr = line.replace('data: ', '').trim();
           
-          // prompt.controller.js에서 보내는 종료 신호와 일치
           if (dataStr === '[DONE]') {
             isFinished = true;
             break;
@@ -123,12 +104,10 @@ const handleGenerate = async (inputData) => {
               setGeneratedResult((prev) => prev + parsed.chunk);
             }
           } catch {
-            // 스트리밍 데이터가 잘려올 경우 대비
             console.warn("JSON chunk parsing wait...");
           }
         }
       }
-      
       setResultRevision((prev) => prev + 1);
     } catch (error) {
       setGenerationError(resolveFriendlyErrorMessage(error));
@@ -148,44 +127,37 @@ const handleGenerate = async (inputData) => {
     const currentUser = getStoredUser();
     const userEmail = String(currentUser?.email || '').trim();
 
-    // 1. 유효성 검사
     if (!normalizedPrompt) {
       showToast('저장할 프롬프트가 없습니다.', { type: 'warning' });
       return false;
     }
-
     if (!userEmail) {
       showToast('로그인 정보가 확인되지 않아 저장할 수 없습니다.', { type: 'error' });
       return false;
     }
 
-    // 2. 백엔드 API 호출
     try {
-      // prompt.routes.js에 설정한 엔드포인트 호출
       const fullUrl = toApiUrl('/save'); 
-      
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.localStorage.getItem('token')}` // 생성(generate) 때와 동일하게 토큰 전달
+          'Authorization': `Bearer ${window.localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           email: userEmail,
-          type: lastPayload?.type || '기본', // lastPayload에서 타겟 타입 추출
+          type: lastPayload?.type || '기본',
           content: normalizedPrompt,
           keyword: lastPayload?.keyword || '',
         }),
       });
 
-      // 3. 응답 처리
       if (!response.ok) {
         const errorData = await safeParseJson(response);
         throw createHttpError({ status: response.status, data: errorData });
       }
 
       const result = await response.json();
-
       if (result.success) {
         showToast('마이페이지에 프롬프트를 저장했습니다.', { type: 'success' });
         return true;
@@ -193,7 +165,6 @@ const handleGenerate = async (inputData) => {
         showToast(result.error || '프롬프트 저장에 실패했습니다.', { type: 'error' });
         return false;
       }
-
     } catch (error) {
       console.error('[Save Prompt Error]:', error);
       showToast('프롬프트 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.', { type: 'error' });
@@ -201,49 +172,55 @@ const handleGenerate = async (inputData) => {
     }
   };
 
-  if (!authChecked) {
-    return null;
-  }
+  if (!authChecked) return null;
 
   return (
-    <div className="page space-y-4 sm:space-y-5 2xl:space-y-3 2xl:p-4">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-gray-200 pb-4 2xl:pb-2.5">
-        <div>
-          <h1 className="text-xl sm:text-2xl 2xl:text-xl font-bold text-gray-900">콘텐츠 생성 스튜디오</h1>
-          <p className="text-sm sm:text-base 2xl:text-sm text-gray-500 mt-1 2xl:mt-0.5">
-            컨텐츠 생성을 위한 프롬프트 초안을 만들어 드립니다.
-          </p>
+    <div className="w-full">
+      {/* ✅ 타이틀 아래와 패널 사이의 여백(space-y)을 대폭 줄였습니다. */}
+      <div className="page space-y-3 sm:space-y-4 p-4 sm:p-6 2xl:p-6">
+        
+        {/* ✅ 구분선(border-b)을 삭제하고 아래쪽 여백(pb)을 최소화했습니다. */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 pb-1">
+          <div>
+            <h1 className="text-2xl sm:text-3xl 2xl:text-2xl font-bold text-gray-900">
+              콘텐츠 생성 스튜디오
+            </h1>
+            <p className="text-base sm:text-lg 2xl:text-base text-gray-500 mt-1">
+              컨텐츠 생성을 위한 프롬프트 초안을 만들어 드립니다.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="creation-grid 2xl:gap-2.5">
-        <ErrorBoundary
-          variant="section"
-          resetKey={initialKeyword}
-          title="입력 섹션을 표시하지 못했습니다."
-          description="페이지를 새로고침하거나 잠시 후 다시 시도해 주세요."
-        >
-          <InputPanel
-            onGenerate={handleGenerate}
-            isLoading={isLoading}
-            initialKeyword={initialKeyword}
-          />
-        </ErrorBoundary>
-        <ErrorBoundary
-          variant="section"
-          resetKey={resultRevision}
-          title="결과 섹션을 표시하지 못했습니다."
-          description="생성을 다시 시도하거나 잠시 후 다시 시도해 주세요."
-        >
-          <ResultPanel
-            key={resultRevision}
-            content={generatedResult}
-            isLoading={isLoading}
-            errorMessage={generationError}
-            onRetry={handleRetry}
-            onSave={handleSavePrompt}
-          />
-        </ErrorBoundary>
+        <div className="creation-grid gap-4 sm:gap-6 2xl:gap-5 items-stretch">
+          <ErrorBoundary
+            variant="section"
+            resetKey={initialKeyword}
+            title="입력 섹션을 표시하지 못했습니다."
+            description="페이지를 새로고침하거나 잠시 후 다시 시도해 주세요."
+          >
+            <InputPanel
+              onGenerate={handleGenerate}
+              isLoading={isLoading}
+              initialKeyword={initialKeyword}
+            />
+          </ErrorBoundary>
+          
+          <ErrorBoundary
+            variant="section"
+            resetKey={resultRevision}
+            title="결과 섹션을 표시하지 못했습니다."
+            description="생성을 다시 시도하거나 잠시 후 다시 시도해 주세요."
+          >
+            <ResultPanel
+              key={resultRevision}
+              content={generatedResult}
+              isLoading={isLoading}
+              errorMessage={generationError}
+              onRetry={handleRetry}
+              onSave={handleSavePrompt}
+            />
+          </ErrorBoundary>
+        </div>
       </div>
     </div>
   );
