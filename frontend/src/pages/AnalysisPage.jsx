@@ -9,6 +9,7 @@ import {
   Export,
   PlayCircle,
   CaretDoubleLeft, // << 아이콘 추가
+  CaretDoubleRight, // [추가됨] >> 아이콘
   CaretLeft,
   CaretRight,
   ChartLineUp,
@@ -1065,13 +1066,19 @@ const AnalysisPage = () => {
                   </button>
 
                   {/* 다음 10페이지 보기 텍스트 버튼 (마지막 그룹이 아니거나 데이터가 더 있을 때 노출) */}
+                  {/* >> 다음 10페이지 (다음 그룹) 버튼 */}
                   {hasNextGroup && (
                     <button
                       onClick={handleNextGroupTextClick}
                       disabled={isLoadingMore}
-                      className="px-2 py-1.5 rounded-md text-xs sm:text-sm font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                      className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                      aria-label="다음 10페이지"
                     >
-                      {isLoadingMore ? '불러오는 중...' : '다음 10페이지 보기'}
+                      {isLoadingMore ? (
+                        <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                      ) : (
+                        <CaretDoubleRight size={16} weight="bold" />
+                      )}
                     </button>
                   )}
                 </div>
