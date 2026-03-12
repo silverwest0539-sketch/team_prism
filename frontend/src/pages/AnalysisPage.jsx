@@ -8,6 +8,7 @@ import {
   BookmarkSimple,
   Export,
   PlayCircle,
+  CaretDoubleLeft, // << 아이콘 추가
   CaretLeft,
   CaretRight,
   ChartLineUp,
@@ -46,7 +47,6 @@ import { showToast } from '../utils/toast';
 import SimpleWordCloud from '../components/analysis/SimpleWordCloud';
 import CommentItem from '../components/analysis/CommentItem';
 import { DUMMY_DATA, PLATFORM_OPTIONS, SENTIMENT_DATA } from '../constants/analysisConstants';
-// DOTS, getPaginationItems 등 기존 방식은 더 이상 사용하지 않아도 되지만 그대로 두셔도 무방합니다.
 
 const getFormattedDate = (date) => {
   const year = date.getFullYear();
@@ -78,8 +78,11 @@ const AnalysisPage = () => {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // 댓글 무한 스크롤 & 페이지네이션용 상태
   const [commentOffset, setCommentOffset] = useState(70);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreComments, setHasMoreComments] = useState(true);
   
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -151,7 +154,20 @@ const AnalysisPage = () => {
 
       if (analysisData.found) {
         setData(analysisData);
-        setCommentOffset(70);
+        
+        // [수정됨] 처음 서버에서 받아온 실제 댓글 개수 확인
+        const initialCommentCount = analysisData.comments?.length || 0;
+        
+        // offset을 실제 받아온 개수로 정확하게 세팅
+        setCommentOffset(initialCommentCount); 
+        
+        // 받아온 댓글이 70개(서버 1회 전송량)보다 적다면, 뒤에 더 이상 데이터가 없는 것임
+        if (initialCommentCount < 70) {
+          setHasMoreComments(false);
+        } else {
+          setHasMoreComments(true);
+        }
+
         if (!currentStart && analysisData.history?.length > 0) {
           const sDate = formatDateForInput(analysisData.history[0].date);
           const eDate = formatDateForInput(analysisData.history[analysisData.history.length - 1].date);
@@ -238,9 +254,9 @@ const AnalysisPage = () => {
     }
   };
 
-  //** 서버에서 추가 댓글을 가져오는 핸들러 */
-  const handleLoadMoreComments = async () => {
-    if (isLoadingMore) return;
+  // ** 변경된 댓글 추가 불러오기 함수 (페이지네이션 이동 중 호출됨) **
+  const fetchMoreComments = async () => {
+    if (isLoadingMore || !hasMoreComments) return false;
     setIsLoadingMore(true);
     try {
       const res = await apiClient.get('/analysis/comments', {
@@ -254,18 +270,25 @@ const AnalysisPage = () => {
 
       const newComments = res.data.comments || [];
       if (newComments.length > 0) {
-        // 기존 댓글 배열에 새 댓글 병합
         setData(prev => ({
           ...prev,
           comments: [...(prev?.comments || []), ...newComments]
         }));
-        setCommentOffset(prev => prev + 70);
+        setCommentOffset(prev => prev + newComments.length);
+        
+        // 만약 설정된 기본 수량(예: 70개)보다 적게 가져왔다면 마지막 데이터로 간주
+        if (newComments.length < 70) {
+          setHasMoreComments(false);
+        }
+        return true;
       } else {
-        showToast('더 이상 불러올 댓글이 없습니다.', { type: 'info' });
+        setHasMoreComments(false);
+        return false;
       }
     } catch (err) {
       console.error('댓글 더보기 실패:', err);
       showToast('댓글을 추가로 불러오지 못했습니다.', { type: 'error' });
+      return false;
     } finally {
       setIsLoadingMore(false);
     }
@@ -333,7 +356,6 @@ const AnalysisPage = () => {
 
     try {
       if (isScrapped) {
-        // 스크랩 취소
         if (resolvedKeyword) {
           await apiClient.delete('/scraps', {
             params: { email: savedUser.email, keyword: resolvedKeyword },
@@ -342,7 +364,6 @@ const AnalysisPage = () => {
         setIsScrapped(false);
         showToast('스크랩이 취소되었습니다.', { type: 'info' });
       } else {
-        // 스크랩 추가
         if (!resolvedKeyword) throw new Error('NO_SERVER_KEYWORD');
         await apiClient.post('/scraps', {
           email: savedUser.email,
@@ -397,9 +418,9 @@ const AnalysisPage = () => {
     
     try {
       await apiClient.post('/auth/report', {
-        keyword: keyword, // 현재 분석 중인 키워드
-        content: editRequestText, // 사용자가 입력한 제보 내용
-        userEmail: getStoredUser()?.email || '비로그인 사용자' // 필요시 제보자 정보 포함
+        keyword: keyword, 
+        content: editRequestText, 
+        userEmail: getStoredUser()?.email || '비로그인 사용자'
       });
 
       showToast('소중한 의견 감사합니다. 검토 후 신속히 반영하겠습니다.', { type: 'success' });
@@ -533,12 +554,26 @@ const AnalysisPage = () => {
     return filteredData.comments;
   }, [filteredData]);
 
-  const totalItems = usageExamples.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  // 현재 프론트엔드에 불러와진 댓글 개수 (페이지네이션 계산용)
+  const loadedItemsCount = usageExamples.length; 
+  const totalPages = Math.max(1, Math.ceil(loadedItemsCount / ITEMS_PER_PAGE));
 
+  // 화면 우측 상단에 보여줄 '진짜 전체 댓글 개수'
+  // 백엔드에서 넘겨주는 키값(예: total_comments)을 사용합니다. 
+  // 만약 백엔드에서 아직 안 넘겨준다면 일단 불러온 개수라도 보여주도록 fallback 처리합니다.
+  const displayTotalCount = data?.total_comments || data?.totalCount || loadedItemsCount;
+
+  // 플랫폼 필터 변경 시 첫 페이지로 이동
   useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(1);
-  }, [totalPages, currentPage]);
+    setCurrentPage(1);
+  }, [selectedPlatform]);
+
+  // 페이지 바운더리 체크 (강제 축소된 경우 예외처리)
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages && !hasMoreComments && !isLoadingMore) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage, hasMoreComments, isLoadingMore]);
 
   const currentUsageExamples = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -546,11 +581,15 @@ const AnalysisPage = () => {
     return usageExamples.slice(startIndex, endIndex);
   }, [usageExamples, currentPage]);
 
-  const goToPage = (p) => {
-    setCurrentPage(p);
+  const scrollToTop = () => {
     requestAnimationFrame(() => {
       commentsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+  };
+
+  const goToPage = (p) => {
+    setCurrentPage(p);
+    scrollToTop();
   };
 
   const availablePlatforms = useMemo(() => {
@@ -569,7 +608,7 @@ const AnalysisPage = () => {
   const todayScore = Math.round(todayData?.score || 0);
 
   // ==========================================
-  // [추가 및 변경] 10단위 그룹 페이지네이션 로직
+  // [수정된] 10단위 그룹 페이지네이션 & 페칭 연동 로직
   // ==========================================
   const PAGE_GROUP_SIZE = 10;
   const currentGroup = Math.floor((currentPage - 1) / PAGE_GROUP_SIZE);
@@ -582,7 +621,45 @@ const AnalysisPage = () => {
   );
 
   const hasPrevGroup = startPage > 1;
-  const hasNextGroup = endPage < totalPages;
+  // 서버에 데이터가 더 있거나, 이미 로드된 총 페이지가 현재 그룹을 넘어선 경우 '다음 10페이지 보기' 노출
+  const hasNextGroup = endPage < totalPages || hasMoreComments;
+
+  // << 동작
+  const handlePrevGroupClick = () => {
+    goToPage(Math.max(1, startPage - PAGE_GROUP_SIZE));
+  };
+
+  // < 동작
+  const handlePrevClick = () => {
+    goToPage(Math.max(1, currentPage - 1));
+  };
+
+  // > 동작
+  const handleNextClick = async () => {
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1);
+    } else if (hasMoreComments) {
+      const fetched = await fetchMoreComments();
+      if (fetched) {
+        setCurrentPage((prev) => prev + 1);
+        scrollToTop();
+      }
+    }
+  };
+
+  // 다음 10페이지 보기 동작
+  const handleNextGroupTextClick = async () => {
+    const targetPage = startPage + PAGE_GROUP_SIZE;
+    if (targetPage <= totalPages) {
+      goToPage(targetPage);
+    } else if (hasMoreComments) {
+      const fetched = await fetchMoreComments();
+      if (fetched) {
+        setCurrentPage(targetPage);
+        scrollToTop();
+      }
+    }
+  };
   // ==========================================
 
   // ---------------- Render ----------------
@@ -603,14 +680,8 @@ const AnalysisPage = () => {
         </div>
       </header>
 
-      {/* ✅ 헤더 아래 “메인 영역”을 확보 (여기 기준으로 중앙정렬됨) */}
       <div className="relative flex-1"></div>
-      
 
-      {/* 
-        [수정] 비로그인 상태이거나 키워드가 없을 때 컨텐츠 영역 블러 처리
-        비로그인 시에는 아예 이벤트를 무시(pointer-events-none)하도록 추가 클래스를 부여합니다.
-      */}
       <div
         className={`w-full transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
           !isLoggedIn
@@ -668,7 +739,7 @@ const AnalysisPage = () => {
                   </>
                 ) : (
                   <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md mt-1 sm:mt-0">
-                    오늘의 트렌드 키워닙니다
+                    오늘의 트렌드 키워드가 아닙니다
                   </span>
                 )}
               </div>
@@ -756,7 +827,7 @@ const AnalysisPage = () => {
                 value={selectedPlatform}
                 onChange={(e) => setSelectedPlatform(e.target.value)}
                 className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-gray-700 bg-gray-50 focus:bg-white cursor-pointer transition-all"
-              >
+               >
                 {filteredPlatforms.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -904,8 +975,9 @@ const AnalysisPage = () => {
                 </p>
               </div>
               
+              {/* 백엔드에서 전달받은 실제 전체 데이터 개수를 출력합니다. */}
               <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
-                총 {totalItems}건
+                총 {displayTotalCount}건
               </span>
             </div>
 
@@ -937,20 +1009,31 @@ const AnalysisPage = () => {
                 )}
               </div>
 
-              {/* 변경된 페이지네이션 영역 */}
-              {totalPages > 1 && (
-                <div className="flex flex-wrap justify-center items-center gap-2 mt-6 pt-4 border-t border-gray-100">
-                  {/* 이전 보기 텍스트 버튼 (첫번째 그룹이 아닐 때만 노출) */}
-                  {hasPrevGroup && (
-                    <button
-                      onClick={() => goToPage(startPage - PAGE_GROUP_SIZE)}
-                      className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                    >
-                      이전 보기
-                    </button>
-                  )}
+              {/* 완성된 페이지네이션 및 페칭 연동 영역 */}
+              {(totalPages > 1 || hasMoreComments) && (
+                <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
+                  
+                  {/* << 이전 10페이지 (이전 그룹) */}
+                  <button
+                    onClick={handlePrevGroupClick}
+                    disabled={!hasPrevGroup}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    aria-label="이전 10페이지"
+                  >
+                    <CaretDoubleLeft size={16} weight="bold" />
+                  </button>
 
-                  <div className="flex items-center gap-1.5 mx-2">
+                  {/* < 이전 1페이지 */}
+                  <button
+                    onClick={handlePrevClick}
+                    disabled={currentPage === 1}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    aria-label="이전 페이지"
+                  >
+                    <CaretLeft size={16} weight="bold" />
+                  </button>
+
+                  <div className="flex items-center gap-1.5 mx-1 sm:mx-2">
                     {visiblePages.map((pageNum) => {
                       const isActive = pageNum === currentPage;
                       return (
@@ -967,13 +1050,28 @@ const AnalysisPage = () => {
                     })}
                   </div>
 
-                  {/* 더보기 텍스트 버튼 (마지막 그룹이 아닐 때만 노출) */}
+                  {/* > 다음 1페이지 (데이터가 모자라면 fetchMoreComments 자동 호출) */}
+                  <button
+                    onClick={handleNextClick}
+                    disabled={currentPage === totalPages && !hasMoreComments}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    aria-label="다음 페이지"
+                  >
+                    {isLoadingMore && currentPage === totalPages ? (
+                      <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                    ) : (
+                      <CaretRight size={16} weight="bold" />
+                    )}
+                  </button>
+
+                  {/* 다음 10페이지 보기 텍스트 버튼 (마지막 그룹이 아니거나 데이터가 더 있을 때 노출) */}
                   {hasNextGroup && (
                     <button
-                      onClick={() => goToPage(startPage + PAGE_GROUP_SIZE)}
-                      className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                      onClick={handleNextGroupTextClick}
+                      disabled={isLoadingMore}
+                      className="px-2 py-1.5 rounded-md text-xs sm:text-sm font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
                     >
-                      더보기
+                      {isLoadingMore ? '불러오는 중...' : '다음 10페이지 보기'}
                     </button>
                   )}
                 </div>
@@ -1369,4 +1467,4 @@ const AnalysisPage = () => {
   );
 };
 
-export default AnalysisPage;
+export default AnalysisPage;               
