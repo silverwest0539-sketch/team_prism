@@ -3,20 +3,7 @@ const Parser = require('rss-parser');
 const os = require('os');
 const { getLatestData, getCommunityHotPosts } = require('../dataLoader');
 
-const isWindows = os.platform() === 'win32';
-
-let mecab = null;
-
-if (!isWindows) {
-  try {
-    mecab = require('mecab-ya');
-    console.log("✅ [NLP] Ubuntu 환경 감지: Mecab 형태소 분석기를 사용합니다.");
-  } catch (error) {
-    console.error("⚠️ [NLP] Mecab 모듈 로드 실패. 로컬 환경으로 간주합니다.");
-  }
-} else {
-  console.log("💻 [NLP] Windows 환경 감지: 내장 자체 형태소 분석기(Fallback)를 사용합니다.");
-}
+console.log("내장 자체 형태소 분석기를 사용합니다.");
 
 const fallbackTokenizeForNouns = (text) => {
   // '그런데' 같은 부사, 접속사를 걸러내기 위한 1차 필터
@@ -34,23 +21,10 @@ const fallbackTokenizeForNouns = (text) => {
   return nouns;
 };
 
-// 4️⃣ OS 자동 분기 명사 추출 함수
+
 const extractNouns = (text) => {
   return new Promise((resolve) => {
-    if (!isWindows && mecab) {
-      // Ubuntu 서버: 고성능 Mecab 사용
-      mecab.nouns(text, (err, nouns) => {
-        if (err) {
-          console.error('Mecab 에러, Fallback으로 전환:', err);
-          resolve(fallbackTokenizeForNouns(text));
-        } else {
-          resolve(nouns);
-        }
-      });
-    } else {
-      // Windows 로컬: 자체 개발 로직 사용
-      resolve(fallbackTokenizeForNouns(text));
-    }
+    resolve(fallbackTokenizeForNouns(text));
   });
 };
 
