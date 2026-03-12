@@ -405,8 +405,9 @@ exports.getMoreComments = async (keyword, startDate, endDate, offset = 70) => {
     commentsParams.push(endDate);
   }
 
-  commentsSql += ` ORDER BY u.collected_date DESC LIMIT 70 OFFSET ?`;
-  commentsParams.push(Number(offset));
+  const safeOffset = parseInt(offset, 10) || 70;
+
+  commentsSql += ` ORDER BY u.collected_date DESC LIMIT 70 OFFSET ${safeOffset}`;
 
   const [exampleRows] = await db.execute(commentsSql, commentsParams);
 

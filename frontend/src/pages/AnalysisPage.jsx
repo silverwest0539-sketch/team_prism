@@ -78,6 +78,8 @@ const AnalysisPage = () => {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [commentOffset, setCommentOffset] = useState(70);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -149,6 +151,7 @@ const AnalysisPage = () => {
 
       if (analysisData.found) {
         setData(analysisData);
+        setCommentOffset(70);
         if (!currentStart && analysisData.history?.length > 0) {
           const sDate = formatDateForInput(analysisData.history[0].date);
           const eDate = formatDateForInput(analysisData.history[analysisData.history.length - 1].date);
@@ -232,6 +235,39 @@ const AnalysisPage = () => {
       navigate(`/analysis/${encodeURIComponent(searchTerm.trim())}`);
       setSearchTerm(''); 
       e.target.blur();
+    }
+  };
+
+  //** 서버에서 추가 댓글을 가져오는 핸들러 */
+  const handleLoadMoreComments = async () => {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await apiClient.get('/analysis/comments', {
+        params: {
+          keyword,
+          startDate: appliedStartDate,
+          endDate: appliedEndDate,
+          offset: commentOffset
+        }
+      });
+
+      const newComments = res.data.comments || [];
+      if (newComments.length > 0) {
+        // 기존 댓글 배열에 새 댓글 병합
+        setData(prev => ({
+          ...prev,
+          comments: [...(prev?.comments || []), ...newComments]
+        }));
+        setCommentOffset(prev => prev + 70);
+      } else {
+        showToast('더 이상 불러올 댓글이 없습니다.', { type: 'info' });
+      }
+    } catch (err) {
+      console.error('댓글 더보기 실패:', err);
+      showToast('댓글을 추가로 불러오지 못했습니다.', { type: 'error' });
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
