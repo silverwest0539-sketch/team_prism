@@ -7,6 +7,7 @@ import ResultPanel from '../components/creation/ResultPanel';
 import { showToast } from '../utils/toast';
 import { getStoredUser } from '../utils/authStorage';
 import { toApiUrl } from '../utils/apiClient';
+import { createHttpError, safeParseJson } from '../utils/fetchError';
 
 const CreationPage = () => {
   const navigate = useNavigate();
@@ -91,9 +92,8 @@ const handleGenerate = async (inputData) => {
       });
 
       if (!response.ok) {
-        // fetch는 에러 시 response.ok가 false가 됨
-        const errorData = await response.json().catch(() => ({}));
-        throw { response: { status: response.status, data: errorData } };
+        const errorData = await safeParseJson(response);
+        throw createHttpError({ status: response.status, data: errorData });
       }
 
       const reader = response.body.getReader();
@@ -180,8 +180,8 @@ const handleGenerate = async (inputData) => {
 
       // 3. 응답 처리
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || '서버 오류');
+        const errorData = await safeParseJson(response);
+        throw createHttpError({ status: response.status, data: errorData });
       }
 
       const result = await response.json();

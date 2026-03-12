@@ -3,6 +3,7 @@ import { Check, Copy, Trash2, Loader2, AlertCircle, Search, X } from 'lucide-rea
 import { BookmarkSimple, SortAscending } from '@phosphor-icons/react';
 import { showToast } from '../../utils/toast';
 import { toApiUrl } from '../../utils/apiClient';
+import { createHttpError, safeParseJson, toFriendlyFetchErrorMessage } from '../../utils/fetchError';
 
 const formatSavedAt = (value) => {
   if (!value) return '';
@@ -210,7 +211,11 @@ const SavedPromptsSection = ({ email = '' }) => {
           }
         });
         
-        const result = await response.json();
+        const result = await safeParseJson(response);
+
+        if (!response.ok) {
+          throw createHttpError({ status: response.status, data: result });
+        }
         
         if (result.success) {
           setSavedPrompts(result.data);
@@ -219,7 +224,7 @@ const SavedPromptsSection = ({ email = '' }) => {
         }
       } catch (error) {
         console.error('프롬프트 목록 조회 에러:', error);
-        showToast('서버 통신 중 오류가 발생했습니다.', { type: 'error' });
+        showToast(toFriendlyFetchErrorMessage(error), { type: 'error' });
       } finally {
         setIsLoading(false);
       }
@@ -277,7 +282,10 @@ const SavedPromptsSection = ({ email = '' }) => {
       body: JSON.stringify({ email }),
     });
 
-    const result = await response.json();
+    const result = await safeParseJson(response);
+    if (!response.ok) {
+      throw createHttpError({ status: response.status, data: result });
+    }
     if (!result.success) {
       throw new Error(result.error || '삭제에 실패했습니다.');
     }
@@ -300,7 +308,7 @@ const SavedPromptsSection = ({ email = '' }) => {
       showToast('저장한 프롬프트를 삭제했습니다.', { type: 'info' });
     } catch (error) {
       console.error('프롬프트 삭제 에러:', error);
-      showToast(error.message || '삭제 중 서버 오류가 발생했습니다.', { type: 'error' });
+      showToast(toFriendlyFetchErrorMessage(error), { type: 'error' });
     }
   };
 
