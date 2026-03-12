@@ -559,11 +559,6 @@ const SavedPromptsSection = ({ email = '' }) => {
                         <h3 className="text-base font-bold text-gray-900 transition-colors group-hover:text-blue-600 whitespace-normal break-all leading-snug">
                           {getPromptKeyword(item)}
                         </h3>
-                        {!isDeleteMode && (
-                          <span className="mt-1 block text-[11px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                            프롬프트 전체보기
-                          </span>
-                        )}
                       </div>
 
                       {!isDeleteMode && (
@@ -611,8 +606,17 @@ const SavedPromptsSection = ({ email = '' }) => {
                       )}
                     </div>
 
-                    <div className={`text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3 ${isDeleteMode ? 'ml-7' : ''}`}>
+                    {/* 변경된 코드 */}
+                    <div className={`flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3 ${isDeleteMode ? 'ml-7' : ''}`}>
+                      {/* 왼쪽: 날짜 영역 */}
                       <span>{formatSavedAt(item.savedAt)} 저장됨</span>
+
+                      {/* 오른쪽: 프롬프트 전체보기 영역 (삭제 모드가 아닐 때만 보임) */}
+                      {!isDeleteMode && (
+                        <span className="text-[12px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                          프롬프트 전체보기
+                        </span>
+                      )}
                     </div>
                   </article>
                 );

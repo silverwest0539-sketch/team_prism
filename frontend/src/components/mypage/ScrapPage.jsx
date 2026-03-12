@@ -337,15 +337,10 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 <div className={`flex-1 ${viewMode === 'list' ? 'min-w-0' : ''}`}>
                     <div className="flex justify-between items-start mb-3">
                         <div className={isDeleteMode && viewMode === 'grid' ? 'ml-7' : ''}>
-                            {/* No. 순위 뱃지 삭제됨 */}
                             <h3 className={`font-bold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors ${viewMode === 'list' ? 'text-base' : 'text-lg'}`}>
                                 {item.keyword}
                             </h3>
-                            {!isDeleteMode && (
-                                <span className="mt-1 block text-[11px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    분석 보기
-                                </span>
-                            )}
+                            {/* ✂️ 원래 여기 있던 '분석 보기' span 코드를 지워줍니다. */}
                         </div>
                         {!isDeleteMode && viewMode === 'grid' && (
                             <button
@@ -358,8 +353,15 @@ const ScrapPage = ({ isEmbedded = false }) => {
                         )}
                     </div>
                     
-                    <div className="text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3">
+                    {/* 👇 여기 div에 flex justify-between items-center 를 추가했습니다! */}
+                    <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3">
                         <span>{item.savedAt ? getRelativeDate(item.savedAt) : '날짜 정보 없음'} 저장됨</span>
+                        
+                        {!isDeleteMode && (
+                            <span className="text-[12px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                분석 보기
+                            </span>
+                        )}
                     </div>
                 </div>
 
