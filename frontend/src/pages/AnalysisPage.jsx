@@ -555,14 +555,18 @@ const AnalysisPage = () => {
         </div>
       </header>
 
+      {/* ✅ 헤더 아래 “메인 영역”을 확보 (여기 기준으로 중앙정렬됨) */}
+      <div className="relative flex-1"></div>
+      
+
       {/* 
         [수정] 비로그인 상태이거나 키워드가 없을 때 컨텐츠 영역 블러 처리
         비로그인 시에는 아예 이벤트를 무시(pointer-events-none)하도록 추가 클래스를 부여합니다.
       */}
       <div
         className={`w-full transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
-          !isLoggedIn 
-            ? 'opacity-30 blur-[6px] pointer-events-none select-none' 
+          !isLoggedIn
+            ? 'opacity-30 blur-[6px] pointer-events-none select-none'
             : (!keyword ? 'blur-disabled' : 'blur-enabled')
         }`}
       >
@@ -1059,12 +1063,8 @@ const AnalysisPage = () => {
         </div>
       </div>
 
-      {/* ======================================================= */}
-      {/* [수정] 오버레이 로직 (비로그인, 혹은 키워드 미입력 시 표출) */}
-      {/* ======================================================= */}
-      
       {!isLoggedIn ? (
-        <div className="absolute inset-0 z-50 flex items-start justify-center pt-24 sm:pt-40 px-4">
+        <div className="absolute inset-x-0 top-[25vh] sm:top-[30vh] z-50 flex items-start justify-center px-4">
           <div className="p-8 sm:p-10 rounded-3xl border border-gray-200 bg-white shadow-2xl text-center max-w-md w-full">
             <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-5">
               <LockKey size={32} weight="fill" />
@@ -1083,7 +1083,7 @@ const AnalysisPage = () => {
           </div>
         </div>
       ) : !keyword ? (
-        <div className="absolute left-0 right-0 top-28 sm:top-36 z-50 flex justify-center px-4 pointer-events-none">
+        <div className="absolute inset-x-0 top-[25vh] sm:top-[30vh] z-50 flex justify-center px-4 pointer-events-none">
           <div className="analysis-empty-state-card p-5 sm:p-8 rounded-3xl border border-gray-200 bg-white/95 backdrop-blur-sm shadow-xl text-center w-full max-w-md pointer-events-auto animate-fade-in">
             <div className="analysis-empty-icon w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
