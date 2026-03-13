@@ -61,7 +61,10 @@ const SavedPromptsSection = ({ email = '' }) => {
 
   const getPromptKeyword = (item = {}) => {
     const keyword = String(item.keyword || '').trim();
-    return keyword || '키워드 없음';
+    if (keyword) return keyword;
+
+    const match = String(item.prompt || '').match(/^\[키워드:([^\]]+)\]/);
+    return match?.[1]?.trim() || '키워드 없음';
   };
 
   const getPromptType = (item = {}) => String(item.type || '').trim();
@@ -210,13 +213,13 @@ const SavedPromptsSection = ({ email = '' }) => {
             'Authorization': `Bearer ${window.localStorage.getItem('token')}` // 필요한 경우 토큰 추가
           }
         });
-        
+
         const result = await safeParseJson(response);
 
         if (!response.ok) {
           throw createHttpError({ status: response.status, data: result });
         }
-        
+
         if (result.success) {
           setSavedPrompts(result.data);
         } else {
@@ -449,9 +452,8 @@ const SavedPromptsSection = ({ email = '' }) => {
                           setSortBy(option.value);
                           setIsSortOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                          sortBy === option.value ? 'text-indigo-600 font-bold bg-indigo-50' : 'text-gray-600'
-                        }`}
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${sortBy === option.value ? 'text-indigo-600 font-bold bg-indigo-50' : 'text-gray-600'
+                          }`}
                       >
                         {option.label}
                       </button>
@@ -475,11 +477,10 @@ const SavedPromptsSection = ({ email = '' }) => {
                     type="button"
                     onClick={handleBulkDelete}
                     disabled={selectedPromptIds.size === 0}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      selectedPromptIds.size > 0
-                        ? 'bg-red-500 text-white hover:bg-red-600 shadow-sm'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedPromptIds.size > 0
+                      ? 'bg-red-500 text-white hover:bg-red-600 shadow-sm'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
                   >
                     삭제 ({selectedPromptIds.size})
                   </button>
@@ -535,17 +536,15 @@ const SavedPromptsSection = ({ email = '' }) => {
                         handleCardClick(item);
                       }
                     }}
-                    className={`group cursor-pointer transition-all duration-300 border bg-white rounded-xl p-4 hover:shadow-md relative ${
-                      isSelected
-                        ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
-                        : 'border-gray-100 hover:border-blue-200'
-                    }`}
+                    className={`group cursor-pointer transition-all duration-300 border bg-white rounded-xl p-4 hover:shadow-md relative ${isSelected
+                      ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
+                      : 'border-gray-100 hover:border-blue-200'
+                      }`}
                   >
                     {isDeleteMode && (
                       <div className="absolute top-4 left-4">
-                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                          isSelected ? 'bg-red-500 border-red-500' : 'border-gray-300 bg-white'
-                        }`}>
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-red-500 border-red-500' : 'border-gray-300 bg-white'
+                          }`}>
                           {isSelected && (
                             <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -662,105 +661,104 @@ const SavedPromptsSection = ({ email = '' }) => {
               const hasOptionalContent = detailedFields.length > 0;
               return (
                 <>
-            <div className="pb-3 border-b border-gray-100">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 break-words">
-                    {getPromptKeyword(selectedPrompt)}
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-1">{formatSavedAt(selectedPrompt.savedAt)}</p>
-                  {(promptType || promptIndustry) && (
-                    <div className="mt-2 flex items-center gap-2 flex-wrap">
-                      {promptType && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
-                          {promptType}
-                        </span>
-                      )}
-                      {promptIndustry && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
-                          {promptIndustry}
-                        </span>
+                  <div className="pb-3 border-b border-gray-100">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900 break-words">
+                          {getPromptKeyword(selectedPrompt)}
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-1">{formatSavedAt(selectedPrompt.savedAt)}</p>
+                        {(promptType || promptIndustry) && (
+                          <div className="mt-2 flex items-center gap-2 flex-wrap">
+                            {promptType && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                                {promptType}
+                              </span>
+                            )}
+                            {promptIndustry && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                                {promptIndustry}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPrompt(selectedPrompt)}
+                          className="inline-flex items-center justify-center gap-1 min-w-[90px] px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap"
+                        >
+                          {copiedId === selectedPrompt.id ? (
+                            <>
+                              <Check size={14} className="text-green-600" />
+                              복사됨
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={14} />
+                              전체 복사
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={closePromptModal}
+                          className="inline-flex items-center justify-center gap-1 min-w-[90px] px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap"
+                        >
+                          <X size={14} />
+                          닫기
+                        </button>
+                      </div>
+                    </div>
+
+                    {promptPurpose && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-600">
+                          목적: {promptPurpose}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowOptionalFields((prev) => !prev)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${showOptionalFields
+                          ? 'bg-indigo-600 border-indigo-600 text-white'
+                          : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                          }`}
+                      >
+                        {showOptionalFields ? '선택항목 숨기기' : '선택항목 표기'}
+                      </button>
+                      {showOptionalFields && (
+                        <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-3 max-h-40 overflow-y-auto scrollbar-hide">
+                          {hasOptionalContent ? (
+                            <div className="space-y-2">
+                              {detailedFields.map((field) => (
+                                <div key={field.label}>
+                                  <p className="text-[11px] font-semibold text-gray-500">{field.label}</p>
+                                  <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">
+                                    {field.value}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">
+                              입력된 선택항목이 없습니다.
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleCopyPrompt(selectedPrompt)}
-                    className="inline-flex items-center justify-center gap-1 min-w-[90px] px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap"
-                  >
-                    {copiedId === selectedPrompt.id ? (
-                      <>
-                        <Check size={14} className="text-green-600" />
-                        복사됨
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={14} />
-                        전체 복사
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={closePromptModal}
-                    className="inline-flex items-center justify-center gap-1 min-w-[90px] px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap"
-                  >
-                    <X size={14} />
-                    닫기
-                  </button>
-                </div>
-              </div>
-
-              {promptPurpose && (
-                <div className="mt-2">
-                  <p className="text-xs text-gray-600">
-                    목적: {promptPurpose}
-                  </p>
-                </div>
-              )}
-
-              <div className="mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowOptionalFields((prev) => !prev)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${
-                    showOptionalFields
-                      ? 'bg-indigo-600 border-indigo-600 text-white'
-                      : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
-                  }`}
-                >
-                  {showOptionalFields ? '선택항목 숨기기' : '선택항목 표기'}
-                </button>
-                {showOptionalFields && (
-                  <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-3 max-h-40 overflow-y-auto scrollbar-hide">
-                    {hasOptionalContent ? (
-                      <div className="space-y-2">
-                        {detailedFields.map((field) => (
-                          <div key={field.label}>
-                            <p className="text-[11px] font-semibold text-gray-500">{field.label}</p>
-                            <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">
-                              {field.value}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-500">
-                        입력된 선택항목이 없습니다.
-                      </p>
-                    )}
                   </div>
-                )}
-              </div>
-            </div>
 
-            <div className="mt-4 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
-              <p className="text-sm text-gray-800 whitespace-pre-wrap break-words leading-relaxed">
-                {String(selectedPrompt.prompt || '').trim() || '프롬프트 내용이 없습니다.'}
-              </p>
-            </div>
+                  <div className="mt-4 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap break-words leading-relaxed">
+                      {String(selectedPrompt.prompt || '').trim() || '프롬프트 내용이 없습니다.'}
+                    </p>
+                  </div>
                 </>
               );
             })()}
@@ -778,12 +776,12 @@ const SavedPromptsSection = ({ email = '' }) => {
               <div>
                 <h3 className="text-lg font-bold text-gray-900">프롬프트 삭제</h3>
                 <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">
-                  이 프롬프트를 정말 삭제하시겠습니까?<br/>
+                  이 프롬프트를 정말 삭제하시겠습니까?<br />
                   삭제한 데이터는 다시 복구할 수 없습니다.
                 </p>
               </div>
             </div>
-            
+
             <div className="flex gap-2 justify-end mt-6">
               <button
                 type="button"

@@ -68,7 +68,7 @@ const CreationPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.localStorage.getItem('token')}` 
+          'Authorization': `Bearer ${window.localStorage.getItem('token')}`
         },
         body: JSON.stringify(inputData),
       });
@@ -80,7 +80,7 @@ const CreationPage = () => {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      
+
       let isFinished = false;
       while (!isFinished) {
         const { value, done: doneReading } = await reader.read();
@@ -92,7 +92,7 @@ const CreationPage = () => {
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
           const dataStr = line.replace('data: ', '').trim();
-          
+
           if (dataStr === '[DONE]') {
             isFinished = true;
             break;
@@ -127,6 +127,12 @@ const CreationPage = () => {
     const currentUser = getStoredUser();
     const userEmail = String(currentUser?.email || '').trim();
 
+    // 사용자 입력 키워드를 프롬프트 앞에 마커로 심기
+    const keywordMarker = lastPayload?.keyword
+      ? `[키워드:${lastPayload.keyword}]\n\n`
+      : '';
+    const promptWithMarker = keywordMarker + normalizedPrompt;
+
     if (!normalizedPrompt) {
       showToast('저장할 프롬프트가 없습니다.', { type: 'warning' });
       return false;
@@ -137,7 +143,7 @@ const CreationPage = () => {
     }
 
     try {
-      const fullUrl = toApiUrl('/save'); 
+      const fullUrl = toApiUrl('/save');
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
@@ -147,7 +153,7 @@ const CreationPage = () => {
         body: JSON.stringify({
           email: userEmail,
           type: lastPayload?.type || '기본',
-          content: normalizedPrompt,
+          content: promptWithMarker,
           keyword: lastPayload?.keyword || '',
         }),
       });
@@ -178,7 +184,7 @@ const CreationPage = () => {
     <div className="w-full">
       {/* ✅ 타이틀 아래와 패널 사이의 여백(space-y)을 대폭 줄였습니다. */}
       <div className="page creation-page space-y-2.5 sm:space-y-3 px-4 pt-2 pb-3 sm:px-5 sm:pt-3 sm:pb-4 2xl:px-5 2xl:pt-3 2xl:pb-4">
-        
+
         {/* ✅ 구분선(border-b)을 삭제하고 아래쪽 여백(pb)을 최소화했습니다. */}
         <div className="creation-heading flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 pb-0">
           <div>
@@ -201,7 +207,7 @@ const CreationPage = () => {
               initialKeyword={initialKeyword}
             />
           </ErrorBoundary>
-          
+
           <ErrorBoundary
             variant="section"
             resetKey={resultRevision}
