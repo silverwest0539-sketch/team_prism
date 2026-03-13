@@ -252,8 +252,8 @@ const CreationPage = () => {
       </div>
 
       {!isLoggedIn ? (
-        <div className="absolute inset-x-0 top-[24vh] sm:top-[28vh] z-50 flex justify-center px-4">
-          <div className="p-8 sm:p-10 rounded-3xl border border-gray-200 bg-white shadow-2xl text-center max-w-md w-full">
+        <div className="creation-login-overlay absolute inset-x-0 z-50 flex justify-center px-4">
+          <div className="creation-login-card rounded-3xl border border-gray-200 bg-white shadow-2xl text-center max-w-md w-full">
             <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-5">
               <LockKey size={32} weight="fill" />
             </div>

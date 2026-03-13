@@ -1,26 +1,46 @@
 /* src/styles/utilities.css */
 
 @layer utilities {
-  
-  /* ===== CreationPage 레이아웃 ===== */
+
+  /* CreationPage layout */
   .creation-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 1rem;
-    align-items: stretch; /* ✅ start → stretch */
+    gap: clamp(0.875rem, 0.75rem + 0.6vw, 1rem);
+    align-items: stretch;
   }
 
-  /* 태블릿 이상에서 간격 확장 */
+  .creation-page {
+    padding-top: clamp(0.5rem, 0.4rem + 0.7vh, 0.9rem) !important;
+    padding-bottom: clamp(0.75rem, 0.55rem + 0.9vh, 1.1rem) !important;
+  }
+
+  .creation-heading {
+    gap: clamp(0.375rem, 0.3rem + 0.4vh, 0.625rem);
+  }
+
+  .creation-login-overlay {
+    top: clamp(7rem, 22vh, 11rem);
+  }
+
+  .creation-login-card {
+    padding: clamp(1.5rem, 1.2rem + 1vw, 2.25rem);
+  }
+
+  .creation-result-panel {
+    min-height: clamp(240px, 28vh, 280px) !important;
+  }
+
   @media (min-width: 1024px) {
     .creation-grid {
-      gap: 1.5rem;
+      gap: clamp(1rem, 0.8rem + 1vw, 1.5rem);
     }
   }
 
   @media (min-width: 1280px) {
     .creation-grid {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      align-items: stretch; /* ✅ 1280px 이상에서도 명시 */
+      align-items: stretch;
     }
   }
 
@@ -88,10 +108,9 @@
     .creation-target-textarea-primary {
       margin-bottom: 0.375rem;
     }
-
   }
 
-  /* ===== AnalysisPage: blur 효과 ===== */
+  /* AnalysisPage blur */
   .blur-disabled {
     @apply blur-md opacity-50 pointer-events-none select-none grayscale-[0.3];
   }
@@ -100,27 +119,26 @@
     @apply blur-0 opacity-100 pointer-events-auto select-auto grayscale-0;
   }
 
-  /* ===== Overlay 중앙 정렬 ===== */
+  /* Overlay centering */
   .overlay-center {
     @apply absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none;
   }
 
-  /* ===== 가로 스크롤 ===== */
+  /* Horizontal scroll */
   .scroll-x {
     @apply overflow-x-auto pb-2;
   }
 
-  /* 스크롤바 숨기기 */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
 
-  /* ===== 텍스트 자르기 (line-clamp) ===== */
+  /* Line clamp */
   .line-clamp-1 {
     display: -webkit-box;
     -webkit-line-clamp: 1;
