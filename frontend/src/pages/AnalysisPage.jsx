@@ -122,10 +122,15 @@ const AnalysisPage = () => {
     });
   }, []);
 
-  // 페이지네이션
+  // 메인 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
   const commentsTopRef = useRef(null);
+
+  // 여론 분석 모달 전용 페이지네이션 상태 (새로 추가됨)
+  const [modalCurrentPage, setModalCurrentPage] = useState(1);
+  const MODAL_ITEMS_PER_PAGE = 7;
+  const modalCommentsTopRef = useRef(null);
 
   // 인물 판별 로직
   const isPersonKeyword = data?.is_person === 1;
@@ -156,7 +161,7 @@ const AnalysisPage = () => {
       if (analysisData.found) {
         setData(analysisData);
         
-        // [수정됨] 처음 서버에서 받아온 실제 댓글 개수 확인
+        // 처음 서버에서 받아온 실제 댓글 개수 확인
         const initialCommentCount = analysisData.comments?.length || 0;
         
         // offset을 실제 받아온 개수로 정확하게 세팅
@@ -229,6 +234,7 @@ const AnalysisPage = () => {
     setAppliedStartDate(yesterdayDate);
     setAppliedEndDate(todayDate);
     setCurrentPage(1);
+    setModalCurrentPage(1); // 검색 시 모달 페이지도 초기화
     
     const savedUser = getStoredUser();
     if (savedUser?.email) {
@@ -300,6 +306,7 @@ const AnalysisPage = () => {
     setAppliedEndDate(inputEndDate);
     fetchData(inputStartDate, inputEndDate);
     setCurrentPage(1);
+    setModalCurrentPage(1);
   };
 
   const handleDateReset = () => {
@@ -313,6 +320,7 @@ const AnalysisPage = () => {
     setAppliedStartDate(yesterdayDate);
     setAppliedEndDate(todayDate);
     setCurrentPage(1);
+    setModalCurrentPage(1);
     
     fetchData(yesterdayDate, todayDate);
     fetchAiSummary(keyword, yesterdayDate, todayDate);
@@ -547,6 +555,7 @@ const AnalysisPage = () => {
     if (targetSentiment) {
       setSentimentModalConfig({ isOpen: true, sentiment: targetSentiment });
       setIsNegativeRevealed(false); 
+      setModalCurrentPage(1); // 모달 오픈 시 1페이지로 셋팅
     }
   };
 
@@ -560,16 +569,15 @@ const AnalysisPage = () => {
   const totalPages = Math.max(1, Math.ceil(loadedItemsCount / ITEMS_PER_PAGE));
 
   // 화면 우측 상단에 보여줄 '진짜 전체 댓글 개수'
-  // 백엔드에서 넘겨주는 키값(예: total_comments)을 사용합니다. 
-  // 만약 백엔드에서 아직 안 넘겨준다면 일단 불러온 개수라도 보여주도록 fallback 처리합니다.
   const displayTotalCount = data?.totalCommentCount || data?.total_comments || data?.totalCount || loadedItemsCount;
 
   // 플랫폼 필터 변경 시 첫 페이지로 이동
   useEffect(() => {
     setCurrentPage(1);
+    setModalCurrentPage(1);
   }, [selectedPlatform]);
 
-  // 페이지 바운더리 체크 (강제 축소된 경우 예외처리)
+  // 페이지 바운더리 체크 (메인 리스트)
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages && !hasMoreComments && !isLoadingMore) {
       setCurrentPage(totalPages);
@@ -609,7 +617,7 @@ const AnalysisPage = () => {
   const todayScore = Math.round(todayData?.score || 0);
 
   // ==========================================
-  // [수정된] 10단위 그룹 페이지네이션 & 페칭 연동 로직
+  // [메인 리스트] 10단위 그룹 페이지네이션 & 페칭 연동 로직
   // ==========================================
   const PAGE_GROUP_SIZE = 10;
   const currentGroup = Math.floor((currentPage - 1) / PAGE_GROUP_SIZE);
@@ -622,20 +630,11 @@ const AnalysisPage = () => {
   );
 
   const hasPrevGroup = startPage > 1;
-  // 서버에 데이터가 더 있거나, 이미 로드된 총 페이지가 현재 그룹을 넘어선 경우 '다음 10페이지 보기' 노출
   const hasNextGroup = endPage < totalPages || hasMoreComments;
 
-  // << 동작
-  const handlePrevGroupClick = () => {
-    goToPage(Math.max(1, startPage - PAGE_GROUP_SIZE));
-  };
+  const handlePrevGroupClick = () => goToPage(Math.max(1, startPage - PAGE_GROUP_SIZE));
+  const handlePrevClick = () => goToPage(Math.max(1, currentPage - 1));
 
-  // < 동작
-  const handlePrevClick = () => {
-    goToPage(Math.max(1, currentPage - 1));
-  };
-
-  // > 동작
   const handleNextClick = async () => {
     if (currentPage < totalPages) {
       goToPage(currentPage + 1);
@@ -648,7 +647,6 @@ const AnalysisPage = () => {
     }
   };
 
-  // 다음 10페이지 보기 동작
   const handleNextGroupTextClick = async () => {
     const targetPage = startPage + PAGE_GROUP_SIZE;
     if (targetPage <= totalPages) {
@@ -661,7 +659,79 @@ const AnalysisPage = () => {
       }
     }
   };
+
   // ==========================================
+  // [모달 리스트] 10단위 그룹 페이지네이션 & 페칭 연동 로직
+  // ==========================================
+  const modalLoadedItemsCount = sentimentModalComments.length;
+  const modalTotalPages = Math.max(1, Math.ceil(modalLoadedItemsCount / MODAL_ITEMS_PER_PAGE));
+
+  // 페이지 바운더리 체크 (모달 리스트)
+  useEffect(() => {
+    if (modalTotalPages > 0 && modalCurrentPage > modalTotalPages && !hasMoreComments && !isLoadingMore) {
+      setModalCurrentPage(modalTotalPages);
+    }
+  }, [modalTotalPages, modalCurrentPage, hasMoreComments, isLoadingMore]);
+
+  const currentModalComments = useMemo(() => {
+    const startIndex = (modalCurrentPage - 1) * MODAL_ITEMS_PER_PAGE;
+    const endIndex = startIndex + MODAL_ITEMS_PER_PAGE;
+    return sentimentModalComments.slice(startIndex, endIndex);
+  }, [sentimentModalComments, modalCurrentPage]);
+
+  const scrollToModalTop = () => {
+    requestAnimationFrame(() => {
+      modalCommentsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const goToModalPage = (p) => {
+    setModalCurrentPage(p);
+    scrollToModalTop();
+  };
+
+  const MODAL_PAGE_GROUP_SIZE = 10;
+  const modalCurrentGroup = Math.floor((modalCurrentPage - 1) / MODAL_PAGE_GROUP_SIZE);
+  const modalStartPage = modalCurrentGroup * MODAL_PAGE_GROUP_SIZE + 1;
+  const modalEndPage = Math.min(modalStartPage + MODAL_PAGE_GROUP_SIZE - 1, modalTotalPages);
+
+  const modalVisiblePages = Array.from(
+    { length: modalEndPage - modalStartPage + 1 },
+    (_, i) => modalStartPage + i
+  );
+
+  const modalHasPrevGroup = modalStartPage > 1;
+  const modalHasNextGroup = modalEndPage < modalTotalPages || hasMoreComments;
+
+  const handleModalPrevGroupClick = () => goToModalPage(Math.max(1, modalStartPage - MODAL_PAGE_GROUP_SIZE));
+  const handleModalPrevClick = () => goToModalPage(Math.max(1, modalCurrentPage - 1));
+
+  const handleModalNextClick = async () => {
+    if (modalCurrentPage < modalTotalPages) {
+      goToModalPage(modalCurrentPage + 1);
+    } else if (hasMoreComments) {
+      const fetched = await fetchMoreComments();
+      if (fetched) {
+        setModalCurrentPage((prev) => prev + 1);
+        scrollToModalTop();
+      }
+    }
+  };
+
+  const handleModalNextGroupTextClick = async () => {
+    const targetPage = modalStartPage + MODAL_PAGE_GROUP_SIZE;
+    if (targetPage <= modalTotalPages) {
+      goToModalPage(targetPage);
+    } else if (hasMoreComments) {
+      const fetched = await fetchMoreComments();
+      if (fetched) {
+        setModalCurrentPage(targetPage);
+        scrollToModalTop();
+      }
+    }
+  };
+  // ==========================================
+
 
   // ---------------- Render ----------------
   return (
@@ -1010,7 +1080,7 @@ const AnalysisPage = () => {
                 )}
               </div>
 
-              {/* 완성된 페이지네이션 및 페칭 연동 영역 */}
+              {/* 메인 리스트 페이지네이션 */}
               {(totalPages > 1 || hasMoreComments) && (
                 <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
                   
@@ -1051,7 +1121,7 @@ const AnalysisPage = () => {
                     })}
                   </div>
 
-                  {/* > 다음 1페이지 (데이터가 모자라면 fetchMoreComments 자동 호출) */}
+                  {/* > 다음 1페이지 */}
                   <button
                     onClick={handleNextClick}
                     disabled={currentPage === totalPages && !hasMoreComments}
@@ -1065,7 +1135,6 @@ const AnalysisPage = () => {
                     )}
                   </button>
 
-                  {/* 다음 10페이지 보기 텍스트 버튼 (마지막 그룹이 아니거나 데이터가 더 있을 때 노출) */}
                   {/* >> 다음 10페이지 (다음 그룹) 버튼 */}
                   {hasNextGroup && (
                     <button
@@ -1338,7 +1407,7 @@ const AnalysisPage = () => {
                   <span className="text-gray-800">댓글 반응</span>
                 </h3>
                 <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 hidden sm:inline-block">
-                  AI의 분석 분류로 정확하지 않을 수 있습니다
+                  총 {sentimentModalComments.length}건
                 </span>
               </div>
               
@@ -1366,7 +1435,8 @@ const AnalysisPage = () => {
             </div>
 
             <div className="flex-1 p-5 overflow-y-auto bg-gray-50/50 relative">
-              
+              <div ref={modalCommentsTopRef} /> {/* 모달 스크롤 탑 위치 */}
+
               {sentimentModalConfig.sentiment === 'negative' && isPersonKeyword ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center h-full">
                   <LockKey size={48} className="mb-4 text-gray-300" weight="fill" />
@@ -1376,7 +1446,7 @@ const AnalysisPage = () => {
                   </p>
                 </div>
               ) : (
-                <div className="relative h-full">
+                <div className="relative h-full flex flex-col">
                   
                   {sentimentModalConfig.sentiment === 'negative' && !isPersonKeyword && !isNegativeRevealed && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pt-10">
@@ -1386,20 +1456,30 @@ const AnalysisPage = () => {
                     </div>
                   )}
 
-                  <div className={`space-y-4 transition-all duration-300 ${
+                  <div className={`space-y-4 transition-all duration-300 flex-1 ${
                     sentimentModalConfig.sentiment === 'negative' && !isNegativeRevealed 
                       ? 'pointer-events-none select-none opacity-40 blur-[3px]' 
                       : ''
                   }`}>
-                    {sentimentModalComments.length > 0 ? (
-                      sentimentModalComments.map((comment, idx) => (
-                        <CommentItem 
-                          key={idx} 
-                          comment={comment} 
-                          globalIndex={idx + 1}
-                          keyword={keyword} 
-                        />
-                      ))
+                    {currentModalComments.length > 0 ? (
+                      currentModalComments.map((comment, idx) => {
+                        const globalIndex = (modalCurrentPage - 1) * MODAL_ITEMS_PER_PAGE + idx + 1;
+                        const uniqueId = comment.id || `modal-comment-${globalIndex}`;
+                        const isRevealed = revealedCommentIds.has(uniqueId);
+
+                        return (
+                          <CommentItem 
+                            key={idx} 
+                            comment={comment} 
+                            globalIndex={globalIndex}
+                            keyword={keyword} 
+                            isIndividualFilter={true} 
+                            isPersonKeyword={isPersonKeyword}
+                            isRevealed={isRevealed}
+                            onReveal={() => handleRevealComment(uniqueId)}
+                          />
+                        );
+                      })
                     ) : (
                       <div className="text-center py-12 text-gray-400 flex flex-col items-center">
                         <BookmarkSimple size={32} className="mb-3 text-gray-300" />
@@ -1407,6 +1487,75 @@ const AnalysisPage = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* 모달 전용 페이지네이션 컴포넌트 */}
+                  {(modalTotalPages > 1 || hasMoreComments) && (
+                    <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-200 pb-2">
+                      
+                      {/* << 이전 10페이지 */}
+                      <button
+                        onClick={handleModalPrevGroupClick}
+                        disabled={!modalHasPrevGroup}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                      >
+                        <CaretDoubleLeft size={16} weight="bold" />
+                      </button>
+
+                      {/* < 이전 1페이지 */}
+                      <button
+                        onClick={handleModalPrevClick}
+                        disabled={modalCurrentPage === 1}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                      >
+                        <CaretLeft size={16} weight="bold" />
+                      </button>
+
+                      <div className="flex items-center gap-1.5 mx-1 sm:mx-2">
+                        {modalVisiblePages.map((pageNum) => {
+                          const isActive = pageNum === modalCurrentPage;
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => goToModalPage(pageNum)}
+                              className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-medium transition-all
+                                ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-indigo-600'}`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* > 다음 1페이지 */}
+                      <button
+                        onClick={handleModalNextClick}
+                        disabled={modalCurrentPage === modalTotalPages && !hasMoreComments}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                      >
+                        {isLoadingMore && modalCurrentPage === modalTotalPages ? (
+                          <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                        ) : (
+                          <CaretRight size={16} weight="bold" />
+                        )}
+                      </button>
+
+                      {/* >> 다음 10페이지 */}
+                      {modalHasNextGroup && (
+                        <button
+                          onClick={handleModalNextGroupTextClick}
+                          disabled={isLoadingMore}
+                          className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                        >
+                          {isLoadingMore ? (
+                            <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                          ) : (
+                            <CaretDoubleRight size={16} weight="bold" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                 </div>
               )}
             </div>
@@ -1474,4 +1623,4 @@ const AnalysisPage = () => {
   );
 };
 
-export default AnalysisPage;               
+export default AnalysisPage;                    
