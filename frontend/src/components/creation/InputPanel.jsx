@@ -22,15 +22,18 @@ const InputPanel = ({
     keyword,
     selectedType,
     industry,
+    userType,
     purpose,
     target,
     essentialDetails,
     otherRequests,
     contentTypes,
     industries,
+    userTypes,
     setKeyword,
     setSelectedType,
     setIndustry,
+    setUserType,
     setPurpose,
     setTarget,
     setEssentialDetails,
@@ -65,36 +68,42 @@ const InputPanel = ({
     <div className="creation-input-panel bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col">
       {/* ✅ 각 섹션 간의 여백(gap)을 줄여서 전체적으로 위로 끌어올렸습니다. */}
       <div className="creation-input-stack flex flex-col gap-2.5 flex-1">
-        <div className="creation-input-keyword order-1">
-          <CreationKeywordSection
-            keyword={keyword}
-            onKeywordChange={(value) => {
-              setKeyword(value);
-              if (keywordError) setKeywordError('');
-            }}
-            helperMessage={keywordError}
-            isHelperError={Boolean(keywordError)}
-          />
-        </div>
+        <div className="creation-input-main">
+          <div className="creation-input-keyword order-1">
+            <CreationKeywordSection
+              keyword={keyword}
+              onKeywordChange={(value) => {
+                setKeyword(value);
+                if (keywordError) setKeywordError('');
+              }}
+              helperMessage={keywordError}
+              isHelperError={Boolean(keywordError)}
+            />
+          </div>
 
-        <div className="creation-input-profile order-2">
-          <CreationProfileSection
-            contentTypes={contentTypes}
-            selectedType={selectedType}
-            onSelectType={setSelectedType}
-            industries={industries}
-            industry={industry}
-            onChangeIndustry={setIndustry}
-            purpose={purpose}
-            onChangePurpose={(value) => {
-              setPurpose(value);
-              if (purposeError && value.trim()) setPurposeError('');
-            }}
-            purposeError={purposeError}
-          />
+          <div className="creation-input-profile order-2">
+            <CreationProfileSection
+              contentTypes={contentTypes}
+              selectedType={selectedType}
+              onSelectType={setSelectedType}
+              industries={industries}
+              industry={industry}
+              onChangeIndustry={setIndustry}
+              userTypes={userTypes}
+              userType={userType}
+              onChangeUserType={setUserType}
+              purpose={purpose}
+              onChangePurpose={(value) => {
+                setPurpose(value);
+                if (purposeError && value.trim()) setPurposeError('');
+              }}
+              purposeError={purposeError}
+            />
+          </div>
         </div>
 
         {/* ✅ 불필요한 하단 마진(mb) 제거하여 선택 항목을 밀착시켰습니다. */}
+        <div className="creation-input-middle-spacer" aria-hidden="true" />
         <div className="creation-input-target order-3">
           <CreationTargetSection
             target={target}
@@ -105,6 +114,7 @@ const InputPanel = ({
             onChangeOtherRequests={setOtherRequests}
           />
         </div>
+        <div className="creation-input-bottom-spacer" aria-hidden="true" />
       </div>
 
       <button

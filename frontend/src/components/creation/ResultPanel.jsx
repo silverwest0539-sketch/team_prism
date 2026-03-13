@@ -62,7 +62,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
   } else if (!v1Content) {
     bodyContent = (
       // ✅ 문구를 화면 정중앙에 배치 (flex-col, items-center, justify-center, h-full 적용)
-      <div className="flex flex-col items-center justify-center h-full border border-gray-200 bg-gray-50 rounded-xl p-4 sm:p-5 text-center space-y-1.5 -translate-y-4">
+      <div className="creation-result-empty flex flex-col items-center justify-center h-full border border-gray-200 bg-gray-50 rounded-xl p-4 sm:p-5 text-center space-y-1.5 -translate-y-4">
         <p className="font-semibold text-gray-700 text-base sm:text-lg">생성된 프롬프트가 아직 없습니다.</p>
         <p className="text-gray-500 text-sm sm:text-base">왼쪽 정보를 입력하고 생성 버튼을 눌러 프롬프트를 만들어 보세요.</p>
       </div>
@@ -94,7 +94,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
     <div className="creation-result-panel bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col h-full min-h-[280px]">
 
       {/* 헤더 */}
-      <div className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-100">
+      <div className="creation-result-header flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <span className="text-base sm:text-lg font-bold text-gray-800">AI 생성 프롬프트</span>
           {v1Content && <span className="w-2.5 h-2.5 rounded-full bg-green-500" />}
@@ -146,7 +146,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
       {/* 본문 컨텐츠 영역 */}
       <div className="relative flex-1 min-h-0 flex flex-col">
         {/* h-full을 주어 내부 bodyContent가 꽉 차도록 설정 */}
-        <div className="absolute inset-0 p-3 h-full">
+        <div className="creation-result-body absolute inset-0 p-3 h-full">
           {bodyContent}
         </div>
 

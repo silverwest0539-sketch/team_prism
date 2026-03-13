@@ -5,11 +5,13 @@ const INDUSTRIES = ['크리에이터', '마케터'];
 
 export const useCreationForm = ({ initialKeyword = '' }) => {
   const normalizedInitialKeyword = useMemo(() => initialKeyword.trim(), [initialKeyword]);
+  const USER_TYPES = ['개인', '기업'];
 
   // UI 폼 상태 관리
   const [keyword, setKeyword] = useState(normalizedInitialKeyword);
   const [selectedType, setSelectedType] = useState(CONTENT_TYPES[0]);
   const [industry, setIndustry] = useState(INDUSTRIES[0]);
+  const [userType, setUserType] = useState(USER_TYPES[0]);
   const [purpose, setPurpose] = useState('');
   const [target, setTarget] = useState('');
   const [essentialDetails, setEssentialDetails] = useState('');
@@ -24,7 +26,8 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
   const buildSubmitPayload = () => {
     // 백엔드에서 'essentialDetails'를 따로 받지 않으므로, 
     // 데이터 유실을 막기 위해 '기타 요구사항'과 합쳐서 넘깁니다.
-    const mergedRequests = [essentialDetails, otherRequests]
+    const userTypeRequest = userType ? `이용 주체: ${userType}` : '';
+    const mergedRequests = [userTypeRequest, essentialDetails, otherRequests]
       .filter((text) => text && text.trim() !== '')
       .join(' / ');
 
@@ -40,12 +43,13 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
 
   return {
     // States
-    keyword, selectedType, industry, purpose, target, essentialDetails, otherRequests,
+    keyword, selectedType, industry, userType, purpose, target, essentialDetails, otherRequests,
     contentTypes: CONTENT_TYPES,
     industries: INDUSTRIES,
+    userTypes: USER_TYPES,
     
     // Setters
-    setKeyword, setSelectedType, setIndustry, setPurpose, setTarget, setEssentialDetails, setOtherRequests,
+    setKeyword, setSelectedType, setIndustry, setUserType, setPurpose, setTarget, setEssentialDetails, setOtherRequests,
     
     // Methods
     buildSubmitPayload,

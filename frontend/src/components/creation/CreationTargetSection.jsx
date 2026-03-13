@@ -9,28 +9,28 @@ const CreationTargetSection = ({
   onChangeOtherRequests,
 }) => {
   return (
-    <div className="creation-target-section bg-gray-50 p-2 2xl:p-1.5 rounded-xl border border-gray-100 mb-1 sm:mb-1.5 2xl:mb-1">
-      <div className="creation-target-header mb-1 2xl:mb-0.5 border-b border-gray-200 pb-0.5 2xl:pb-0.5">
+    <div className="creation-target-section bg-gray-50 rounded-xl border border-gray-100 mb-1 sm:mb-1.5 2xl:mb-1">
+      <div className="creation-target-header border-b border-gray-200">
         <span className="inline-flex items-center text-base font-bold text-gray-700">
           선택 항목
         </span>
       </div>
-      <label className="block text-sm font-bold text-gray-800 mb-1 2xl:mb-0.5">
+      <label className="block text-sm font-bold text-gray-800">
         상세 타겟 설정
       </label>
       <input
         type="text"
-        className="creation-target-input w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-1.5 2xl:mb-1 text-sm"
+        className="creation-target-input w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
         value={target}
         onChange={(event) => onChangeTarget(event.target.value)}
         placeholder="예: 20~30대 직장인, 간편식/헬스 관심 사용자"
       />
 
-      <label className="block text-sm font-bold text-gray-800 mb-1 2xl:mb-0.5">
+      <label className="block text-sm font-bold text-gray-800">
         꼭 포함할 정보
       </label>
       <textarea
-        className="creation-target-textarea-primary w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-sm mb-1.5 2xl:mb-1"
+        className="creation-target-textarea-primary w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-sm"
         rows={1}
         value={essentialDetails}
         onChange={(event) => onChangeEssentialDetails(event.target.value)}
