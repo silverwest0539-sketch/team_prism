@@ -207,11 +207,11 @@ const CreationPage = () => {
   return (
     <div className="w-full relative">
       <div
-        className={`page creation-page space-y-2.5 sm:space-y-3 px-4 pt-2 pb-3 sm:px-5 sm:pt-3 sm:pb-4 2xl:px-5 2xl:pt-3 2xl:pb-4 transition-all duration-500 ease-in-out ${
+        className={`page creation-page space-y-2 sm:space-y-2.5 px-4 pt-1.5 pb-2.5 sm:px-5 sm:pt-2 sm:pb-3 2xl:px-5 2xl:pt-2 2xl:pb-3 transition-all duration-500 ease-in-out ${
           !isLoggedIn ? 'opacity-30 blur-[6px] pointer-events-none select-none' : ''
         }`}
       >
-        <div className="creation-heading flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 pb-0">
+        <div className="creation-heading flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1.5 pb-0">
           <div>
             <h1 className="creation-page-title text-2xl sm:text-3xl 2xl:text-2xl font-bold text-gray-900">
               {PAGE_TITLE}
@@ -219,7 +219,7 @@ const CreationPage = () => {
           </div>
         </div>
 
-        <div className="creation-grid gap-4 sm:gap-6 2xl:gap-5 items-stretch">
+        <div className="creation-grid gap-3 sm:gap-4 2xl:gap-4 items-stretch">
           <ErrorBoundary
             variant="section"
             resetKey={initialKeyword}
