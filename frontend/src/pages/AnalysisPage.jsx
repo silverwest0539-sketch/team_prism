@@ -572,6 +572,16 @@ const AnalysisPage = () => {
     return (filteredData?.comments || []).filter(c => c.sentiment === sentimentModalConfig.sentiment);
   }, [filteredData, sentimentModalConfig]);
 
+    // 도넛 차트의 스케일링된 숫자와 모달 상단 숫자를 완벽하게 동기화
+  const displayModalTotalCount = useMemo(() => {
+    if (!sentimentModalConfig.sentiment) return 0;
+    const labelMap = { positive: '긍정', negative: '부정', neutral: '중립' };
+    const targetLabel = labelMap[sentimentModalConfig.sentiment];
+    const matchedData = sentimentChartData.find(d => d.name === targetLabel);
+    
+    return matchedData ? matchedData.value : sentimentModalComments.length;
+  }, [sentimentModalConfig.sentiment, sentimentChartData, sentimentModalComments.length]);
+
   const handleSentimentClick = (data) => {
     const clickedName = data?.name || data?.value || data?.payload?.name;
     let targetSentiment = null;
@@ -1435,8 +1445,10 @@ const AnalysisPage = () => {
                   {sentimentModalConfig.sentiment === 'neutral' && <span className="text-gray-500">중립</span>}
                   <span className="text-gray-800">댓글 반응</span>
                 </h3>
+                {/* ❌ 기존 코드: 총 {sentimentModalComments.length}건 */}
+                {/* ✅ 수정된 코드: 총 {displayModalTotalCount}건 */}
                 <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 hidden sm:inline-block">
-                  총 {sentimentModalComments.length}건
+                  총 {displayModalTotalCount}건
                 </span>
               </div>
               
