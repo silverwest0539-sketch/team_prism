@@ -59,11 +59,11 @@ exports.getAutocomplete = async (req, res) => {
 
 exports.getMoreComments = async (req, res) => {
   try {
-    const { keyword, startDate, endDate, offset } = req.query;
+    const { keyword, startDate, endDate, offset, sentiment, platform } = req.query;
     if (!keyword) return res.status(400).json({ error: 'Keyword required' });
 
-    const comments = await trendService.getMoreComments(keyword, startDate, endDate, offset);
-    res.json({ comments });
+    const comments = await trendService.getMoreComments(keyword, startDate, endDate, offset, sentiment, platform);
+    res.json({ comments });   
   } catch (error) {
     console.error("API Error (/analysis/comments):", error);
     res.status(500).json({ error: 'Server Error' });

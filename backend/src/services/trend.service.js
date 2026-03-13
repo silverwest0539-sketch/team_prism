@@ -214,7 +214,12 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
 
   // ── 3. 댓글 예시 ─────────────────────────────────────
   let countSql = `
-    SELECT COUNT(*) as total
+    SELECT 
+      u.platform,
+      COUNT(*) as total,
+      SUM(CASE WHEN u.sentiment_label = 'positive' THEN 1 ELSE 0 END) as positive_count,
+      SUM(CASE WHEN u.sentiment_label = 'negative' THEN 1 ELSE 0 END) as negative_count,
+      SUM(CASE WHEN u.sentiment_label = 'neutral' THEN 1 ELSE 0 END) as neutral_count
     FROM USAGE_EXAMPLE u
     JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
     WHERE ke.keyword_id = ?
@@ -231,7 +236,28 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
     countSql += ` AND u.collected_date <= ?`;
     countParams.push(endDate);
   }
-  const [[{ total: totalCommentCount }]] = await db.execute(countSql, countParams);
+  countSql += ` GROUP BY u.platform`;
+  const [countRows] = await db.execute(countSql, countParams);
+
+  let totalCommentCount = 0;
+  const sentimentCounts = {
+    all: { positive: 0, negative: 0, neutral: 0 }
+  };
+
+  countRows.forEach(row => {
+    totalCommentCount += row.total;
+    const pos = Number(row.positive_count) || 0;
+    const neg = Number(row.negative_count) || 0;
+    const neu = Number(row.neutral_count) || 0;
+
+    // 전체 합산
+    sentimentCounts.all.positive += pos;
+    sentimentCounts.all.negative += neg;
+    sentimentCounts.all.neutral += neu;
+
+    // 플랫폼별 합산
+    sentimentCounts[row.platform] = { positive: pos, negative: neg, neutral: neu };
+  });
 
   let commentsSql = `
       SELECT u.platform, u.url, u.content, u.collected_date, u.sentiment_label
@@ -352,6 +378,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
     negative_score: negativeScore,
     history,
     totalCommentCount,
+    sentimentCounts,
     comments: parsedComments,
     wordCloud: wordCloudData,
     videos: relatedVideos,
@@ -381,7 +408,7 @@ exports.getAutocomplete = async (prefix) => {
   return rows.map(row => row.keyword_name);
 };
 
-exports.getMoreComments = async (keyword, startDate, endDate, offset = 70) => {
+exports.getMoreComments = async (keyword, startDate, endDate, offset = 0, sentiment, platform) => {
   const [kwRows] = await db.execute(
     `SELECT keyword_id FROM TREND_KEYWORD WHERE keyword_name = ?`, [keyword]
   );
@@ -405,7 +432,16 @@ exports.getMoreComments = async (keyword, startDate, endDate, offset = 70) => {
     commentsParams.push(endDate);
   }
 
-  const safeOffset = parseInt(offset, 10) || 70;
+  if (sentiment) {
+    commentsSql += ` AND u.sentiment_label = ?`;
+    commentsParams.push(sentiment);
+  }
+  if (platform && platform !== 'all') {
+    commentsSql += ` AND u.platform = ?`;
+    commentsParams.push(platform);
+  }
+
+  const safeOffset = offset !== undefined && offset !== '' ? parseInt(offset, 10) : 70;
 
   commentsSql += ` ORDER BY u.collected_date DESC LIMIT 70 OFFSET ${safeOffset}`;
 

@@ -84,6 +84,11 @@ const AnalysisPage = () => {
   const [commentOffset, setCommentOffset] = useState(70);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreComments, setHasMoreComments] = useState(true);
+
+  const [modalCommentsData, setModalCommentsData] = useState([]);
+  const [modalCommentOffset, setModalCommentOffset] = useState(0);
+  const [isModalLoadingMore, setIsModalLoadingMore] = useState(false);
+  const [modalHasMoreComments, setModalHasMoreComments] = useState(true);
   
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -271,7 +276,8 @@ const AnalysisPage = () => {
           keyword,
           startDate: appliedStartDate,
           endDate: appliedEndDate,
-          offset: commentOffset
+          offset: commentOffset,
+          platform: selectedPlatform !== 'all' ? selectedPlatform : undefined
         }
       });
 
@@ -298,6 +304,63 @@ const AnalysisPage = () => {
       return false;
     } finally {
       setIsLoadingMore(false);
+    }
+  };
+
+  const fetchModalCommentsInitial = async (sentiment) => {
+    setIsModalLoadingMore(true);
+    try {
+      const res = await apiClient.get('/analysis/comments', {
+        params: {
+          keyword,
+          startDate: appliedStartDate,
+          endDate: appliedEndDate,
+          sentiment: sentiment,
+          platform: selectedPlatform !== 'all' ? selectedPlatform : undefined,
+          offset: 0
+        }
+      });
+      const newComments = res.data.comments || [];
+      setModalCommentsData(newComments);
+      setModalCommentOffset(newComments.length);
+      setModalHasMoreComments(newComments.length >= 70);
+    } catch (error) {
+      console.error('모달 댓글 로드 실패:', error);
+    } finally {
+      setIsModalLoadingMore(false);
+    }
+  };
+
+  const fetchMoreModalComments = async () => {
+    if (isModalLoadingMore || !modalHasMoreComments) return false;
+    setIsModalLoadingMore(true);
+    try {
+      const res = await apiClient.get('/analysis/comments', {
+        params: {
+          keyword,
+          startDate: appliedStartDate,
+          endDate: appliedEndDate,
+          sentiment: sentimentModalConfig.sentiment,
+          platform: selectedPlatform !== 'all' ? selectedPlatform : undefined,
+          offset: modalCommentOffset
+        }
+      });
+
+      const newComments = res.data.comments || [];
+      if (newComments.length > 0) {
+        setModalCommentsData(prev => [...prev, ...newComments]);
+        setModalCommentOffset(prev => prev + newComments.length);
+        if (newComments.length < 70) setModalHasMoreComments(false);
+        return true;
+      } else {
+        setModalHasMoreComments(false);
+        return false;
+      }
+    } catch (error) {
+      console.error('모달 댓글 추가 로드 실패:', error);
+      return false;
+    } finally {
+      setIsModalLoadingMore(false);
     }
   };
 
@@ -524,63 +587,36 @@ const AnalysisPage = () => {
   const showMoreChartBtn = (filteredData?.history?.length || 0) > 7;
 
   const sentimentChartData = useMemo(() => {
-    const comments = filteredData?.comments || [];
-    let pos = 0, neg = 0, neu = 0;
-
-    comments.forEach(c => {
-      if (c.sentiment === 'positive') pos++;
-      else if (c.sentiment === 'negative') neg++;
-      else neu++;
-    });
-
-    // --- [수정된 로직 추가] ---
-    // 현재 프론트엔드에 로드된 댓글 수
-    const loadedCount = pos + neg + neu;
-    
-    // 백엔드에서 넘겨준 진짜 총 댓글 수
-    const backendTotal = data?.totalCommentCount || data?.total_comments || data?.totalCount;
-    
-    // 플랫폼 필터가 'all(전체)'일 때만 백엔드 총합을 사용하고, 특정 커뮤니티면 현재 필터링된 개수를 사용
-    const totalCount = (selectedPlatform === 'all' && backendTotal) ? backendTotal : loadedCount;
-
-    // 데이터가 모두 불러와졌거나 없는 경우 원본 그대로 반환
-    if (loadedCount === 0 || loadedCount === totalCount) {
+    // 백엔드에서 집계해준 정확한 여론 통계 데이터를 최우선으로 사용
+    if (data?.sentimentCounts) {
+      const counts = selectedPlatform === 'all' 
+        ? data.sentimentCounts.all 
+        : (data.sentimentCounts[selectedPlatform] || { positive: 0, negative: 0, neutral: 0 });
+      
       return [
-        { name: '긍정', value: pos, color: '#3B82F6' },
-        { name: '부정', value: neg, color: '#EF4444' },
-        { name: '중립', value: neu, color: '#9CA3AF' },
+        { name: '긍정', value: counts.positive, color: '#3B82F6' },
+        { name: '부정', value: counts.negative, color: '#EF4444' },
+        { name: '중립', value: counts.neutral, color: '#9CA3AF' },
       ];
     }
 
-    // 일부 댓글만 로드된 경우, 비율을 계산해 전체 수량(totalCount)에 맞게 숫자 스케일링
-    const posScaled = Math.round((pos / loadedCount) * totalCount);
-    const negScaled = Math.round((neg / loadedCount) * totalCount);
-    
-    // 총합이 정확히 일치하도록 반올림 오차를 중립(neu)에 보정
-    let neuScaled = totalCount - posScaled - negScaled;
-    if (neuScaled < 0) neuScaled = 0;
-
+    // 통계 데이터가 없을 때의 기본값
     return [
-      { name: '긍정', value: posScaled, color: '#3B82F6' },
-      { name: '부정', value: negScaled, color: '#EF4444' },
-      { name: '중립', value: neuScaled, color: '#9CA3AF' },
+      { name: '긍정', value: 0, color: '#3B82F6' },
+      { name: '부정', value: 0, color: '#EF4444' },
+      { name: '중립', value: 0, color: '#9CA3AF' },
     ];
-  }, [filteredData, data, selectedPlatform]);
+  }, [data, selectedPlatform]);
 
-  const sentimentModalComments = useMemo(() => {
-    if (!sentimentModalConfig.isOpen || !sentimentModalConfig.sentiment) return [];
-    return (filteredData?.comments || []).filter(c => c.sentiment === sentimentModalConfig.sentiment);
-  }, [filteredData, sentimentModalConfig]);
-
-    // 도넛 차트의 스케일링된 숫자와 모달 상단 숫자를 완벽하게 동기화
+  // 2. 모달창 상단에 표시되는 총 개수도 정확하게 연동
   const displayModalTotalCount = useMemo(() => {
     if (!sentimentModalConfig.sentiment) return 0;
     const labelMap = { positive: '긍정', negative: '부정', neutral: '중립' };
     const targetLabel = labelMap[sentimentModalConfig.sentiment];
     const matchedData = sentimentChartData.find(d => d.name === targetLabel);
     
-    return matchedData ? matchedData.value : sentimentModalComments.length;
-  }, [sentimentModalConfig.sentiment, sentimentChartData, sentimentModalComments.length]);
+    return matchedData ? matchedData.value : 0; 
+  }, [sentimentModalConfig.sentiment, sentimentChartData]);
 
   const handleSentimentClick = (data) => {
     const clickedName = data?.name || data?.value || data?.payload?.name;
@@ -592,7 +628,13 @@ const AnalysisPage = () => {
     if (targetSentiment) {
       setSentimentModalConfig({ isOpen: true, sentiment: targetSentiment });
       setIsNegativeRevealed(false); 
-      setModalCurrentPage(1); // 모달 오픈 시 1페이지로 셋팅
+      setModalCurrentPage(1);
+      
+      // ✅ 모달 오픈 시 데이터 초기화 및 서버에서 첫 페이지 호출
+      setModalCommentsData([]);
+      setModalCommentOffset(0);
+      setModalHasMoreComments(true);
+      fetchModalCommentsInitial(targetSentiment);
     }
   };
 
@@ -606,14 +648,58 @@ const AnalysisPage = () => {
   const totalPages = Math.max(1, Math.ceil(loadedItemsCount / ITEMS_PER_PAGE));
 
   // 화면 우측 상단에 보여줄 '진짜 전체 댓글 개수' (도넛 차트와 완벽 동기화)
-  const displayTotalCount = (selectedPlatform === 'all' && (data?.totalCommentCount || data?.total_comments || data?.totalCount)) 
-    ? (data?.totalCommentCount || data?.total_comments || data?.totalCount) 
-    : loadedItemsCount;
+  const displayTotalCount = useMemo(() => {
+    // 1. '전체' 플랫폼일 경우 백엔드에서 받아온 전체 개수 사용
+    if (selectedPlatform === 'all') {
+      return data?.totalCommentCount || data?.total_comments || data?.totalCount || loadedItemsCount;
+    }
+    
+    // 2. 특정 플랫폼 선택 시, 백엔드 여론 통계(긍정+부정+중립)의 합산값을 전체 개수로 사용
+    if (data?.sentimentCounts && data.sentimentCounts[selectedPlatform]) {
+      const stats = data.sentimentCounts[selectedPlatform];
+      return stats.positive + stats.negative + stats.neutral;
+    }
+
+    // 3. Fallback (오류 시 기본값)
+    return loadedItemsCount;
+  }, [selectedPlatform, data, loadedItemsCount]);
 
   // 플랫폼 필터 변경 시 첫 페이지로 이동
   useEffect(() => {
     setCurrentPage(1);
     setModalCurrentPage(1);
+
+    // 데이터가 아예 없는 초기 로딩 시점은 제외 (fetchData가 알아서 가져옴)
+    if (!data || !keyword) return;
+
+    const fetchPlatformComments = async () => {
+      setIsLoadingMore(true);
+      try {
+        const res = await apiClient.get('/analysis/comments', {
+          params: {
+            keyword,
+            startDate: appliedStartDate,
+            endDate: appliedEndDate,
+            offset: 0, // 처음 1페이지부터 가져옴
+            platform: selectedPlatform !== 'all' ? selectedPlatform : undefined
+          }
+        });
+        const newComments = res.data.comments || [];
+        
+        // 메인 데이터의 comments 배열을 선택한 플랫폼의 새 댓글들로 덮어쓰기
+        setData(prev => prev ? { ...prev, comments: newComments } : prev);
+        
+        // 오프셋 및 무한스크롤 상태 초기화
+        setCommentOffset(newComments.length);
+        setHasMoreComments(newComments.length >= 70);
+      } catch (error) {
+        console.error('플랫폼 전용 댓글 로드 실패:', error);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    };
+
+    fetchPlatformComments();
   }, [selectedPlatform]);
 
   // 페이지 바운더리 체크 (메인 리스트)
@@ -641,10 +727,11 @@ const AnalysisPage = () => {
   };
 
   const availablePlatforms = useMemo(() => {
-    if (!data || !data.comments) return ['all']; 
-    const sources = data.comments.map(comment => comment.source);
-    const uniqueSources = [...new Set(sources)];
-    return ['all', ...uniqueSources]; 
+    // 서버에서 최초 조회 시 받아온 전체 여론 통계(sentimentCounts)의 키 값을 활용
+    if (!data || !data.sentimentCounts) return ['all']; 
+    
+    // sentimentCounts 객체에는 'all' 및 데이터가 존재하는 플랫폼 이름들이 키로 존재함
+    return Object.keys(data.sentimentCounts);
   }, [data]);
 
   const filteredPlatforms = PLATFORM_OPTIONS.filter(opt => 
@@ -702,7 +789,7 @@ const AnalysisPage = () => {
   // ==========================================
   // [모달 리스트] 10단위 그룹 페이지네이션 & 페칭 연동 로직
   // ==========================================
-  const modalLoadedItemsCount = sentimentModalComments.length;
+  const modalLoadedItemsCount = modalCommentsData.length;
   const modalTotalPages = Math.max(1, Math.ceil(modalLoadedItemsCount / MODAL_ITEMS_PER_PAGE));
 
   // 페이지 바운더리 체크 (모달 리스트)
@@ -715,8 +802,8 @@ const AnalysisPage = () => {
   const currentModalComments = useMemo(() => {
     const startIndex = (modalCurrentPage - 1) * MODAL_ITEMS_PER_PAGE;
     const endIndex = startIndex + MODAL_ITEMS_PER_PAGE;
-    return sentimentModalComments.slice(startIndex, endIndex);
-  }, [sentimentModalComments, modalCurrentPage]);
+    return modalCommentsData.slice(startIndex, endIndex);
+  }, [modalCommentsData, modalCurrentPage]);
 
   const scrollToModalTop = () => {
     requestAnimationFrame(() => {
@@ -740,7 +827,7 @@ const AnalysisPage = () => {
   );
 
   const modalHasPrevGroup = modalStartPage > 1;
-  const modalHasNextGroup = modalEndPage < modalTotalPages || hasMoreComments;
+  const modalHasNextGroup = modalEndPage < modalTotalPages || modalHasMoreComments;
 
   const handleModalPrevGroupClick = () => goToModalPage(Math.max(1, modalStartPage - MODAL_PAGE_GROUP_SIZE));
   const handleModalPrevClick = () => goToModalPage(Math.max(1, modalCurrentPage - 1));
@@ -748,8 +835,8 @@ const AnalysisPage = () => {
   const handleModalNextClick = async () => {
     if (modalCurrentPage < modalTotalPages) {
       goToModalPage(modalCurrentPage + 1);
-    } else if (hasMoreComments) {
-      const fetched = await fetchMoreComments();
+    } else if (modalHasMoreComments) {
+      const fetched = await fetchMoreModalComments();
       if (fetched) {
         setModalCurrentPage((prev) => prev + 1);
         scrollToModalTop();
@@ -761,8 +848,8 @@ const AnalysisPage = () => {
     const targetPage = modalStartPage + MODAL_PAGE_GROUP_SIZE;
     if (targetPage <= modalTotalPages) {
       goToModalPage(targetPage);
-    } else if (hasMoreComments) {
-      const fetched = await fetchMoreComments();
+    } else if (modalHasMoreComments) {
+      const fetched = await fetchMoreModalComments();
       if (fetched) {
         setModalCurrentPage(targetPage);
         scrollToModalTop();
@@ -1572,10 +1659,10 @@ const AnalysisPage = () => {
                       {/* > 다음 1페이지 */}
                       <button
                         onClick={handleModalNextClick}
-                        disabled={modalCurrentPage === modalTotalPages && !hasMoreComments}
+                        disabled={modalCurrentPage === modalTotalPages && !modalHasMoreComments} 
                         className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                       >
-                        {isLoadingMore && modalCurrentPage === modalTotalPages ? (
+                        {isModalLoadingMore && modalCurrentPage === modalTotalPages ? ( 
                           <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
                         ) : (
                           <CaretRight size={16} weight="bold" />
@@ -1586,10 +1673,10 @@ const AnalysisPage = () => {
                       {modalHasNextGroup && (
                         <button
                           onClick={handleModalNextGroupTextClick}
-                          disabled={isLoadingMore}
+                          disabled={isModalLoadingMore} 
                           className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                         >
-                          {isLoadingMore ? (
+                          {isModalLoadingMore ? ( 
                             <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
                           ) : (
                             <CaretDoubleRight size={16} weight="bold" />
