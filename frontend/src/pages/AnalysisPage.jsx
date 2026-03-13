@@ -562,7 +562,7 @@ const AnalysisPage = () => {
   // 화면 우측 상단에 보여줄 '진짜 전체 댓글 개수'
   // 백엔드에서 넘겨주는 키값(예: total_comments)을 사용합니다. 
   // 만약 백엔드에서 아직 안 넘겨준다면 일단 불러온 개수라도 보여주도록 fallback 처리합니다.
-  const displayTotalCount = data?.total_comments || data?.totalCount || loadedItemsCount;
+  const displayTotalCount = data?.totalCommentCount || data?.total_comments || data?.totalCount || loadedItemsCount;
 
   // 플랫폼 필터 변경 시 첫 페이지로 이동
   useEffect(() => {
