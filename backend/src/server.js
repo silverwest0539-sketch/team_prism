@@ -12,7 +12,7 @@ const app = express();
 const PORT = 5000;
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://prism-front.s3-website.ap-northeast-2.amazonaws.com'], 
+  origin: ['http://localhost:5173', 'http://prism-alg-1404906920.ap-northeast-2.elb.amazonaws.com'], 
   credentials: true,
 }));
 app.use(express.json());
