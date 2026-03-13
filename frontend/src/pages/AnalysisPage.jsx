@@ -1465,7 +1465,9 @@ const AnalysisPage = () => {
                       currentModalComments.map((comment, idx) => {
                         const globalIndex = (modalCurrentPage - 1) * MODAL_ITEMS_PER_PAGE + idx + 1;
                         const uniqueId = comment.id || `modal-comment-${globalIndex}`;
-                        const isRevealed = revealedCommentIds.has(uniqueId);
+                        
+                        // ✅ 수정됨: 상단 '전체 보기 동의(isNegativeRevealed)'를 눌렀다면 모두 true로 전달되도록 추가
+                        const isRevealed = isNegativeRevealed || revealedCommentIds.has(uniqueId);
 
                         return (
                           <CommentItem 
