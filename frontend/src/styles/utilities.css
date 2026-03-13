@@ -24,6 +24,73 @@
     }
   }
 
+  @media (min-width: 1280px) and (max-height: 1000px) {
+    .creation-page {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+
+    .creation-heading {
+      gap: 0.5rem;
+      padding-bottom: 0;
+    }
+
+    .creation-page-title {
+      font-size: 1.875rem;
+      line-height: 2.25rem;
+    }
+
+    .creation-input-panel {
+      padding: 0.75rem;
+    }
+
+    .creation-input-stack {
+      gap: 0.5rem;
+    }
+
+    .creation-keyword-section {
+      margin-bottom: 0.375rem;
+    }
+
+    .creation-keyword-label,
+    .creation-profile-label {
+      margin-bottom: 0.25rem;
+    }
+
+    .creation-keyword-section input,
+    .creation-profile-block button,
+    .creation-profile-block textarea,
+    .creation-target-section input,
+    .creation-target-section textarea {
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+
+    .creation-profile-block {
+      margin-bottom: 0.5rem;
+    }
+
+    .creation-target-section {
+      padding: 0.5rem;
+      margin-bottom: 0.375rem;
+    }
+
+    .creation-target-section label,
+    .creation-target-header {
+      margin-bottom: 0.25rem;
+    }
+
+    .creation-target-header {
+      padding-bottom: 0.25rem;
+    }
+
+    .creation-target-input,
+    .creation-target-textarea-primary {
+      margin-bottom: 0.375rem;
+    }
+
+  }
+
   /* ===== AnalysisPage: blur 효과 ===== */
   .blur-disabled {
     @apply blur-md opacity-50 pointer-events-none select-none grayscale-[0.3];

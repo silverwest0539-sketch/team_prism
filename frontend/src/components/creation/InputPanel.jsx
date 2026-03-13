@@ -62,10 +62,10 @@ const InputPanel = ({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5 flex flex-col h-full">
+    <div className="creation-input-panel bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col">
       {/* ✅ 각 섹션 간의 여백(gap)을 줄여서 전체적으로 위로 끌어올렸습니다. */}
-      <div className="flex flex-col gap-3 sm:gap-4 flex-1">
-        <div className="order-1">
+      <div className="creation-input-stack flex flex-col gap-2.5 flex-1">
+        <div className="creation-input-keyword order-1">
           <CreationKeywordSection
             keyword={keyword}
             onKeywordChange={(value) => {
@@ -77,7 +77,7 @@ const InputPanel = ({
           />
         </div>
 
-        <div className="order-2">
+        <div className="creation-input-profile order-2">
           <CreationProfileSection
             contentTypes={contentTypes}
             selectedType={selectedType}
@@ -95,7 +95,7 @@ const InputPanel = ({
         </div>
 
         {/* ✅ 불필요한 하단 마진(mb) 제거하여 선택 항목을 밀착시켰습니다. */}
-        <div className="order-3">
+        <div className="creation-input-target order-3">
           <CreationTargetSection
             target={target}
             essentialDetails={essentialDetails}
@@ -111,7 +111,7 @@ const InputPanel = ({
         type="button"
         onClick={handleSubmit}
         disabled={isLoading}
-        className={`w-full text-white font-bold py-3.5 sm:py-4 rounded-xl transition flex items-center justify-center mt-3 text-base sm:text-lg shadow-md ${
+        className={`creation-submit-button w-full text-white font-bold py-2.5 sm:py-3 rounded-xl transition flex items-center justify-center mt-[3px] text-base sm:text-lg shadow-md ${
           isLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
         }`}
       >

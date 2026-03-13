@@ -177,17 +177,14 @@ const CreationPage = () => {
   return (
     <div className="w-full">
       {/* ✅ 타이틀 아래와 패널 사이의 여백(space-y)을 대폭 줄였습니다. */}
-      <div className="page space-y-3 sm:space-y-4 p-4 sm:p-6 2xl:p-6">
+      <div className="page creation-page space-y-2.5 sm:space-y-3 px-4 pt-2 pb-3 sm:px-5 sm:pt-3 sm:pb-4 2xl:px-5 2xl:pt-3 2xl:pb-4">
         
         {/* ✅ 구분선(border-b)을 삭제하고 아래쪽 여백(pb)을 최소화했습니다. */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 pb-1">
+        <div className="creation-heading flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 pb-0">
           <div>
-            <h1 className="text-2xl sm:text-3xl 2xl:text-2xl font-bold text-gray-900">
+            <h1 className="creation-page-title text-2xl sm:text-3xl 2xl:text-2xl font-bold text-gray-900">
               콘텐츠 생성 스튜디오
             </h1>
-            <p className="text-base sm:text-lg 2xl:text-base text-gray-500 mt-1">
-              컨텐츠 생성을 위한 프롬프트 초안을 만들어 드립니다.
-            </p>
           </div>
         </div>
 

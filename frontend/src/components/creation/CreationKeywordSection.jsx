@@ -8,16 +8,16 @@ const CreationKeywordSection = ({
 }) => {
   return (
     // ✅ 아래쪽 여백(mb)을 줄여서 하단 요소들을 위로 더 끌어올렸습니다.
-    <div className="mb-2 sm:mb-3">
+    <div className="creation-keyword-section mb-2 sm:mb-2.5">
       {/* ✅ 라벨 폰트 크기 통일성 있게 확대 (text-sm -> text-base) */}
-      <label className="block text-sm sm:text-base font-bold text-gray-800 mb-1.5">
+      <label className="creation-keyword-label block text-sm sm:text-base font-bold text-gray-800 mb-1.5">
         주제 키워드
       </label>
       
       {/* ✅ 입력창 폰트 및 패딩 조정 */}
       <input
         type="text"
-        className="w-full border border-gray-300 rounded-lg p-2.5 sm:p-3 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-base text-gray-800"
+        className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-sm sm:text-[15px] placeholder:text-sm sm:placeholder:text-[15px] text-gray-800"
         value={keyword}
         onChange={(event) => onKeywordChange(event.target.value)}
         placeholder="트렌드 키워드 또는 원하는 주제 입력"

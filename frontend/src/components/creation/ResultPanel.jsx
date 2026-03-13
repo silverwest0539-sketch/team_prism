@@ -91,7 +91,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
 
   return (
     // ✅ 모바일에서 너무 작게 찌그러지지 않도록 min-h-[400px] 추가. 데스크탑은 h-full로 꽉 참.
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col h-full min-h-[400px]">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col h-full min-h-[280px]">
 
       {/* 헤더 */}
       <div className="flex-shrink-0 flex items-center justify-between p-3 sm:p-4 border-b border-gray-100">
