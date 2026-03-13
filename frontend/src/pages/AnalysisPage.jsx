@@ -533,12 +533,39 @@ const AnalysisPage = () => {
       else neu++;
     });
 
+    // --- [수정된 로직 추가] ---
+    // 현재 프론트엔드에 로드된 댓글 수
+    const loadedCount = pos + neg + neu;
+    
+    // 백엔드에서 넘겨준 진짜 총 댓글 수
+    const backendTotal = data?.totalCommentCount || data?.total_comments || data?.totalCount;
+    
+    // 플랫폼 필터가 'all(전체)'일 때만 백엔드 총합을 사용하고, 특정 커뮤니티면 현재 필터링된 개수를 사용
+    const totalCount = (selectedPlatform === 'all' && backendTotal) ? backendTotal : loadedCount;
+
+    // 데이터가 모두 불러와졌거나 없는 경우 원본 그대로 반환
+    if (loadedCount === 0 || loadedCount === totalCount) {
+      return [
+        { name: '긍정', value: pos, color: '#3B82F6' },
+        { name: '부정', value: neg, color: '#EF4444' },
+        { name: '중립', value: neu, color: '#9CA3AF' },
+      ];
+    }
+
+    // 일부 댓글만 로드된 경우, 비율을 계산해 전체 수량(totalCount)에 맞게 숫자 스케일링
+    const posScaled = Math.round((pos / loadedCount) * totalCount);
+    const negScaled = Math.round((neg / loadedCount) * totalCount);
+    
+    // 총합이 정확히 일치하도록 반올림 오차를 중립(neu)에 보정
+    let neuScaled = totalCount - posScaled - negScaled;
+    if (neuScaled < 0) neuScaled = 0;
+
     return [
-      { name: '긍정', value: pos, color: '#3B82F6' },
-      { name: '부정', value: neg, color: '#EF4444' },
-      { name: '중립', value: neu, color: '#9CA3AF' },
+      { name: '긍정', value: posScaled, color: '#3B82F6' },
+      { name: '부정', value: negScaled, color: '#EF4444' },
+      { name: '중립', value: neuScaled, color: '#9CA3AF' },
     ];
-  }, [filteredData]);
+  }, [filteredData, data, selectedPlatform]);
 
   const sentimentModalComments = useMemo(() => {
     if (!sentimentModalConfig.isOpen || !sentimentModalConfig.sentiment) return [];
@@ -568,8 +595,10 @@ const AnalysisPage = () => {
   const loadedItemsCount = usageExamples.length; 
   const totalPages = Math.max(1, Math.ceil(loadedItemsCount / ITEMS_PER_PAGE));
 
-  // 화면 우측 상단에 보여줄 '진짜 전체 댓글 개수'
-  const displayTotalCount = data?.totalCommentCount || data?.total_comments || data?.totalCount || loadedItemsCount;
+  // 화면 우측 상단에 보여줄 '진짜 전체 댓글 개수' (도넛 차트와 완벽 동기화)
+  const displayTotalCount = (selectedPlatform === 'all' && (data?.totalCommentCount || data?.total_comments || data?.totalCount)) 
+    ? (data?.totalCommentCount || data?.total_comments || data?.totalCount) 
+    : loadedItemsCount;
 
   // 플랫폼 필터 변경 시 첫 페이지로 이동
   useEffect(() => {
