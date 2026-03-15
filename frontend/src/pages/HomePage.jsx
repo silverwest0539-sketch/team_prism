@@ -57,7 +57,7 @@ const HomePage = () => {
     { label: '더쿠', value: 'theqoo' },
     { label: '디시인사이드', value: 'dcinside' },
     { label: '루리웹', value: 'ruliweb' },
-    { label: '네이트판', value: 'natepan' },
+    { label: '인스티즈', value: 'instiz' },
     { label: 'FM코리아', value: 'fmkorea' },
   ];
 
@@ -75,7 +75,7 @@ const HomePage = () => {
     { label: '더쿠', value: 'theqoo' },
     { label: '디시인사이드', value: 'dcinside' },
     { label: '루리웹', value: 'ruliweb' },
-    { label: '네이트판', value: 'natepan' },
+    { label: '인스티즈', value: 'instiz' },
     { label: 'FM코리아', value: 'fmkorea' },
   ];
 
