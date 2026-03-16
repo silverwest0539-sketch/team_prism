@@ -1,9 +1,25 @@
 const axios = require('axios');
 const Parser = require('rss-parser');
+const { spawn } = require('child_process');
+const path = require('path');
 const os = require('os');
 const { getLatestData, getCommunityHotPosts } = require('../dataLoader');
 
-console.log("내장 자체 형태소 분석기를 사용합니다.");
+// RSS 파서 설정
+const parser = new Parser({
+  customFields: {
+    item: [['source', 'newsSource']] 
+  }
+});
+
+const getPythonPath = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return '/opt/venv/bin/python'; // Docker 환경
+  }
+  return os.platform() === 'win32' ? 'python' : 'python3'; // 로컬 환경
+};
+
+// console.log("내장 자체 형태소 분석기를 사용합니다.");
 
 const fallbackTokenizeForNouns = (text) => {
   // '그런데' 같은 부사, 접속사를 걸러내기 위한 1차 필터
@@ -22,14 +38,100 @@ const fallbackTokenizeForNouns = (text) => {
 };
 
 
-const extractNouns = (text) => {
+const extractNounsBatch = (payloadArray) => {
   return new Promise((resolve) => {
-    resolve(fallbackTokenizeForNouns(text));
+    const pythonPath = getPythonPath();
+    
+    // 환경에 맞게 경로 설정 (앞서 수정한 경로 방식 유지)
+    const scriptPath = path.join(__dirname, '..', 'utils', 'noun_extractor.py');
+
+    const pythonProcess = spawn(pythonPath, [scriptPath]);
+    let dataString = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      dataString += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      console.error("[Kiwi Error]:", data.toString());
+    });
+
+    // Fallback 처리용 헬퍼 함수
+    const runFallback = () => {
+      const fallbackResults = [];
+      payloadArray.forEach(item => {
+        if (item.text) {
+          const nouns = fallbackTokenizeForNouns(item.text);
+          nouns.forEach(noun => {
+            fallbackResults.push({
+              word: noun,
+              platform: item.platform || 'unknown',
+              type: item.type || 'trend'
+            });
+          });
+        }
+      });
+      return fallbackResults;
+    };
+
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.warn("Python 형태소 분석 프로세스 비정상 종료. 내장 정규식 필터로 폴백(Fallback)합니다.");
+        return resolve(runFallback());
+      }
+      try {
+        const results = JSON.parse(dataString);
+        resolve(results);
+      } catch (e) {
+        console.error("JSON 파싱 오류. 내장 정규식 필터로 폴백(Fallback)합니다:", e);
+        resolve(runFallback());
+      }
+    });
+
+    pythonProcess.stdin.write(JSON.stringify(payloadArray));
+    pythonProcess.stdin.end();
   });
 };
 
 
 let newsKeywordCache = {};
+
+const updateSingleCategoryKeyword = async (category) => {
+  try {
+    const newsList = await exports.getNewsByCategory(category);
+    if (!newsList || newsList.length === 0) return [];
+
+    const batchPayload = newsList.map(news => {
+      let cleanTitle = news.title.replace(/\s*[-|][^-|]*$/, '');
+      cleanTitle = cleanTitle.replace(/\[.*?\]|\(.*?\)|<.*?>|【.*?】/g, '').trim();
+      return { text: cleanTitle, platform: "news", type: "news" };
+    });
+
+    const extractedData = await extractNounsBatch(batchPayload);
+
+    const keywordMap = {};
+    extractedData.forEach(item => {
+      const noun = item.word;
+      keywordMap[noun] = (keywordMap[noun] || 0) + 1;
+    });
+
+    const formattedData = Object.entries(keywordMap)
+      .map(([keyword, count]) => ({ keyword, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map((item, index) => ({
+        rank: index + 1,
+        keyword: item.keyword,
+        change: 'NEW' 
+      }));
+
+    newsKeywordCache[category] = { data: formattedData, timestamp: Date.now() };
+    return formattedData;
+  } catch (error) {
+    console.error(`[Single Update] '${category}' 업데이트 실패:`, error.message);
+    return [];
+  }
+};
 
 const updateNewsKeywords = async () => {
   try {
@@ -37,55 +139,35 @@ const updateNewsKeywords = async () => {
     
     const categories = ['korea', 'business', 'tech', 'world', 'entertainment', 'sports'];
     
-    const stopWords = new Set(['뉴스', '오늘', '내일', '종합', '단독', '속보', '무단', '배포', '금지', 
-                              '기자', '재배포', '연합뉴스', '오전', '오후', '대한민국', '한겨레', '조선일보', '중앙일보', '동아일보',
-                            '경향신문', '공격', '매일경제', '디지털투데', '확대', '10', '뉴스1', '경향신문', 'MBC뉴스', '부산경남', '맑아져',
-                            '경남북서내륙', 'knn', 'co', 'kr', '흔들리', '말아먹', '보수냐', 'bntnews', '한국경제', '남자', '22', '그냥',
-                            '끼어', '돌아', '여행하', 'vs', '다시']);
-
     for (const category of categories) {
       const newsList = await exports.getNewsByCategory(category);
-      const titles = newsList.map(news => news.title);
-      
-      if (titles.length === 0) continue;
+      if (!newsList || newsList.length === 0) continue;
 
+      // 1. Python으로 보낼 Batch 페이로드 생성
+      const batchPayload = newsList.map(news => {
+        let cleanTitle = news.title.replace(/\s*[-|][^-|]*$/, '');
+        cleanTitle = cleanTitle.replace(/\[.*?\]|\(.*?\)|<.*?>|【.*?】/g, '').trim();
+        return {
+          text: cleanTitle,
+          platform: "news",
+          type: "news"
+        };
+      });
+
+      // 2. Python 프로세스 1회 호출로 해당 카테고리의 모든 기사 형태소 분석
+      const extractedData = await extractNounsBatch(batchPayload);
+
+      // 3. 반환된 단어들의 빈도수 계산
       const keywordMap = {};
+      
+      extractedData.forEach(item => {
+        const noun = item.word;
+        // Python에서 이미 숫자, 단일글자, 불용어가 필터링되어 넘어오므로 카운트만 수행
+        keywordMap[noun] = (keywordMap[noun] || 0) + 1;
+      });
 
-      for (const title of titles) {
-        let cleanTitle = title.replace(/\s*[-|][^-|]*$/, '');
-        cleanTitle = cleanTitle.replace(/\[.*?\]|\(.*?\)|<.*?>|【.*?】/g, '');
-        cleanTitle = cleanTitle.trim();
-        // 제목에서 실제 '명사'만 추출
-        const nouns = await extractNouns(cleanTitle);
-        
-        nouns.forEach(noun => {
-          // ✨ 1. 숫자 + 단위 필터링 (예: 7만, 000달러, 10명, 3천억, 1위)
-          // 숫자와 쉼표/마침표 뒤에 올 수 있는 대표적인 단위들을 묶어서 걸러냅니다.
-          const isNumWithUnit = /^[0-9,.]+(만|천|백|십|억|조|달러|원|엔|명|개|위|회|년|월|일|주|차|배|건|종|대|프로|퍼센트|%)?$/.test(noun);
-          
-          // ✨ 2. 동사/형용사 활용형 꼬리표 필터링 (예: 상상해본, 시작하는, 예상되는)
-          // 2-1. 명백한 서술어 꼬리표
-          const hasVerbTail = /(해본|하는|되는|있는|없는|같은|대해|관해|위해|통해|가진|받은|주는|만든|시킨|다는|라서)$/.test(noun);
-          // 2-2. 세 글자 이상이면서 '-한', '-할', '-된', '-인', '-적'으로 끝나는 경우 (예: 다양한, 준비된, 경제적)
-          const isModifier = noun.length >= 3 && /(한|할|된|인|적)$/.test(noun);
-
-          const isVerbEnding = /[가-힣](랐|렸|썼|쓸|솟|겠|챘|켰|팠|봤|왔|갔|줬|췄)(고|게|다|어|아|려)?$/.test(noun) || /(치솟|쓸게)$/.test(noun);
-
-          // ✨ 3. 최종 조건: 2글자 이상 & 불용어 아님 & 숫자/단위 아님 & 서술어/수식어 아님
-          if (
-            noun.length >= 2 && 
-            !stopWords.has(noun) && 
-            !isNumWithUnit && 
-            !hasVerbTail && 
-            !isModifier &&
-            !isVerbEnding
-          ) {
-            keywordMap[noun] = (keywordMap[noun] || 0) + 1;
-          }
-        });
-      }
-
-    const formattedData = Object.entries(keywordMap)
+      // 4. 빈도수 기준 상위 5개 추출
+      const formattedData = Object.entries(keywordMap)
         .map(([keyword, count]) => ({ keyword, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 5)
@@ -109,12 +191,6 @@ const updateNewsKeywords = async () => {
 setTimeout(updateNewsKeywords, 5000); 
 setInterval(updateNewsKeywords, 1000 * 60 * 60);
 
-// RSS 파서 설정
-const parser = new Parser({
-  customFields: {
-    item: [['source', 'newsSource']] 
-  }
-});
 
 // 유튜브 비디오 캐시 저장소
 let videoCache = {}; 
@@ -420,11 +496,11 @@ exports.getNewsByCategory = async (category) => {
 
 // 뉴스 키워드 추출용 함수
 exports.getNewsKeywordRankings = async (category = 'korea') => {
-  // 요청한 카테고리의 캐시가 아직 없다면 업데이트 시도
+  // 요청한 카테고리의 캐시가 아직 없다면, '해당 카테고리만' 즉시 생성하여 응답 속도 최적화
   if (!newsKeywordCache[category] || !newsKeywordCache[category].data) {
-    await updateNewsKeywords();
+    console.log(`[On-Demand] '${category}' 캐시가 없어 즉시 생성합니다.`);
+    await updateSingleCategoryKeyword(category);
   }
   
-  // 해당 카테고리의 데이터를 반환하거나 없으면 빈 배열 반환
   return newsKeywordCache[category]?.data || [];
 };
