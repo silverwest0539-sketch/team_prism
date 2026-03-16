@@ -24,22 +24,20 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
 
   // 백엔드(prompt.service.js)가 요구하는 포맷으로 페이로드 조립
   const buildSubmitPayload = () => {
-    // 백엔드에서 'essentialDetails'를 따로 받지 않으므로, 
-    // 데이터 유실을 막기 위해 '기타 요구사항'과 합쳐서 넘깁니다.
-    const userTypeRequest = userType ? `이용 주체: ${userType}` : '';
-    const mergedRequests = [userTypeRequest, essentialDetails, otherRequests]
-      .filter((text) => text && text.trim() !== '')
-      .join(' / ');
+  const mergedRequests = [essentialDetails, otherRequests]
+    .filter((text) => text && text.trim() !== '')
+    .join(' / ');
 
-    return {
-      keyword: keyword.trim(),
-      type: selectedType,
-      industry,
-      context: purpose, // 프론트의 purpose를 백엔드의 context로 이름 변환
-      target,
-      otherRequests: mergedRequests,
-    };
+  return {
+    keyword: keyword.trim(),
+    type: selectedType,
+    industry,
+    userType,        
+    context: purpose,
+    target,
+    otherRequests: mergedRequests,
   };
+};
 
   return {
     // States

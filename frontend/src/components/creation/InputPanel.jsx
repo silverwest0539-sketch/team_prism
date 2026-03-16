@@ -43,6 +43,7 @@ const InputPanel = ({
 
   const handleSubmit = () => {
     const payload = buildSubmitPayload();
+    console.log('payload:', payload);
     let hasError = false;
 
     if (!payload.keyword) {

@@ -3,7 +3,7 @@ const promptService = require('../services/prompt.service');
 
 exports.generatePrompt = async (req, res) => {
   try {
-    const { keyword, type, industry, context, target, otherRequests } = req.body;
+    const { keyword, type, industry, context, target, otherRequests, userType } = req.body;
 
     if (!keyword) {
       return res.status(400).json({ success: false, error: '키워드를 입력해 주세요.' });
@@ -27,7 +27,7 @@ exports.generatePrompt = async (req, res) => {
       trendData = { stats, examples };
     }
 
-    const formData = { keyword, type, industry, context, target, otherRequests };
+    const formData = { keyword, type, industry, context, target, otherRequests, userType };
 
     // 3. AI 서비스 호출 (스트리밍 방식)
     // 세 번째 인자로 한 글자씩 올 때마다 실행될 콜백 함수를 전달합니다.

@@ -26,7 +26,7 @@ const fetchNaverNews = (keyword) => {
       res.on('end', () => {
         try {
           const parsed = JSON.parse(data);
-          const items = (parsed.items || []).map((item, i) => 
+          const items = (parsed.items || []).map((item, i) =>
             `${i + 1}. [${item.pubDate}] ${item.title.replace(/<[^>]+>/g, '')} — ${item.description.replace(/<[^>]+>/g, '')}`
           );
           resolve(items.join('\n'));
@@ -77,7 +77,9 @@ exports.getUsageExamples = async (keywordId) => {
 };
 
 exports.createPromptWithAI = async (formData, trendData, onStream) => {
-  const { keyword, type, industry, context, target, otherRequests } = formData;
+  const { keyword, type, industry, context, target, otherRequests, userType } = formData;
+
+  console.log('userType:', userType);
 
   // ✅ STEP 1: 네이버 뉴스 API로 최신 뉴스 수집
   const newsText = await fetchNaverNews(keyword);
@@ -118,6 +120,7 @@ exports.createPromptWithAI = async (formData, trendData, onStream) => {
   const typeConfig = {
     카드뉴스: {
       fewShot: `
+// 아래 예시는 개인 크리에이터 기준입니다. 기업 사용자의 경우 전문적·신뢰감 있는 톤으로 조정하고, CTA는 상담/문의 유도로 변경하세요.
 ---예시 시작---
 당신은 푸드 트렌드 전문 카피라이터입니다.
 실제 카드뉴스 이미지 세트를 제작해 주세요. 목적은 봄철 제철 식재료 '봄동'을 활용한 봄동비빔밥이 SNS와 방송을 통해 다시 주목받고 있는 트렌드를 포착하여, 요리 비주얼과 레시피 정보를 감각적으로 전달하는 것입니다.
@@ -249,6 +252,7 @@ SLIDE 06 — CTA (행동 유도) / 마지막 슬라이드
 
     포스터: {
       fewShot: `
+// 아래 예시는 개인 크리에이터 기준입니다. 기업 사용자의 경우 전문적·신뢰감 있는 톤으로 조정하고, CTA는 상담/문의 유도로 변경하세요.
 ---예시 시작---
 당신은 오프라인/온라인 광고 캠페인을 다수 진행한 시각 커뮤니케이션 전문 디자이너입니다.
 실제 포스터 이미지를 제작해 주세요. 목적은 봄철 제철 식재료 '봄동비빔밥'의 감성을 단 한 장의 이미지로 강렬하게 전달하는 것입니다.
@@ -325,6 +329,7 @@ SLIDE 06 — CTA (행동 유도) / 마지막 슬라이드
 
     썸네일: {
       fewShot: `
+// 아래 예시는 개인 크리에이터 기준입니다. 기업 사용자의 경우 전문적·신뢰감 있는 톤으로 조정하고, CTA는 상담/문의 유도로 변경하세요.
 ---예시 시작---
 당신은 구독자 100만 채널의 영상 썸네일을 전담하는 썸네일 전문 디자이너입니다.
 실제 썸네일 이미지를 제작해 주세요. 목적은 봄동비빔밥 관련 영상/게시물의 클릭률을 극대화하는 강렬한 썸네일을 만드는 것입니다.
@@ -401,15 +406,31 @@ SLIDE 06 — CTA (행동 유도) / 마지막 슬라이드
   // type에 해당하는 config 가져오기 (없으면 카드뉴스로 fallback)
   const config = typeConfig[type] || typeConfig['카드뉴스'];
   const roleByType = {
-    카드뉴스: '10년 차 수석 마케터이자 전문 프롬프트 엔지니어',
-    포스터: '오프라인/온라인 광고 캠페인 경험이 풍부한 시각 디자인 전문 프롬프트 엔지니어',
-    썸네일: '구독자 100만 채널 운영 경험이 있는 SNS 콘텐츠 전문 프롬프트 엔지니어',
+    카드뉴스: userType === '기업'
+      ? 'B2B/B2C 브랜드 캠페인을 다수 수행한 기업 마케팅 전문 프롬프트 엔지니어'
+      : '10년 차 수석 마케터이자 전문 프롬프트 엔지니어',
+    포스터: userType === '기업'
+      ? '기업 브랜드 아이덴티티와 광고 캠페인을 전문으로 하는 브랜딩 디자이너'
+      : '오프라인/온라인 광고 캠페인 경험이 풍부한 시각 디자인 전문 프롬프트 엔지니어',
+    썸네일: userType === '기업'
+      ? '기업 유튜브 채널 및 디지털 마케팅을 전문으로 하는 콘텐츠 전략가'
+      : '구독자 100만 채널 운영 경험이 있는 SNS 콘텐츠 전문 프롬프트 엔지니어',
   };
   const role = roleByType[type] || roleByType['카드뉴스'];
 
+  const businessRule = userType === '기업' ? `
+[기업 콘텐츠 작성 원칙]
+- 감성적 공감보다 신뢰감과 전문성 중심의 언어를 사용합니다.
+- 브랜드 일관성을 유지하고 과장된 표현을 지양합니다.
+- CTA는 '상담 신청', '문의하기' 등 구체적 비즈니스 행동으로 유도합니다.
+- 수치나 사실 기반의 설득력 있는 메시지를 작성합니다.
+` : '';
+
   const systemPrompt = `
 당신은 ${role}입니다.
+${businessRule}
 사용자가 ChatGPT나 Gemini에 바로 복사/붙여넣기 할 수 있는 '완성형 ${type} 제작 프롬프트'를 작성하세요.
+
 
 [절대 규칙]
 1. 인사말, 요약, 부연 설명 없이 오직 프롬프트 텍스트만 출력합니다.
@@ -433,6 +454,18 @@ ${config.fewShot}
   };
   const label = imageLabel[type] || '이미지';
 
+  const industryRoleMap = {
+    크리에이터: {
+      개인: '크리에이터 콘텐츠 전문 카피라이터',
+      기업: '크리에이터 브랜드 전략 및 채널 마케팅 전문가',
+    },
+    마케터: {
+      개인: '마케팅 콘텐츠 전문 카피라이터',
+      기업: '브랜드 전략 및 기업 마케팅 전문가',
+    },
+  };
+  const industryRole = industryRoleMap[industry]?.[userType] || '전문 카피라이터';
+
   let userPrompt = `
 다음 조건을 바탕으로 최적의 마케팅 콘텐츠 생성 프롬프트를 작성해 주세요.
 
@@ -440,6 +473,7 @@ ${config.fewShot}
 - 메인 키워드: ${keyword}
 - 콘텐츠 유형: ${type}
 - 업종: ${industry}
+- 사용자 유형: ${userType}
 - 제작 목적: ${context || '일반적인 정보 전달 및 홍보'}
 - 타겟 고객: ${target || '일반 대중'}
 - 추가 요구사항: ${otherRequests || '없음'}
@@ -469,10 +503,14 @@ ${trendData.examples.map((ex, i) => `  ${i + 1}. [${ex.platform}] "${ex.content}
     `;
   }
 
-  userPrompt += `
-\n[출력 구조 — 위 예시와 동일한 형식과 밀도로 작성. 아래 첫 4줄은 수정 없이 그대로 출력에 포함할 것]
 
-당신은 ${industry} 전문 카피라이터입니다.
+  userPrompt += `
+\n[출력 구조 — 위 예시와 동일한 형식과 밀도로 작성. 아래 첫 문단은 수정 없이 그대로 출력에 포함할 것]
+
+당신은 ${industryRole}입니다.
+${userType === '기업'
+  ? '기업 브랜드의 신뢰성과 전문성을 최우선으로, 절제되고 일관된 비주얼 언어로 작성하세요. 과장된 표현·유행어·충동형 문구는 배제하고, 브랜드 아이덴티티가 명확히 드러나는 품격 있는 디자인을 지향합니다.'
+  : '트렌드와 감성을 자유롭게 활용하여 타겟의 공감을 이끌어내세요. 유행 요소, 개성 있는 컬러, 감각적인 레이아웃을 적극 활용하여 시선을 끄는 콘텐츠를 만들어 주세요.'}
 실제 ${type} ${label}를 제작해 주세요. 목적은 ${context || '정보 전달'}이며, 타겟은 ${target || '일반 대중'}입니다.
 최근 '${keyword}'에 대한 사람들의 반응은 ${moodSentence}
 이러한 여론과 트렌드를 적극 활용하여 ${target || '일반 대중'}의 시선을 끄는 콘텐츠를 만들어 주세요.
@@ -483,12 +521,24 @@ ${otherRequests ? `추가 요구사항: ${otherRequests} — 이 요구사항은
 ## 2. 주제 (3개 이상, 문장형으로)
 ## 3. 타겟
 ## 4. 톤앤매너 (3개 이상)
+${userType === '기업' ? '- 전문적이고 신뢰감 있는 어조 유지\n- 과장된 표현 지양, 사실 기반 메시지\n- CTA는 상담 신청/문의하기 등 비즈니스 행동 유도' : ''}
+${userType === '기업' ? `
+[기업 전용 작성 지침 — 아래 내용을 출력 전반에 반드시 반영할 것]
+- 메인 카피: 감탄사·유행어 금지. "두쫀쿠, 새로운 맛의 시작" 같은 감성형 대신
+  "검증된 맛, 두쫀쿠의 신메뉴" 처럼 브랜드 신뢰 중심으로 작성
+- 서브 카피: "지금 바로 경험해보세요!" 같은 충동형 대신
+  "프리미엄 디저트의 새 기준을 직접 확인하세요" 처럼 가치 제안형으로
+- CTA: "저장/공유/댓글" 유도 금지. "매장 방문 예약" "브랜드 공식 채널 팔로우" 등으로
+- 톤앤매너: SNS 감성 문구 지양. 절제되고 품격 있는 브랜드 언어 사용
+- 디자인: 스파클·이모지·말풍선 UI 지양. 깔끔한 화이트스페이스 중심 레이아웃
+` : ''}
 ## 5. 전체 디자인 조건
   1) 컬러 팔레트 (HEX 코드 포함)
   2) 타이포그래피
   3) 그래픽 스타일 (3개 이상)
   4) 레이아웃 원칙 (3개 이상)
 ${config.structureGuide}
+${userType === '기업' ? '- CTA는 상담/문의/브랜드 신뢰 강조 방향으로 작성' : ''}
   `.trim();
 
   // ✅ STEP 5: 스트리밍 생성
@@ -517,7 +567,7 @@ ${config.structureGuide}
 
 exports.saveGeneratedPrompt = async (userEmail, outputType, content, keyword) => {
   const connection = await pool.getConnection(); // 안전한 다중 저장을 위한 커넥션 획득
-  
+
   try {
     await connection.beginTransaction(); // 트랜잭션 시작
 
@@ -531,7 +581,7 @@ exports.saveGeneratedPrompt = async (userEmail, outputType, content, keyword) =>
 
     if (keyword && keyword.trim() !== '') {
       const cleanKeyword = keyword.trim();
-      
+
       // ✨ 핵심: 공백 차이로 못 찾는 경우를 방지하기 위해 띄어쓰기 무시하고 비교
       const keywordQuery = `
         SELECT keyword_id 
@@ -540,11 +590,11 @@ exports.saveGeneratedPrompt = async (userEmail, outputType, content, keyword) =>
         LIMIT 1
       `;
       const [keywordRows] = await connection.query(keywordQuery, [cleanKeyword]);
-      
+
       // DB에 일치하는 키워드가 있을 때만 매핑 (새로 생성하지 않음)
       if (keywordRows.length > 0) {
         const keywordId = keywordRows[0].keyword_id;
-        
+
         const mappingQuery = `INSERT INTO KEYWORD_OUTPUT (output_id, keyword_id) VALUES (?, ?)`;
         await connection.query(mappingQuery, [outputId, keywordId]);
       }
@@ -586,17 +636,17 @@ exports.deletePromptById = async (outputId, userEmail) => {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction(); // 트랜잭션 시작
-    
+
     // ✨ 핵심 1: 자식 테이블(KEYWORD_OUTPUT)에서 매핑된 데이터를 먼저 삭제
     await connection.query(`DELETE FROM KEYWORD_OUTPUT WHERE output_id = ?`, [outputId]);
-    
+
     // ✨ 핵심 2: 부모 테이블(MARKETING_OUTPUT)에서 프롬프트 삭제
     const deleteQuery = `DELETE FROM MARKETING_OUTPUT WHERE output_id = ? AND user_email = ?`;
     const [result] = await connection.query(deleteQuery, [outputId, userEmail]);
-    
+
     await connection.commit(); // 트랜잭션 성공
     return result.affectedRows > 0;
-    
+
   } catch (error) {
     await connection.rollback(); // 에러 시 롤백
     throw error;
