@@ -17,7 +17,7 @@ const getCommunityHotPosts = (platform) => {
     const prefixMap = {
       'theqoo': 'theqoo_hot_selector_',
       'ruliweb': 'ruliweb_full_',
-      'natepan': 'nate_rank100_completed_',
+      'instiz': 'instiz_',
       'fmkorea': 'fmkorea_',
       'dcinside': 'final_dc_best_DC_Best_'
     };
