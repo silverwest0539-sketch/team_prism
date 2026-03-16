@@ -45,6 +45,10 @@ const LAPTOP_BREAKPOINT = 1024;
 const ITEMS_PER_PAGE_MOBILE = 3;
 const ITEMS_PER_PAGE_LAPTOP = 9;
 const getKeywordText = (item) => String(item?.keyword || '').trim();
+const normalizeScrapItem = (item) => {
+    if (!item || typeof item !== 'object') return null;
+    return item;
+};
 const resolveItemsPerPage = () => {
     if (typeof window === 'undefined') return ITEMS_PER_PAGE_MOBILE;
     return window.innerWidth >= LAPTOP_BREAKPOINT ? ITEMS_PER_PAGE_LAPTOP : ITEMS_PER_PAGE_MOBILE;
@@ -93,7 +97,9 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 params: { email: userEmail }
             });
             if (response.data && response.data.success) {
-                setScraps(response.data.scraps || []);
+                const rawScraps = Array.isArray(response.data.scraps) ? response.data.scraps : [];
+                const normalizedScraps = rawScraps.map(normalizeScrapItem).filter(Boolean);
+                setScraps(normalizedScraps);
             } else {
                 setScraps([]);
             }
@@ -127,7 +133,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
 
     // ─── 필터 + 검색 + 정렬 파이프라인 ───
     const processedScraps = useMemo(() => {
-        let result = [...scraps];
+        let result = scraps.filter((item) => item && typeof item === 'object');
 
         // 1. 검색
         if (searchQuery.trim()) {
@@ -268,6 +274,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
 
     // 카드 클릭 → 모달 또는 선택
     const handleCardClick = (item) => {
+        if (!item || typeof item !== 'object') return;
         if (isDeleteMode) {
             toggleDeleteSelect(getKeywordText(item));
             return;
@@ -333,6 +340,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
         const isRemoving = removingKeywords.has(keyword);
         const isSelected = getCheckState(keyword);
         const isDragOver = dragOverIndex === index;
+        const savedAtText = item?.savedAt ? getRelativeDate(item.savedAt) : '날짜 정보 없음';
 
         return (
             <div
@@ -349,7 +357,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                         : 'bg-white rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 p-4'}
                     ${isRemoving ? 'opacity-0 scale-95 -translate-y-2' : 'opacity-100 scale-100'}
                     ${isSelected
-                        ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
+                        ? 'delete-selection-card border-red-400 bg-red-50/20'
                         : 'border-gray-100 hover:border-blue-200'
                     }
                     ${isDragOver ? 'border-indigo-400 border-dashed bg-indigo-50/20' : ''}
@@ -402,7 +410,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                     
                     {/* 👇 여기 div에 flex justify-between items-center 를 추가했습니다! */}
                     <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-auto">
-                        <span>{item.savedAt ? getRelativeDate(item.savedAt) : '날짜 정보 없음'} 저장됨</span>
+                        <span>{savedAtText} 저장됨</span>
                         
                         {!isDeleteMode && (
                             <span className="text-[12px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -92,6 +92,38 @@ html.theme-dark .text-gray-300 {
   color: #94a3b8 !important;
 }
 
+html.theme-dark .error-boundary-section {
+  background-color: rgba(127, 29, 29, 0.22) !important;
+  border-color: rgba(248, 113, 113, 0.45) !important;
+}
+
+html.theme-dark .error-boundary-section-title {
+  color: #fecaca !important;
+}
+
+html.theme-dark .error-boundary-section-desc {
+  color: #fca5a5 !important;
+}
+
+html.theme-dark .error-boundary-section-btn {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+html.theme-dark .error-boundary-section-btn:hover {
+  background-color: #dc2626 !important;
+}
+
+html.theme-dark .error-boundary-section-debug {
+  background-color: rgba(127, 29, 29, 0.38) !important;
+  color: #fecaca !important;
+}
+
+html.theme-dark .delete-selection-card {
+  border-color: rgba(248, 113, 113, 0.55) !important;
+  background-color: rgba(127, 29, 29, 0.16) !important;
+}
+
 html.theme-dark .shadow-sm {
   box-shadow: 0 8px 24px -18px rgba(2, 6, 23, 0.8) !important;
 }

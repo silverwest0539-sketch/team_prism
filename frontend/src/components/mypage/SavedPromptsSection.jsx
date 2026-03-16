@@ -570,6 +570,11 @@ const SavedPromptsSection = ({ email = '' }) => {
                   const promptType = getPromptType(item);
                   const promptIndustry = getPromptIndustry(item);
                   const isSelected = selectedPromptIds.has(item.id);
+                  const hasDualMetaBadges = Boolean(promptType && promptIndustry);
+                  const metaBadgeWidthClass = hasDualMetaBadges ? 'max-w-[48%]' : 'max-w-full';
+                  const metaBadgeTextLength = String(promptType || '').length + String(promptIndustry || '').length;
+                  const isTightMetaRow = hasDualMetaBadges && metaBadgeTextLength >= 11;
+                  const metaBadgePaddingClass = isTightMetaRow ? 'px-0 py-0' : 'px-1.5 py-0.5';
 
                   return (
                     <article
@@ -584,7 +589,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                         }
                       }}
                       className={`group cursor-pointer transition-all duration-300 border bg-white rounded-xl p-3 sm:p-4 lg:p-5 min-h-[132px] sm:min-h-[148px] lg:min-h-[160px] h-full flex flex-col hover:shadow-md relative ${isSelected
-                        ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
+                        ? 'delete-selection-card border-red-400 bg-red-50/20'
                         : 'border-gray-100 hover:border-blue-200'
                         }`}
                     >
@@ -639,14 +644,14 @@ const SavedPromptsSection = ({ email = '' }) => {
                         )}
                       </div>
 
-                      <div className={`mt-2.5 flex items-center gap-2 flex-wrap ${isDeleteMode ? 'ml-7' : ''}`}>
+                      <div className={`mt-2.5 flex w-full min-w-0 items-center justify-start gap-1.5 ${isDeleteMode ? 'ml-7' : ''}`}>
                         {promptType && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                          <span className={`inline-flex min-w-0 w-auto items-center justify-center ${metaBadgePaddingClass} rounded text-[10px] leading-tight font-semibold text-center bg-white border border-gray-200 text-gray-600 overflow-hidden text-ellipsis whitespace-nowrap ${metaBadgeWidthClass}`}>
                             {promptType}
                           </span>
                         )}
                         {promptIndustry && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                          <span className={`inline-flex min-w-0 w-auto items-center justify-center ${metaBadgePaddingClass} rounded text-[10px] leading-tight font-semibold text-center bg-white border border-gray-200 text-gray-600 overflow-hidden text-ellipsis whitespace-nowrap ${metaBadgeWidthClass}`}>
                             {promptIndustry}
                           </span>
                         )}

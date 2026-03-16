@@ -57,23 +57,23 @@ class ErrorBoundary extends React.Component {
 
     if (variant === 'section') {
       return (
-        <div className={`w-full rounded-xl border border-red-200 bg-red-50 p-4 sm:p-5 ${className}`}>
-          <h3 className="text-sm sm:text-base font-bold text-red-700 mb-1 break-keep">
+        <div className={`error-boundary-section w-full rounded-xl border border-red-200 bg-red-50 p-4 sm:p-5 ${className}`}>
+          <h3 className="error-boundary-section-title text-sm sm:text-base font-bold text-red-700 mb-1 break-keep">
             {title || '섹션을 불러오는 중 오류가 발생했습니다.'}
           </h3>
-          <p className="text-xs sm:text-sm text-red-600 break-keep leading-relaxed">
+          <p className="error-boundary-section-desc text-xs sm:text-sm text-red-600 break-keep leading-relaxed">
             {description || '잠시 후 다시 시도해 주세요.'}
           </p>
           <button
             type="button"
             onClick={this.handleRetry}
-            className="mt-3 px-3.5 py-2 rounded-lg bg-red-600 text-white text-xs sm:text-sm font-semibold hover:bg-red-700 transition"
+            className="error-boundary-section-btn mt-3 px-3.5 py-2 rounded-lg bg-red-600 text-white text-xs sm:text-sm font-semibold hover:bg-red-700 transition"
           >
             {retryLabel || '다시 시도'}
           </button>
 
           {isDev && this.state.error?.message ? (
-            <pre className="mt-4 p-3 bg-red-100 rounded-lg text-xs text-red-700 overflow-auto">
+            <pre className="error-boundary-section-debug mt-4 p-3 bg-red-100 rounded-lg text-xs text-red-700 overflow-auto">
               {this.state.error.message}
             </pre>
           ) : null}
