@@ -60,9 +60,9 @@ exports.getPlatformTrends = async (platform) => {
     youtube: 'youtube_score',
     fmkorea: 'fmkorea_score',
     ruliweb: 'ruliweb_score',
-    natepan: 'nate_score',
     theqoo: 'theqoo_score',
     dcinside: 'dcinside_score',
+    instiz: 'instiz_score'
   }[platform] || 'youtube_score';
 
   const [[{ maxDate }]] = await db.execute(
@@ -166,7 +166,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
       COALESCE(youtube_count, 0) AS youtube_count,
       COALESCE(fmkorea_count, 0) AS fmkorea_count,
       COALESCE(ruliweb_count, 0) AS ruliweb_count,
-      COALESCE(nate_count, 0) AS nate_count,
+      COALESCE(instiz_count, 0) AS instiz_count,
       COALESCE(theqoo_count, 0) AS theqoo_count,
       COALESCE(dcinside_count, 0) AS dcinside_count
     FROM KEYWORD_STATS
@@ -205,9 +205,9 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
       youtube: row.youtube_count || 0,
       fmkorea: row.fmkorea_count || 0,
       ruliweb: row.ruliweb_count || 0,
-      nate: row.nate_count || 0,
       theqoo: row.theqoo_count || 0,
       dcinside: row.dcinside_count || 0,
+      instiz: row.instiz_count || 0,
       score: row.trend_score || 0,
     };
   });
