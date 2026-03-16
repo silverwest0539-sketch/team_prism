@@ -52,7 +52,6 @@ const HomePage = () => {
   const scrollRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // [수정] 커뮤니티 옵션에 '전체(all)' 추가
   const COMMUNITY_OPTIONS = [
     { label: '더쿠', value: 'theqoo' },
     { label: '디시인사이드', value: 'dcinside' },
@@ -96,15 +95,13 @@ const HomePage = () => {
   const handleNewsClick = (link) => setReadNewsLinks((prev) => new Set(prev).add(link));
   const getCategoryBadgeClass = () => 'bg-blue-100 text-blue-700';
 
-  // [수정] 마법사 모달 완료 핸들러: 로컬스토리지에 모달 확인 완료 기록 추가!
   const handleInitialPreferencesSubmit = async ({ community, news }) => {
     if (community && community !== 'skip') {
       setSelectedPlatform(community); 
-      // ★ 유튜브일 경우 'theqoo' 연동
       setSelectedComm(community === 'youtube' ? 'theqoo' : community);
     } else {
       setSelectedPlatform('youtube');
-      setSelectedComm('theqoo'); // ★ 기본값
+      setSelectedComm('theqoo'); 
     }
     
     if (news && news !== 'skip') {
@@ -124,7 +121,6 @@ const HomePage = () => {
       console.error('취향 설정 저장 실패:', error);
     }
     
-    // ★ 핵심: 다시는 뜨지 않도록 브라우저에 "본 적 있음" 기록 저장
     localStorage.setItem(`hasSeenWizard_${userInfo?.email}`, 'true');
     setIsInitialModalOpen(false);
   };
@@ -172,7 +168,6 @@ const HomePage = () => {
     fetchNewsData();
   }, [selectedNewsCategory]);
 
-  // ★ [수정] 커뮤니티 데이터 호출: 'all' 일때 5개 모두 불러와서 합치기
   useEffect(() => {
     const fetchCommunityPosts = async () => {
       try {
@@ -187,7 +182,7 @@ const HomePage = () => {
     };
     fetchCommunityPosts();
   }, [selectedComm]);
-  // ★ [수정] 취향 정보 불러오기: hasSeenWizard 확인
+
   useEffect(() => {
     const fetchUserPreferences = async () => {
       if (userInfo?.email) {
@@ -201,7 +196,6 @@ const HomePage = () => {
               setIsInitialModalOpen(true);
             } else {
               setSelectedPlatform(preferredCommunity || 'youtube');
-              // ★ 유튜브이거나 값이 없을 때 'theqoo'로 세팅
               setSelectedComm((preferredCommunity === 'youtube' || !preferredCommunity) ? 'theqoo' : preferredCommunity);
               setSelectedNewsTopCategory(preferredNews || 'korea');
               setSelectedNewsCategory(preferredNews || 'korea');
@@ -233,9 +227,10 @@ const HomePage = () => {
         
         {/* 1. 트렌드 키워드 */}
         <div className="card-soft">
-          <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-100">
+          {/* 수정한 부분: flex-wrap 적용, 제목에서 'Top 5' 제거 및 break-keep 적용 */}
+          <div className="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2 border-gray-100">
             <div className="flex items-center gap-1 relative">
-              <h2 className="text-lg font-bold text-gray-900">오늘의 트렌드 키워드 Top 5</h2>
+              <h2 className="text-base xl:text-lg font-bold text-gray-900 break-keep">오늘의 트렌드 키워드</h2>
               <button onClick={(e) => { e.stopPropagation(); toggleTooltip('trend'); }} className="text-gray-400 hover:text-indigo-500 transition-colors p-1">
                 <Question size={18} weight="fill" />
               </button>
@@ -247,7 +242,8 @@ const HomePage = () => {
                 </div>
               )}
             </div>
-            <button onClick={() => setIsTrendModalOpen(true)} className="text-xs text-gray-400 hover:text-indigo-600 font-medium flex items-center gap-1">
+            {/* 수정한 부분: ml-auto 적용으로 줄바꿈 시 우측 정렬 유지 */}
+            <button onClick={() => setIsTrendModalOpen(true)} className="text-xs text-gray-400 hover:text-indigo-600 font-medium flex items-center gap-1 ml-auto">
               더보기 <Plus size={12} />
             </button>
           </div>
@@ -263,9 +259,10 @@ const HomePage = () => {
 
         {/* 2. 플랫폼별 키워드 */}
         <div className="card-soft relative">
-          <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-100">
+          {/* 수정한 부분: flex-wrap 적용, 제목 폰트 조정 및 간소화 */}
+          <div className="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2 border-gray-100">
             <div className="flex items-center gap-1 relative">
-              <h2 className="text-lg font-bold text-gray-900">오늘의 플랫폼별 키워드 Top 5</h2>
+              <h2 className="text-base xl:text-lg font-bold text-gray-900 break-keep">오늘의 플랫폼별 키워드</h2>
               <button onClick={(e) => { e.stopPropagation(); toggleTooltip('platform'); }} className="text-gray-400 hover:text-indigo-500 transition-colors p-1">
                 <Question size={18} weight="fill" />
               </button>
@@ -277,7 +274,8 @@ const HomePage = () => {
                 </div>
               )}
             </div>
-            <div className="tab-wrap" onClick={(e) => e.stopPropagation()}>
+            {/* 수정한 부분: ml-auto 적용 */}
+            <div className="tab-wrap ml-auto" onClick={(e) => e.stopPropagation()}>
               <div className="relative">
                 <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className={`tab-btn flex items-center gap-1 ${isDropdownOpen || selectedPlatform ? 'tab-active text-green-600' : 'text-gray-500 hover:text-gray-800'}`}>
                   <span className="font-medium text-xs">{MAIN_PLATFORM_OPTIONS.find(opt => opt.value === selectedPlatform)?.label || '유튜브'}</span>
@@ -306,9 +304,10 @@ const HomePage = () => {
 
         {/* 3. 뉴스 키워드 */}
         <div className="card-soft relative">
-          <div className="flex justify-between items-center mb-4 border-b pb-2 border-gray-100">
+          {/* 수정한 부분: flex-wrap 적용, 제목 간소화 */}
+          <div className="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2 border-gray-100">
             <div className="flex items-center gap-1 relative">
-              <h2 className="text-lg font-bold text-gray-900">오늘의 뉴스 키워드 Top 5</h2>
+              <h2 className="text-base xl:text-lg font-bold text-gray-900 break-keep">오늘의 뉴스 키워드</h2>
               <button onClick={(e) => { e.stopPropagation(); toggleTooltip('news'); }} className="text-gray-400 hover:text-indigo-500 transition-colors p-1">
                 <Question size={18} weight="fill" />
               </button>
@@ -320,7 +319,8 @@ const HomePage = () => {
                 </div>
               )}
             </div>
-            <div className="tab-wrap" onClick={(e) => e.stopPropagation()}>
+            {/* 수정한 부분: ml-auto 적용 */}
+            <div className="tab-wrap ml-auto" onClick={(e) => e.stopPropagation()}>
               <div className="relative">
                 <button onClick={() => setIsNewsDropdownOpen(!isNewsDropdownOpen)} className={`tab-btn flex items-center gap-1 ${isNewsDropdownOpen || selectedNewsTopCategory ? 'tab-active text-emerald-600' : 'text-gray-500 hover:text-gray-800'}`}>
                   <span className="font-medium text-xs">{NEWS_CATEGORY_OPTIONS.find(opt => opt.value === selectedNewsTopCategory)?.label || '대한민국'}</span>
@@ -454,10 +454,8 @@ const HomePage = () => {
 
       <SummaryModal isOpen={isModalOpen} onClose={closeModal} data={selectedKeyword} />
 
-      {/* 모달 등 생략 방지 (트렌드 모달 유지) */}
       {isTrendModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-          {/* 생략: 원본 코드와 동일하므로 그대로 유지하세요. (버튼으로 닫기 등 기능 동일) */}
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
