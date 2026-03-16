@@ -12,6 +12,7 @@ import SummaryModal from '../home/SummaryModal';
 import apiClient from '../../utils/apiClient';
 import { getStoredUserEmail } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
+import PaginationBar from '../common/PaginationBar';
 
 
 // ─── 날짜 계산 헬퍼 함수 (수정사항 3번 해결) ───
@@ -40,6 +41,8 @@ const SORT_OPTIONS = [
     { label: '이름순', value: 'name_asc' },
     { label: '이름 역순', value: 'name_desc' },
 ];
+const ITEMS_PER_PAGE = 9;
+const getKeywordText = (item) => String(item?.keyword || '').trim();
 
 const ScrapPage = ({ isEmbedded = false }) => {
     const navigate = useNavigate();
@@ -49,6 +52,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
 
     // 검색
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
 
     // 정렬
     const [sortBy, setSortBy] = useState('newest');
@@ -113,8 +117,8 @@ const ScrapPage = ({ isEmbedded = false }) => {
         if (searchQuery.trim()) {
             const q = searchQuery.trim().toLowerCase();
             result = result.filter(item =>
-                item.keyword.toLowerCase().includes(q) ||
-                (item.desc || '').toLowerCase().includes(q)
+                getKeywordText(item).toLowerCase().includes(q) ||
+                String(item?.desc || '').toLowerCase().includes(q)
             );
         }
 
@@ -124,13 +128,34 @@ const ScrapPage = ({ isEmbedded = false }) => {
         } else if (sortBy === 'oldest') {
             result.sort((a, b) => new Date(a.savedAt || 0) - new Date(b.savedAt || 0));
         } else if (sortBy === 'name_asc') {
-            result.sort((a, b) => a.keyword.localeCompare(b.keyword, 'ko'));
+            result.sort((a, b) => getKeywordText(a).localeCompare(getKeywordText(b), 'ko'));
         } else if (sortBy === 'name_desc') {
-            result.sort((a, b) => b.keyword.localeCompare(a.keyword, 'ko'));
+            result.sort((a, b) => getKeywordText(b).localeCompare(getKeywordText(a), 'ko'));
         }
 
         return result;
     }, [scraps, searchQuery, sortBy]);
+
+    const totalPages = useMemo(
+        () => Math.max(1, Math.ceil(processedScraps.length / ITEMS_PER_PAGE)),
+        [processedScraps.length]
+    );
+
+    const pageStartIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedScraps = useMemo(
+        () => processedScraps.slice(pageStartIndex, pageStartIndex + ITEMS_PER_PAGE),
+        [processedScraps, pageStartIndex]
+    );
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, sortBy]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
     // ─── 핸들러 ───
 
@@ -152,7 +177,11 @@ const ScrapPage = ({ isEmbedded = false }) => {
         e.stopPropagation();
         const userEmail = getStoredUserEmail();
         if (!userEmail) return;
-        const keyword = item.keyword;
+        const keyword = getKeywordText(item);
+        if (!keyword) {
+            showToast('삭제할 키워드 정보가 없습니다.', { type: 'error' });
+            return;
+        }
 
         if (window.confirm(`'${keyword}' 스크랩을 삭제하시겠습니까?`)) {
             setRemovingKeywords(new Set([keyword]));
@@ -207,7 +236,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
         if (deleteSelection.size === processedScraps.length) {
             setDeleteSelection(new Set());
         } else {
-            setDeleteSelection(new Set(processedScraps.map(s => s.keyword)));
+            setDeleteSelection(new Set(processedScraps.map((s) => getKeywordText(s)).filter(Boolean)));
         }
     };
 
@@ -224,14 +253,15 @@ const ScrapPage = ({ isEmbedded = false }) => {
     // 카드 클릭 → 모달 또는 선택
     const handleCardClick = (item) => {
         if (isDeleteMode) {
-            toggleDeleteSelect(item.keyword);
+            toggleDeleteSelect(getKeywordText(item));
             return;
         }
+        const keyword = getKeywordText(item);
         setSelectedKeyword({
-            keyword: item.keyword,
+            keyword: keyword || '키워드 없음',
             rank: item.rank,
             type: item.type || 'trend',
-            title: item.keyword,
+            title: keyword || '키워드 없음',
             desc: item.desc || '요약 정보 없음',
         });
         setIsModalOpen(true);
@@ -283,13 +313,14 @@ const ScrapPage = ({ isEmbedded = false }) => {
 
     // 카드 컨텐츠 (그리드/리스트 공용 추출)
     const renderCardContent = (item, index) => {
-        const isRemoving = removingKeywords.has(item.keyword);
-        const isSelected = getCheckState(item.keyword);
+        const keyword = getKeywordText(item);
+        const isRemoving = removingKeywords.has(keyword);
+        const isSelected = getCheckState(keyword);
         const isDragOver = dragOverIndex === index;
 
         return (
             <div
-                key={item.keyword}
+                key={`${keyword || 'scrap'}-${index}`}
                 draggable={!isDeleteMode && sortBy === 'custom'}
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
@@ -298,8 +329,8 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 onClick={() => handleCardClick(item)}
                 className={`group cursor-pointer transition-all duration-300 border relative
                     ${viewMode === 'grid'
-                        ? 'card-soft'
-                        : 'card-soft flex items-start gap-4 p-4'}
+                        ? 'bg-white rounded-2xl border border-gray-100 shadow-sm p-3 sm:p-4 lg:p-5 min-h-[132px] sm:min-h-[148px] lg:min-h-[160px] h-full'
+                        : 'bg-white rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 p-4'}
                     ${isRemoving ? 'opacity-0 scale-95 -translate-y-2' : 'opacity-100 scale-100'}
                     ${isSelected
                         ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
@@ -338,7 +369,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                     <div className="flex justify-between items-start mb-3">
                         <div className={isDeleteMode && viewMode === 'grid' ? 'ml-7' : ''}>
                             <h3 className={`font-bold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors ${viewMode === 'list' ? 'text-base' : 'text-lg'}`}>
-                                {item.keyword}
+                                {keyword || '키워드 없음'}
                             </h3>
                             {/* ✂️ 원래 여기 있던 '분석 보기' span 코드를 지워줍니다. */}
                         </div>
@@ -379,7 +410,10 @@ const ScrapPage = ({ isEmbedded = false }) => {
         );
     };
 
-    const rootClassName = isEmbedded ? 'w-full p-5 sm:p-6' : 'page';
+    const rootClassName = isEmbedded ? 'w-full p-5 sm:p-6 h-full flex flex-col' : 'page';
+    const gridTemplateColumns = isEmbedded
+        ? 'repeat(auto-fit, minmax(170px, 1fr))'
+        : 'repeat(auto-fit, minmax(220px, 1fr))';
 
     return (
         <div className={rootClassName} onClick={() => isSortOpen && setIsSortOpen(false)}>
@@ -504,62 +538,77 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 </>
             )}
 
-            {/* ─── 콘텐츠 영역 ─── */}
-            {processedScraps.length === 0 && scraps.length > 0 ? (
-                // 검색/필터 결과 없음
-                <div className="flex flex-col items-center justify-center h-48 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400">
-                    {searchQuery ? (
-                        <>
-                            <MagnifyingGlass size={36} className="mb-3 opacity-50" />
-                            <p className="font-medium text-sm">'{searchQuery}' 검색 결과가 없습니다.</p>
-                        </>
-                    ) : (
-                        <>
-                            <Tag size={36} className="mb-3 opacity-50" />
-                            <p className="font-medium text-sm">현재 조건에 맞는 키워드가 없습니다.</p>
-                        </>
-                    )}
-                    <button
-                        onClick={() => { setSearchQuery(''); }}
-                        className="mt-3 text-blue-600 hover:underline text-xs font-bold"
+            <div className="flex-1 flex flex-col">
+                {/* ─── 콘텐츠 영역 ─── */}
+                {processedScraps.length === 0 && scraps.length > 0 ? (
+                    // 검색/필터 결과 없음
+                    <div className="flex flex-col items-center justify-center h-48 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400">
+                        {searchQuery ? (
+                            <>
+                                <MagnifyingGlass size={36} className="mb-3 opacity-50" />
+                                <p className="font-medium text-sm">'{searchQuery}' 검색 결과가 없습니다.</p>
+                            </>
+                        ) : (
+                            <>
+                                <Tag size={36} className="mb-3 opacity-50" />
+                                <p className="font-medium text-sm">현재 조건에 맞는 키워드가 없습니다.</p>
+                            </>
+                        )}
+                        <button
+                            onClick={() => { setSearchQuery(''); }}
+                            className="mt-3 text-blue-600 hover:underline text-xs font-bold"
+                        >
+                            전체 보기
+                        </button>
+                    </div>
+                ) : scraps.length === 0 ? (
+                    // Empty State
+                    <div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400">
+                        {showClearMsg ? (
+                            <>
+                                <Sparkle size={48} className="mb-4 text-indigo-400 animate-bounce" weight="fill" />
+                                <p className="font-bold text-indigo-600 text-lg">깔끔하게 정리 완료!</p>
+                                <p className="text-sm text-gray-400 mt-1">새로운 트렌드를 발견하러 가볼까요?</p>
+                            </>
+                        ) : (
+                            <>
+                                <BookmarkSimple size={48} className="mb-4 opacity-50" />
+                                <p className="font-medium">아직 스크랩한 키워드가 없습니다.</p>
+                            </>
+                        )}
+                        <button
+                            onClick={() => navigate('/home')}
+                            className="mt-4 text-blue-600 hover:underline text-sm font-bold"
+                        >
+                            트렌드 둘러보러 가기
+                        </button>
+                    </div>
+                ) : (
+                    // 카드 그리드 (뷰 모드 선택 메뉴가 사라졌으므로 Grid 고정)
+                    <div
+                        className={
+                            viewMode === 'grid'
+                                ? 'flex-1 grid gap-3 content-start'
+                                : 'flex flex-col gap-3'
+                        }
+                        style={viewMode === 'grid' ? { gridTemplateColumns } : undefined}
                     >
-                        전체 보기
-                    </button>
-                </div>
-            ) : scraps.length === 0 ? (
-                // Empty State
-                <div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400">
-                    {showClearMsg ? (
-                        <>
-                            <Sparkle size={48} className="mb-4 text-indigo-400 animate-bounce" weight="fill" />
-                            <p className="font-bold text-indigo-600 text-lg">깔끔하게 정리 완료!</p>
-                            <p className="text-sm text-gray-400 mt-1">새로운 트렌드를 발견하러 가볼까요?</p>
-                        </>
-                    ) : (
-                        <>
-                            <BookmarkSimple size={48} className="mb-4 opacity-50" />
-                            <p className="font-medium">아직 스크랩한 키워드가 없습니다.</p>
-                        </>
-                    )}
-                    <button
-                        onClick={() => navigate('/home')}
-                        className="mt-4 text-blue-600 hover:underline text-sm font-bold"
-                    >
-                        트렌드 둘러보러 가기
-                    </button>
-                </div>
-            ) : (
-                // 카드 그리드 (뷰 모드 선택 메뉴가 사라졌으므로 Grid 고정)
-                <div className={
-                    viewMode === 'grid'
-                        ? (isEmbedded
-                            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3'
-                            : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3')
-                        : 'flex flex-col gap-3'
-                }>
-                    {processedScraps.map((item, index) => renderCardContent(item, index))}
-                </div>
-            )}
+                        {paginatedScraps.map((item, index) => renderCardContent(item, pageStartIndex + index))}
+                    </div>
+                )}
+
+                {processedScraps.length > 0 && (
+                    <PaginationBar
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        pageStartIndex={pageStartIndex}
+                        itemsPerPage={ITEMS_PER_PAGE}
+                        totalItems={processedScraps.length}
+                        onPageChange={setCurrentPage}
+                        className="mt-auto pt-6"
+                    />
+                )}
+            </div>
 
             {/* 트렌드 요약 모달 */}
             <SummaryModal

@@ -373,20 +373,22 @@ const MyPage = () => {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-5">
         <ErrorBoundary
           variant="section"
+          className="xl:col-span-6"
           title="스크랩 섹션을 표시하지 못했습니다."
           description="잠시 후 다시 시도해 주세요."
         >
-          <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden xl:col-span-6">
+          <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden xl:col-span-6 h-full xl:min-h-[860px]">
             <ScrapPage isEmbedded />
           </section>
         </ErrorBoundary>
 
         <ErrorBoundary
           variant="section"
+          className="xl:col-span-6"
           title="저장 프롬프트 섹션을 표시하지 못했습니다."
           description="잠시 후 다시 시도해 주세요."
         >
-          <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden xl:col-span-6">
+          <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden xl:col-span-6 h-full xl:min-h-[860px]">
             <SavedPromptsSection email={userInfo.email} />
           </section>
         </ErrorBoundary>

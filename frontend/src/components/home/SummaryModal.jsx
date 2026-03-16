@@ -15,6 +15,65 @@ import apiClient from '../../utils/apiClient';
 import { getStoredUser } from '../../utils/authStorage';
 import { showToast } from '../../utils/toast';
 
+const SENTIMENT_KEYS = ['positive', 'neutral', 'negative'];
+
+const normalizeSentiment = (value) => {
+  const lowered = String(value || '').toLowerCase();
+  if (SENTIMENT_KEYS.includes(lowered)) return lowered;
+  return 'neutral';
+};
+
+const toDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}${month}${day}`;
+};
+
+const buildFallbackDetailData = (keyword, comments = []) => {
+  const list = Array.isArray(comments) ? comments : [];
+  const sentimentAll = { positive: 0, neutral: 0, negative: 0 };
+  const mentionsByDate = new Map();
+
+  list.forEach((comment) => {
+    const sentiment = normalizeSentiment(comment?.sentiment);
+    sentimentAll[sentiment] += 1;
+
+    const rawDate = String(comment?.date || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+      const key = rawDate.replace(/-/g, '');
+      mentionsByDate.set(key, (mentionsByDate.get(key) || 0) + 1);
+    }
+  });
+
+  const today = new Date();
+  const history = [2, 1, 0].map((offset) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - offset);
+    const key = toDateKey(date);
+    return {
+      date: key,
+      mentions: mentionsByDate.get(key) || 0,
+    };
+  });
+
+  return {
+    found: true,
+    keyword: String(keyword || '').trim(),
+    is_person: 0,
+    totalMentions: list.length,
+    positive_score: sentimentAll.positive,
+    neutral_score: sentimentAll.neutral,
+    negative_score: sentimentAll.negative,
+    history,
+    totalCommentCount: list.length,
+    sentimentCounts: { all: sentimentAll },
+    comments: list,
+    wordCloud: { all: [] },
+    videos: [],
+  };
+};
+
 
 export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const navigate = useNavigate();
@@ -36,8 +95,9 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
     const savedUser = getStoredUser();
     const targetKeyword = String(data?.keyword || '').trim();
+    let isCancelled = false;
 
-   if (savedUser?.email) {
+    if (savedUser?.email) {
       apiClient
         .get('/scraps/check', {
           params: {
@@ -45,34 +105,64 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
             keyword: targetKeyword,
           },
         })
-        .then((res) => setIsBookmarked(Boolean(res.data?.isBookmarked)))
-        .catch(() => setIsBookmarked(false));
+        .then((res) => {
+          if (!isCancelled) {
+            setIsBookmarked(Boolean(res.data?.isBookmarked));
+          }
+        })
+        .catch(() => {
+          if (!isCancelled) {
+            setIsBookmarked(false);
+          }
+        });
     } else {
       setIsBookmarked(false);
     }
 
-    // 상세 데이터 (여론, 차트 등) 호출
-    apiClient
-      .get('/analysis', {
-        params: {
-          keyword: data.keyword,
-          type: data.type || 'trend',
-        },
-      })
-      .then((res) => {
-        const result = res.data;
-        if (result?.found) {
-          setDetailData(result);
+    const fetchDetailData = async () => {
+      let hasFallback = false;
+
+      // 1) 댓글 API 선행 호출: /analysis 장애 시에도 기본 정보 표시
+      try {
+        const commentsRes = await apiClient.get('/analysis/comments', {
+          params: { keyword: targetKeyword, offset: 0 },
+        });
+        const fallbackData = buildFallbackDetailData(targetKeyword, commentsRes.data?.comments || []);
+        if (!isCancelled) {
+          setDetailData(fallbackData);
+        }
+        hasFallback = true;
+      } catch (fallbackErr) {
+        console.error('모달 댓글 데이터 로딩 실패:', fallbackErr);
+      }
+
+      // 2) /analysis 성공 시 정식 데이터로 덮어쓰기
+      try {
+        const analysisRes = await apiClient.get('/analysis', {
+          params: { keyword: targetKeyword },
+        });
+        if (!isCancelled && analysisRes.data?.found) {
+          setDetailData(analysisRes.data);
+          setLoading(false);
           return;
         }
+      } catch (analysisErr) {
+        console.error('모달 상세 데이터 로딩 실패:', analysisErr);
+      }
+
+      if (!isCancelled && !hasFallback) {
         setDetailData(null);
-      })
-      .catch((err) => {
-        console.error('모달 데이터 로딩 실패:', err);
-      })
-      .finally(() => {
+      }
+      if (!isCancelled) {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchDetailData();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [isOpen, data]);
 
   if (!isOpen) return null;
@@ -137,9 +227,10 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
     }
   };
 
-  const posScore = Number(detailData?.positive_score) || 0;
-  const neuScore = Number(detailData?.neutral_score) || 0;
-  const negScore = Number(detailData?.negative_score) || 0;
+  const allSentimentCounts = detailData?.sentimentCounts?.all;
+  const posScore = Number(allSentimentCounts?.positive ?? detailData?.positive_score) || 0;
+  const neuScore = Number(allSentimentCounts?.neutral ?? detailData?.neutral_score) || 0;
+  const negScore = Number(allSentimentCounts?.negative ?? detailData?.negative_score) || 0;
 
   const maxScore = Math.max(posScore, neuScore, negScore);
   

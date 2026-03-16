@@ -57,11 +57,11 @@ class ErrorBoundary extends React.Component {
 
     if (variant === 'section') {
       return (
-        <div className={`rounded-xl border border-red-200 bg-red-50 p-4 sm:p-5 ${className}`}>
-          <h3 className="text-sm sm:text-base font-bold text-red-700 mb-1">
+        <div className={`w-full rounded-xl border border-red-200 bg-red-50 p-4 sm:p-5 ${className}`}>
+          <h3 className="text-sm sm:text-base font-bold text-red-700 mb-1 break-keep">
             {title || '섹션을 불러오는 중 오류가 발생했습니다.'}
           </h3>
-          <p className="text-xs sm:text-sm text-red-600">
+          <p className="text-xs sm:text-sm text-red-600 break-keep leading-relaxed">
             {description || '잠시 후 다시 시도해 주세요.'}
           </p>
           <button

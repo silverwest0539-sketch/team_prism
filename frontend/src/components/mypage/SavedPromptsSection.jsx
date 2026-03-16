@@ -4,6 +4,7 @@ import { BookmarkSimple, SortAscending } from '@phosphor-icons/react';
 import { showToast } from '../../utils/toast';
 import { toApiUrl } from '../../utils/apiClient';
 import { createHttpError, safeParseJson, toFriendlyFetchErrorMessage } from '../../utils/fetchError';
+import PaginationBar from '../common/PaginationBar';
 
 const formatSavedAt = (value) => {
   if (!value) return '';
@@ -24,6 +25,7 @@ const SORT_OPTIONS = [
   { label: '키워드순', value: 'name_asc' },
   { label: '키워드 역순', value: 'name_desc' },
 ];
+const ITEMS_PER_PAGE = 6;
 
 const normalizeText = (value = '') => String(value || '').replace(/\s+/g, ' ').trim();
 
@@ -53,6 +55,7 @@ const SavedPromptsSection = ({ email = '' }) => {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [selectedPrompt, setSelectedPrompt] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('newest');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -259,6 +262,28 @@ const SavedPromptsSection = ({ email = '' }) => {
 
     return result;
   }, [savedPrompts, searchQuery, sortBy]);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(processedPrompts.length / ITEMS_PER_PAGE)),
+    [processedPrompts.length]
+  );
+
+  const pageStartIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedPrompts = useMemo(
+    () => processedPrompts.slice(pageStartIndex, pageStartIndex + ITEMS_PER_PAGE),
+    [processedPrompts, pageStartIndex]
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortBy]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const isAllVisibleSelected = processedPrompts.length > 0 && selectedPromptIds.size === processedPrompts.length;
 
   const handleCopyPrompt = async (item) => {
@@ -376,8 +401,13 @@ const SavedPromptsSection = ({ email = '' }) => {
     setIsDeleteMode(false);
   };
 
+  const goToPage = (page) => {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    setCurrentPage(page);
+  };
+
   return (
-    <div className="p-5 sm:p-6" onClick={() => isSortOpen && setIsSortOpen(false)}>
+    <div className="p-5 sm:p-6 h-full flex flex-col" onClick={() => isSortOpen && setIsSortOpen(false)}>
       <div className="mb-5 sm:mb-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 xl:pt-7 xl:min-h-[120px]">
           <div>
@@ -518,108 +548,123 @@ const SavedPromptsSection = ({ email = '' }) => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {processedPrompts.map((item) => {
-                const promptType = getPromptType(item);
-                const promptIndustry = getPromptIndustry(item);
-                const isSelected = selectedPromptIds.has(item.id);
+            <div className="flex-1 flex flex-col">
+              <div
+                className="grid gap-3 flex-1 content-start"
+                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}
+              >
+                {paginatedPrompts.map((item) => {
+                  const promptType = getPromptType(item);
+                  const promptIndustry = getPromptIndustry(item);
+                  const isSelected = selectedPromptIds.has(item.id);
 
-                return (
-                  <article
-                    key={item.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleCardClick(item)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        handleCardClick(item);
-                      }
-                    }}
-                    className={`group cursor-pointer transition-all duration-300 border bg-white rounded-xl p-4 hover:shadow-md relative ${isSelected
-                      ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
-                      : 'border-gray-100 hover:border-blue-200'
-                      }`}
-                  >
-                    {isDeleteMode && (
-                      <div className="absolute top-4 left-4">
-                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-red-500 border-red-500' : 'border-gray-300 bg-white'
-                          }`}>
-                          {isSelected && (
-                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className={`min-w-0 ${isDeleteMode ? 'ml-7' : ''}`}>
-                        <h3 className="text-base font-bold text-gray-900 transition-colors group-hover:text-blue-600 whitespace-normal break-all leading-snug">
-                          {getPromptKeyword(item)}
-                        </h3>
-                      </div>
-
-                      {!isDeleteMode && (
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleCopyPrompt(item);
-                            }}
-                            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                            title="복사"
-                          >
-                            {copiedId === item.id ? (
-                              <Check size={16} className="text-green-600" />
-                            ) : (
-                              <Copy size={16} />
+                  return (
+                    <article
+                      key={item.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleCardClick(item)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          handleCardClick(item);
+                        }
+                      }}
+                      className={`group cursor-pointer transition-all duration-300 border bg-white rounded-xl p-3 sm:p-4 lg:p-5 min-h-[132px] sm:min-h-[148px] lg:min-h-[160px] hover:shadow-md relative ${isSelected
+                        ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
+                        : 'border-gray-100 hover:border-blue-200'
+                        }`}
+                    >
+                      {isDeleteMode && (
+                        <div className="absolute top-4 left-4">
+                          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-red-500 border-red-500' : 'border-gray-300 bg-white'
+                            }`}>
+                            {isSelected && (
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
                             )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setDeleteTargetId(item.id);
-                            }}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                            title="삭제"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          </div>
                         </div>
                       )}
-                    </div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className={`min-w-0 ${isDeleteMode ? 'ml-7' : ''}`}>
+                          <h3 className="text-base font-bold text-gray-900 transition-colors group-hover:text-blue-600 whitespace-normal break-all leading-snug">
+                            {getPromptKeyword(item)}
+                          </h3>
+                        </div>
 
-                    <div className={`mt-2.5 flex items-center gap-2 flex-wrap ${isDeleteMode ? 'ml-7' : ''}`}>
-                      {promptType && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
-                          {promptType}
-                        </span>
-                      )}
-                      {promptIndustry && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
-                          {promptIndustry}
-                        </span>
-                      )}
-                    </div>
+                        {!isDeleteMode && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleCopyPrompt(item);
+                              }}
+                              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                              title="복사"
+                            >
+                              {copiedId === item.id ? (
+                                <Check size={16} className="text-green-600" />
+                              ) : (
+                                <Copy size={16} />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setDeleteTargetId(item.id);
+                              }}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              title="삭제"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
 
-                    {/* 변경된 코드 */}
-                    <div className={`flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3 ${isDeleteMode ? 'ml-7' : ''}`}>
-                      {/* 왼쪽: 날짜 영역 */}
-                      <span>{formatSavedAt(item.savedAt)} 저장됨</span>
+                      <div className={`mt-2.5 flex items-center gap-2 flex-wrap ${isDeleteMode ? 'ml-7' : ''}`}>
+                        {promptType && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                            {promptType}
+                          </span>
+                        )}
+                        {promptIndustry && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-gray-200 text-gray-600">
+                            {promptIndustry}
+                          </span>
+                        )}
+                      </div>
 
-                      {/* 오른쪽: 프롬프트 전체보기 영역 (삭제 모드가 아닐 때만 보임) */}
-                      {!isDeleteMode && (
-                        <span className="text-[12px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                          프롬프트 전체보기
-                        </span>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
+                      {/* 변경된 코드 */}
+                      <div className={`flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3 ${isDeleteMode ? 'ml-7' : ''}`}>
+                        {/* 왼쪽: 날짜 영역 */}
+                        <span>{formatSavedAt(item.savedAt)} 저장됨</span>
+
+                        {/* 오른쪽: 프롬프트 전체보기 영역 (삭제 모드가 아닐 때만 보임) */}
+                        {!isDeleteMode && (
+                          <span className="text-[12px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                            프롬프트 전체보기
+                          </span>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              <PaginationBar
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageStartIndex={pageStartIndex}
+                itemsPerPage={ITEMS_PER_PAGE}
+                totalItems={processedPrompts.length}
+                onPageChange={goToPage}
+                className="mt-auto pt-6"
+              />
             </div>
           )}
         </>
