@@ -41,8 +41,14 @@ const SORT_OPTIONS = [
     { label: '이름순', value: 'name_asc' },
     { label: '이름 역순', value: 'name_desc' },
 ];
-const ITEMS_PER_PAGE = 9;
+const LAPTOP_BREAKPOINT = 1024;
+const ITEMS_PER_PAGE_MOBILE = 3;
+const ITEMS_PER_PAGE_LAPTOP = 9;
 const getKeywordText = (item) => String(item?.keyword || '').trim();
+const resolveItemsPerPage = () => {
+    if (typeof window === 'undefined') return ITEMS_PER_PAGE_MOBILE;
+    return window.innerWidth >= LAPTOP_BREAKPOINT ? ITEMS_PER_PAGE_LAPTOP : ITEMS_PER_PAGE_MOBILE;
+};
 
 const ScrapPage = ({ isEmbedded = false }) => {
     const navigate = useNavigate();
@@ -53,6 +59,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
     // 검색
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(() => resolveItemsPerPage());
 
     // 정렬
     const [sortBy, setSortBy] = useState('newest');
@@ -100,6 +107,15 @@ const ScrapPage = ({ isEmbedded = false }) => {
         fetchScraps();
     }, [fetchScraps]);
 
+    useEffect(() => {
+        const handleResize = () => {
+            setItemsPerPage(resolveItemsPerPage());
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Empty State 도달 감지
     useEffect(() => {
         if (prevCountRef.current > 0 && scraps.length === 0) {
@@ -137,14 +153,14 @@ const ScrapPage = ({ isEmbedded = false }) => {
     }, [scraps, searchQuery, sortBy]);
 
     const totalPages = useMemo(
-        () => Math.max(1, Math.ceil(processedScraps.length / ITEMS_PER_PAGE)),
-        [processedScraps.length]
+        () => Math.max(1, Math.ceil(processedScraps.length / itemsPerPage)),
+        [processedScraps.length, itemsPerPage]
     );
 
-    const pageStartIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const pageStartIndex = (currentPage - 1) * itemsPerPage;
     const paginatedScraps = useMemo(
-        () => processedScraps.slice(pageStartIndex, pageStartIndex + ITEMS_PER_PAGE),
-        [processedScraps, pageStartIndex]
+        () => processedScraps.slice(pageStartIndex, pageStartIndex + itemsPerPage),
+        [processedScraps, pageStartIndex, itemsPerPage]
     );
 
     useEffect(() => {
@@ -365,7 +381,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 )}
 
                 {/* 메인 컨텐츠 */}
-                <div className={`flex-1 ${viewMode === 'list' ? 'min-w-0' : ''}`}>
+                <div className={`flex-1 flex flex-col h-full ${viewMode === 'list' ? 'min-w-0' : ''}`}>
                     <div className="flex justify-between items-start mb-3">
                         <div className={isDeleteMode && viewMode === 'grid' ? 'ml-7' : ''}>
                             <h3 className={`font-bold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors ${viewMode === 'list' ? 'text-base' : 'text-lg'}`}>
@@ -385,7 +401,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                     </div>
                     
                     {/* 👇 여기 div에 flex justify-between items-center 를 추가했습니다! */}
-                    <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3">
+                    <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-auto">
                         <span>{item.savedAt ? getRelativeDate(item.savedAt) : '날짜 정보 없음'} 저장됨</span>
                         
                         {!isDeleteMode && (
@@ -411,9 +427,6 @@ const ScrapPage = ({ isEmbedded = false }) => {
     };
 
     const rootClassName = isEmbedded ? 'w-full p-5 sm:p-6 h-full flex flex-col' : 'page';
-    const gridTemplateColumns = isEmbedded
-        ? 'repeat(auto-fit, minmax(170px, 1fr))'
-        : 'repeat(auto-fit, minmax(220px, 1fr))';
 
     return (
         <div className={rootClassName} onClick={() => isSortOpen && setIsSortOpen(false)}>
@@ -458,8 +471,8 @@ const ScrapPage = ({ isEmbedded = false }) => {
                     </div>
 
                     {/* ─── 툴바: 정렬 + (뷰전환 삭제됨) + 모드 토글 ─── */}
-                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-6">
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <div className="flex items-center justify-between gap-2 mb-6">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                             {/* 정렬 드롭다운 */}
                             <div className="relative" onClick={(e) => e.stopPropagation()}>
                                 <button
@@ -491,7 +504,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                         </div>
 
                         {/* 모드 버튼들 */}
-                        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                        <div className="flex items-center gap-2 shrink-0 ml-auto">
                             {/* 다중 삭제 모드 액션 */}
                             {isDeleteMode && (
                                 <>
@@ -585,14 +598,13 @@ const ScrapPage = ({ isEmbedded = false }) => {
                     </div>
                 ) : (
                     // 카드 그리드 (뷰 모드 선택 메뉴가 사라졌으므로 Grid 고정)
-                    <div
-                        className={
-                            viewMode === 'grid'
-                                ? 'flex-1 grid gap-3 content-start'
-                                : 'flex flex-col gap-3'
-                        }
-                        style={viewMode === 'grid' ? { gridTemplateColumns } : undefined}
-                    >
+                    <div className={
+                        viewMode === 'grid'
+                            ? (isEmbedded
+                                ? 'flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 content-start'
+                                : 'flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 content-start')
+                            : 'flex flex-col gap-3'
+                    }>
                         {paginatedScraps.map((item, index) => renderCardContent(item, pageStartIndex + index))}
                     </div>
                 )}
@@ -602,7 +614,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                         currentPage={currentPage}
                         totalPages={totalPages}
                         pageStartIndex={pageStartIndex}
-                        itemsPerPage={ITEMS_PER_PAGE}
+                        itemsPerPage={itemsPerPage}
                         totalItems={processedScraps.length}
                         onPageChange={setCurrentPage}
                         className="mt-auto pt-6"

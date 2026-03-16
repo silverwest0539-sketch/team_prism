@@ -25,7 +25,13 @@ const SORT_OPTIONS = [
   { label: '키워드순', value: 'name_asc' },
   { label: '키워드 역순', value: 'name_desc' },
 ];
-const ITEMS_PER_PAGE = 6;
+const LAPTOP_BREAKPOINT = 1024;
+const ITEMS_PER_PAGE_MOBILE = 3;
+const ITEMS_PER_PAGE_LAPTOP = 9;
+const resolveItemsPerPage = () => {
+  if (typeof window === 'undefined') return ITEMS_PER_PAGE_MOBILE;
+  return window.innerWidth >= LAPTOP_BREAKPOINT ? ITEMS_PER_PAGE_LAPTOP : ITEMS_PER_PAGE_MOBILE;
+};
 
 const normalizeText = (value = '') => String(value || '').replace(/\s+/g, ' ').trim();
 
@@ -56,6 +62,7 @@ const SavedPromptsSection = ({ email = '' }) => {
   const [selectedPrompt, setSelectedPrompt] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(() => resolveItemsPerPage());
   const [sortBy, setSortBy] = useState('newest');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -239,6 +246,15 @@ const SavedPromptsSection = ({ email = '' }) => {
     fetchSavedPrompts();
   }, [email]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setItemsPerPage(resolveItemsPerPage());
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const hasPrompts = savedPrompts.length > 0;
   const processedPrompts = useMemo(() => {
     let result = [...savedPrompts];
@@ -264,14 +280,14 @@ const SavedPromptsSection = ({ email = '' }) => {
   }, [savedPrompts, searchQuery, sortBy]);
 
   const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(processedPrompts.length / ITEMS_PER_PAGE)),
-    [processedPrompts.length]
+    () => Math.max(1, Math.ceil(processedPrompts.length / itemsPerPage)),
+    [processedPrompts.length, itemsPerPage]
   );
 
-  const pageStartIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const pageStartIndex = (currentPage - 1) * itemsPerPage;
   const paginatedPrompts = useMemo(
-    () => processedPrompts.slice(pageStartIndex, pageStartIndex + ITEMS_PER_PAGE),
-    [processedPrompts, pageStartIndex]
+    () => processedPrompts.slice(pageStartIndex, pageStartIndex + itemsPerPage),
+    [processedPrompts, pageStartIndex, itemsPerPage]
   );
 
   useEffect(() => {
@@ -461,8 +477,8 @@ const SavedPromptsSection = ({ email = '' }) => {
             )}
           </div>
 
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-6">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center justify-between gap-2 mb-6">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="relative" onClick={(event) => event.stopPropagation()}>
                 <button
                   type="button"
@@ -493,7 +509,7 @@ const SavedPromptsSection = ({ email = '' }) => {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            <div className="flex items-center gap-2 shrink-0 ml-auto">
               {isDeleteMode && (
                 <>
                   <button
@@ -549,10 +565,7 @@ const SavedPromptsSection = ({ email = '' }) => {
             </div>
           ) : (
             <div className="flex-1 flex flex-col">
-              <div
-                className="grid gap-3 flex-1 content-start"
-                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}
-              >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 flex-1 content-start">
                 {paginatedPrompts.map((item) => {
                   const promptType = getPromptType(item);
                   const promptIndustry = getPromptIndustry(item);
@@ -570,7 +583,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                           handleCardClick(item);
                         }
                       }}
-                      className={`group cursor-pointer transition-all duration-300 border bg-white rounded-xl p-3 sm:p-4 lg:p-5 min-h-[132px] sm:min-h-[148px] lg:min-h-[160px] hover:shadow-md relative ${isSelected
+                      className={`group cursor-pointer transition-all duration-300 border bg-white rounded-xl p-3 sm:p-4 lg:p-5 min-h-[132px] sm:min-h-[148px] lg:min-h-[160px] h-full flex flex-col hover:shadow-md relative ${isSelected
                         ? 'border-red-400 ring-2 ring-red-200 bg-red-50/30'
                         : 'border-gray-100 hover:border-blue-200'
                         }`}
@@ -640,7 +653,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                       </div>
 
                       {/* 변경된 코드 */}
-                      <div className={`flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-3 ${isDeleteMode ? 'ml-7' : ''}`}>
+                      <div className={`flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-auto ${isDeleteMode ? 'ml-7' : ''}`}>
                         {/* 왼쪽: 날짜 영역 */}
                         <span>{formatSavedAt(item.savedAt)} 저장됨</span>
 
@@ -660,7 +673,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 pageStartIndex={pageStartIndex}
-                itemsPerPage={ITEMS_PER_PAGE}
+                itemsPerPage={itemsPerPage}
                 totalItems={processedPrompts.length}
                 onPageChange={goToPage}
                 className="mt-auto pt-6"
