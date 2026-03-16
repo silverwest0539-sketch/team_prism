@@ -135,7 +135,7 @@ const SearchBar = ({ placeholder, value, onChange, onKeyDown, containerClassName
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder || '분석하고 싶은 키워드 검색 (예: 봄동)'}
-          className="w-full pl-12 pr-4 py-3 sm:py-4 bg-white border border-purple-500 rounded-full text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-all"
+          className="w-full pl-12 pr-4 py-3 sm:py-4 bg-white border border-indigo-500 rounded-full text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-all"
         />
       </div>
 

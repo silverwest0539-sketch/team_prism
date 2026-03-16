@@ -8,8 +8,8 @@ import {
   BookmarkSimple,
   Export,
   PlayCircle,
-  CaretDoubleLeft, // << 아이콘 추가
-  CaretDoubleRight, // [추가됨] >> 아이콘
+  CaretDoubleLeft,
+  CaretDoubleRight,
   CaretLeft,
   CaretRight,
   ChartLineUp,
@@ -65,9 +65,13 @@ const AnalysisPage = () => {
   const initialToday = new Date();
   const initialYesterday = new Date(initialToday);
   initialYesterday.setDate(initialYesterday.getDate() - 1);
+  
+  // [추가됨] 상단 3개 위젯을 위한 '일주일 전' 기준 날짜
+  const initialOneWeekAgo = new Date(initialToday);
+  initialOneWeekAgo.setDate(initialToday.getDate() - 7); 
 
   // ==========================================
-  // [추가] 로그인 상태 관리
+  // 로그인 상태 관리
   // ==========================================
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -92,12 +96,18 @@ const AnalysisPage = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   
-  // 입력용 날짜와 실제 적용(차트렌더링)용 날짜를 분리
-  const [inputStartDate, setInputStartDate] = useState(getFormattedDate(initialYesterday));
+  // 입력용 날짜와 실제 적용(차트렌더링)용 날짜 (상단 3개 메뉴: 일주일 기준)
+  const [inputStartDate, setInputStartDate] = useState(getFormattedDate(initialOneWeekAgo));
   const [inputEndDate, setInputEndDate] = useState(getFormattedDate(initialToday));
   
-  const [appliedStartDate, setAppliedStartDate] = useState(getFormattedDate(initialYesterday));
+  const [appliedStartDate, setAppliedStartDate] = useState(getFormattedDate(initialOneWeekAgo));
   const [appliedEndDate, setAppliedEndDate] = useState(getFormattedDate(initialToday));
+
+  // [추가됨] 하단 2개 메뉴(댓글 반응, AI 인사이트)를 위한 1일 전용 날짜 상태
+  const [commentStartDate, setCommentStartDate] = useState(getFormattedDate(initialYesterday));
+  const [commentEndDate, setCommentEndDate] = useState(getFormattedDate(initialToday));
+
+  const [bottomTotalCount, setBottomTotalCount] = useState(0); 
 
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [news, setNews] = useState([]);
@@ -108,15 +118,12 @@ const AnalysisPage = () => {
   const [showScoreTooltip, setShowScoreTooltip] = useState(false);
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
 
-  // 여론 분석 모달 관련 상태
   const [sentimentModalConfig, setSentimentModalConfig] = useState({ isOpen: false, sentiment: null });
   const [isNegativeRevealed, setIsNegativeRevealed] = useState(false);
 
-  // 정보 수정 제보 모달 관련 상태
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editRequestText, setEditRequestText] = useState('');
 
-  // 개별 댓글 반응용 동의 상태 관리 (Set)
   const [revealedCommentIds, setRevealedCommentIds] = useState(new Set());
 
   const handleRevealComment = useCallback((commentId) => {
@@ -127,26 +134,22 @@ const AnalysisPage = () => {
     });
   }, []);
 
-  // 메인 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
   const commentsTopRef = useRef(null);
 
-  // 여론 분석 모달 전용 페이지네이션 상태 (새로 추가됨)
   const [modalCurrentPage, setModalCurrentPage] = useState(1);
   const MODAL_ITEMS_PER_PAGE = 7;
   const modalCommentsTopRef = useRef(null);
 
-  // 인물 판별 로직
   const isPersonKeyword = data?.is_person === 1;
 
-  // 기준 날짜 (오늘 날짜) 포맷팅
   const todayForText = new Date();
   const baseDateText = `${todayForText.getMonth() + 1}월 ${todayForText.getDate()}일 기준`;
 
-  // 데이터 불러오기
-  const fetchData = useCallback(async (currentStart, currentEnd) => {
-    if (!keyword || !isLoggedIn) return; // 로그인 안되어있으면 API 호출 방지 (리소스 절약)
+  // 데이터 불러오기 (하단 댓글용 시작/종료일을 추가 파라미터로 받음)
+  const fetchData = useCallback(async (currentStart, currentEnd, cStart, cEnd) => {
+    if (!keyword || !isLoggedIn) return; 
 
     setLoading(true);
 
@@ -164,15 +167,43 @@ const AnalysisPage = () => {
       const newsData = newsRes.data;
 
       if (analysisData.found) {
+        
+        // [추가된 로직] 상단(1주일)과 하단(1일)의 날짜가 다를 경우, 하단 댓글만 1일치로 덮어쓰기
+        if (cStart && cEnd && (currentStart !== cStart || currentEnd !== cEnd)) {
+          try {
+            const commentsRes = await apiClient.get('/analysis/comments', {
+              params: {
+                keyword,
+                startDate: cStart,
+                endDate: cEnd,
+                offset: 0
+              }
+            });
+            analysisData.comments = commentsRes.data.comments || [];
+
+            // 👇 추가됨: 1일치 전용 데이터의 총 개수를 별도로 저장
+            setBottomTotalCount(
+              commentsRes.data.totalCount || 
+              commentsRes.data.total_comments || 
+              commentsRes.data.comments?.length || 0
+            );
+          } catch (err) {
+            console.error('하단 1일치 댓글 로드 실패:', err);
+          }
+        } else {
+          // 수동 검색 등으로 날짜가 동일할 때
+          setBottomTotalCount(
+            analysisData.totalCommentCount || 
+            analysisData.total_comments || 
+            analysisData.comments?.length || 0
+          );
+        }
+
         setData(analysisData);
         
-        // 처음 서버에서 받아온 실제 댓글 개수 확인
         const initialCommentCount = analysisData.comments?.length || 0;
-        
-        // offset을 실제 받아온 개수로 정확하게 세팅
         setCommentOffset(initialCommentCount); 
         
-        // 받아온 댓글이 70개(서버 1회 전송량)보다 적다면, 뒤에 더 이상 데이터가 없는 것임
         if (initialCommentCount < 70) {
           setHasMoreComments(false);
         } else {
@@ -186,6 +217,8 @@ const AnalysisPage = () => {
           setInputEndDate(eDate);
           setAppliedStartDate(sDate);
           setAppliedEndDate(eDate);
+          setCommentStartDate(sDate);
+          setCommentEndDate(eDate);
         }
       } else {
         setData(null);
@@ -201,7 +234,7 @@ const AnalysisPage = () => {
   }, [keyword, isLoggedIn]); 
 
   const fetchAiSummary = useCallback(async (targetKeyword, start, end) => {
-    if (!isLoggedIn) return; // 비로그인 시 차단
+    if (!isLoggedIn) return; 
 
     setIsAiLoading(true);
     try {
@@ -225,21 +258,32 @@ const AnalysisPage = () => {
     setAiSummary(null);
     setIsAiLoading(true);
     setShowScoreTooltip(false);
-    
-    // 키워드가 변경되면 개별 댓글 동의 상태도 초기화
     setRevealedCommentIds(new Set());
     
     const todayDate = getFormattedDate(new Date());
+    
+    // 1일전 날짜 계산 (하단용)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayDate = getFormattedDate(yesterday);
 
-    setInputStartDate(yesterdayDate);
+    // 7일전 날짜 계산 (상단용)
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const oneWeekAgoDate = getFormattedDate(oneWeekAgo);
+
+    // 상단 3개 메뉴 상태 세팅 (1주일)
+    setInputStartDate(oneWeekAgoDate);
     setInputEndDate(todayDate);
-    setAppliedStartDate(yesterdayDate);
+    setAppliedStartDate(oneWeekAgoDate);
     setAppliedEndDate(todayDate);
+
+    // 하단 2개 메뉴 상태 세팅 (1일 유지)
+    setCommentStartDate(yesterdayDate);
+    setCommentEndDate(todayDate);
+
     setCurrentPage(1);
-    setModalCurrentPage(1); // 검색 시 모달 페이지도 초기화
+    setModalCurrentPage(1); 
     
     const savedUser = getStoredUser();
     if (savedUser?.email) {
@@ -253,7 +297,10 @@ const AnalysisPage = () => {
       setIsScrapped(false);
     }
 
-    fetchData(yesterdayDate, todayDate);
+    // 메인호출: 상단은 1주일, 하단 댓글용은 1일
+    fetchData(oneWeekAgoDate, todayDate, yesterdayDate, todayDate);
+    
+    // AI요약: 1일 기준 그대로
     fetchAiSummary(keyword, yesterdayDate, todayDate);
 
   }, [keyword, fetchAiSummary, fetchData, isLoggedIn]); 
@@ -266,7 +313,6 @@ const AnalysisPage = () => {
     }
   };
 
-  // ** 변경된 댓글 추가 불러오기 함수 (페이지네이션 이동 중 호출됨) **
   const fetchMoreComments = async () => {
     if (isLoadingMore || !hasMoreComments) return false;
     setIsLoadingMore(true);
@@ -274,8 +320,8 @@ const AnalysisPage = () => {
       const res = await apiClient.get('/analysis/comments', {
         params: {
           keyword,
-          startDate: appliedStartDate,
-          endDate: appliedEndDate,
+          startDate: commentStartDate, // 하단 전용 날짜(1일) 사용
+          endDate: commentEndDate,
           offset: commentOffset,
           platform: selectedPlatform !== 'all' ? selectedPlatform : undefined
         }
@@ -289,7 +335,6 @@ const AnalysisPage = () => {
         }));
         setCommentOffset(prev => prev + newComments.length);
         
-        // 만약 설정된 기본 수량(예: 70개)보다 적게 가져왔다면 마지막 데이터로 간주
         if (newComments.length < 70) {
           setHasMoreComments(false);
         }
@@ -307,6 +352,7 @@ const AnalysisPage = () => {
     }
   };
 
+  // 여론 분석 모달은 '여론 분석(1주일)' 메뉴 안에 속하므로 appliedStartDate(1주일) 유지
   const fetchModalCommentsInitial = async (sentiment) => {
     setIsModalLoadingMore(true);
     try {
@@ -367,29 +413,85 @@ const AnalysisPage = () => {
   const handleDateApply = () => {
     setAppliedStartDate(inputStartDate);
     setAppliedEndDate(inputEndDate);
-    fetchData(inputStartDate, inputEndDate);
+    
+    // 사용자가 날짜를 수동 검색할 땐 하단 데이터도 맞추어 갱신
+    setCommentStartDate(inputStartDate);
+    setCommentEndDate(inputEndDate);
+
+    fetchData(inputStartDate, inputEndDate, inputStartDate, inputEndDate);
+    fetchAiSummary(keyword, inputStartDate, inputEndDate);
     setCurrentPage(1);
     setModalCurrentPage(1);
   };
 
   const handleDateReset = () => {
     const todayDate = getFormattedDate(new Date());
+    
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayDate = getFormattedDate(yesterday);
 
-    setInputStartDate(yesterdayDate);
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const oneWeekAgoDate = getFormattedDate(oneWeekAgo);
+
+    setInputStartDate(oneWeekAgoDate);
     setInputEndDate(todayDate);
-    setAppliedStartDate(yesterdayDate);
+    setAppliedStartDate(oneWeekAgoDate);
     setAppliedEndDate(todayDate);
+    
+    setCommentStartDate(yesterdayDate);
+    setCommentEndDate(todayDate);
+
     setCurrentPage(1);
     setModalCurrentPage(1);
     
-    fetchData(yesterdayDate, todayDate);
+    fetchData(oneWeekAgoDate, todayDate, yesterdayDate, todayDate);
     fetchAiSummary(keyword, yesterdayDate, todayDate);
   };
 
-  const resolveScrapKeyword = useCallback(async () => {
+  // 2) 플랫폼 필터 변경 useEffect 내부 수정
+  useEffect(() => {
+    setCurrentPage(1);
+    setModalCurrentPage(1);
+
+    if (!data || !keyword) return;
+
+    const fetchPlatformComments = async () => {
+      setIsLoadingMore(true);
+      try {
+        const res = await apiClient.get('/analysis/comments', {
+          params: {
+            keyword,
+            startDate: commentStartDate,
+            endDate: commentEndDate,
+            offset: 0,
+            platform: selectedPlatform !== 'all' ? selectedPlatform : undefined
+          }
+        });
+        const newComments = res.data.comments || [];
+        
+        setData(prev => prev ? { ...prev, comments: newComments } : prev);
+        setCommentOffset(newComments.length);
+        setHasMoreComments(newComments.length >= 70);
+        
+        // 👇 추가됨: 플랫폼 변경 시에도 하단 전용 카운트 업데이트
+        setBottomTotalCount(
+          res.data.totalCount || 
+          res.data.total_comments || 
+          newComments.length
+        );
+      } catch (error) {
+        console.error('플랫폼 전용 댓글 로드 실패:', error);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    };
+
+    fetchPlatformComments();
+  }, [selectedPlatform, keyword, commentStartDate, commentEndDate]);
+
+    const resolveScrapKeyword = useCallback(async () => {
     const cachedKeyword = String(data?.keyword || '').trim();
     if (cachedKeyword) return cachedKeyword;
 
@@ -549,6 +651,7 @@ const AnalysisPage = () => {
       historyFiltered = sourceData.history || [];
     }
 
+    // 하단 1일치 데이터를 받아온 comments 활용
     let allComments = sourceData.comments || [];
     if (selectedPlatform !== 'all') {
       allComments = allComments.filter((c) => (c?.source || '').includes(selectedPlatform));
@@ -581,13 +684,13 @@ const AnalysisPage = () => {
 
   const mainChartData = useMemo(() => {
     const history = filteredData?.history || [];
-    return history.length > 7 ? history.slice(-7) : history;
+    // 기본 날짜가 1주일(8일치 데이터)이므로 slice 제한을 늘리거나 없애 전체 적용 데이터를 보여줍니다.
+    return history.length > 8 ? history.slice(-8) : history;
   }, [filteredData]);
 
-  const showMoreChartBtn = (filteredData?.history?.length || 0) > 7;
+  const showMoreChartBtn = (filteredData?.history?.length || 0) > 8;
 
   const sentimentChartData = useMemo(() => {
-    // 백엔드에서 집계해준 정확한 여론 통계 데이터를 최우선으로 사용
     if (data?.sentimentCounts) {
       const counts = selectedPlatform === 'all' 
         ? data.sentimentCounts.all 
@@ -599,8 +702,6 @@ const AnalysisPage = () => {
         { name: '중립', value: counts.neutral, color: '#9CA3AF' },
       ];
     }
-
-    // 통계 데이터가 없을 때의 기본값
     return [
       { name: '긍정', value: 0, color: '#3B82F6' },
       { name: '부정', value: 0, color: '#EF4444' },
@@ -608,7 +709,6 @@ const AnalysisPage = () => {
     ];
   }, [data, selectedPlatform]);
 
-  // 2. 모달창 상단에 표시되는 총 개수도 정확하게 연동
   const displayModalTotalCount = useMemo(() => {
     if (!sentimentModalConfig.sentiment) return 0;
     const labelMap = { positive: '긍정', negative: '부정', neutral: '중립' };
@@ -630,7 +730,6 @@ const AnalysisPage = () => {
       setIsNegativeRevealed(false); 
       setModalCurrentPage(1);
       
-      // ✅ 모달 오픈 시 데이터 초기화 및 서버에서 첫 페이지 호출
       setModalCommentsData([]);
       setModalCommentOffset(0);
       setModalHasMoreComments(true);
@@ -643,66 +742,15 @@ const AnalysisPage = () => {
     return filteredData.comments;
   }, [filteredData]);
 
-  // 현재 프론트엔드에 불러와진 댓글 개수 (페이지네이션 계산용)
   const loadedItemsCount = usageExamples.length; 
   const totalPages = Math.max(1, Math.ceil(loadedItemsCount / ITEMS_PER_PAGE));
 
-  // 화면 우측 상단에 보여줄 '진짜 전체 댓글 개수' (도넛 차트와 완벽 동기화)
   const displayTotalCount = useMemo(() => {
-    // 1. '전체' 플랫폼일 경우 백엔드에서 받아온 전체 개수 사용
-    if (selectedPlatform === 'all') {
-      return data?.totalCommentCount || data?.total_comments || data?.totalCount || loadedItemsCount;
-    }
-    
-    // 2. 특정 플랫폼 선택 시, 백엔드 여론 통계(긍정+부정+중립)의 합산값을 전체 개수로 사용
-    if (data?.sentimentCounts && data.sentimentCounts[selectedPlatform]) {
-      const stats = data.sentimentCounts[selectedPlatform];
-      return stats.positive + stats.negative + stats.neutral;
-    }
+    // 백엔드에서 명시적인 총 개수를 안 줬을 경우를 대비해, 
+    // 현재 화면에 불러와진 개수(loadedItemsCount)와 비교하여 더 큰 값을 표시합니다.
+    return Math.max(bottomTotalCount, loadedItemsCount);
+  }, [bottomTotalCount, loadedItemsCount]);
 
-    // 3. Fallback (오류 시 기본값)
-    return loadedItemsCount;
-  }, [selectedPlatform, data, loadedItemsCount]);
-
-  // 플랫폼 필터 변경 시 첫 페이지로 이동
-  useEffect(() => {
-    setCurrentPage(1);
-    setModalCurrentPage(1);
-
-    // 데이터가 아예 없는 초기 로딩 시점은 제외 (fetchData가 알아서 가져옴)
-    if (!data || !keyword) return;
-
-    const fetchPlatformComments = async () => {
-      setIsLoadingMore(true);
-      try {
-        const res = await apiClient.get('/analysis/comments', {
-          params: {
-            keyword,
-            startDate: appliedStartDate,
-            endDate: appliedEndDate,
-            offset: 0, // 처음 1페이지부터 가져옴
-            platform: selectedPlatform !== 'all' ? selectedPlatform : undefined
-          }
-        });
-        const newComments = res.data.comments || [];
-        
-        // 메인 데이터의 comments 배열을 선택한 플랫폼의 새 댓글들로 덮어쓰기
-        setData(prev => prev ? { ...prev, comments: newComments } : prev);
-        
-        // 오프셋 및 무한스크롤 상태 초기화
-        setCommentOffset(newComments.length);
-        setHasMoreComments(newComments.length >= 70);
-      } catch (error) {
-        console.error('플랫폼 전용 댓글 로드 실패:', error);
-      } finally {
-        setIsLoadingMore(false);
-      }
-    };
-
-    fetchPlatformComments();
-  }, [selectedPlatform]);
-
-  // 페이지 바운더리 체크 (메인 리스트)
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages && !hasMoreComments && !isLoadingMore) {
       setCurrentPage(totalPages);
@@ -727,10 +775,7 @@ const AnalysisPage = () => {
   };
 
   const availablePlatforms = useMemo(() => {
-    // 서버에서 최초 조회 시 받아온 전체 여론 통계(sentimentCounts)의 키 값을 활용
     if (!data || !data.sentimentCounts) return ['all']; 
-    
-    // sentimentCounts 객체에는 'all' 및 데이터가 존재하는 플랫폼 이름들이 키로 존재함
     return Object.keys(data.sentimentCounts);
   }, [data]);
 
@@ -743,7 +788,7 @@ const AnalysisPage = () => {
   const todayScore = Math.round(todayData?.score || 0);
 
   // ==========================================
-  // [메인 리스트] 10단위 그룹 페이지네이션 & 페칭 연동 로직
+  // [메인 리스트] 10단위 그룹 페이지네이션
   // ==========================================
   const PAGE_GROUP_SIZE = 10;
   const currentGroup = Math.floor((currentPage - 1) / PAGE_GROUP_SIZE);
@@ -787,12 +832,11 @@ const AnalysisPage = () => {
   };
 
   // ==========================================
-  // [모달 리스트] 10단위 그룹 페이지네이션 & 페칭 연동 로직
+  // [모달 리스트] 10단위 그룹 페이지네이션
   // ==========================================
   const modalLoadedItemsCount = modalCommentsData.length;
   const modalTotalPages = Math.max(1, Math.ceil(modalLoadedItemsCount / MODAL_ITEMS_PER_PAGE));
 
-  // 페이지 바운더리 체크 (모달 리스트)
   useEffect(() => {
     if (modalTotalPages > 0 && modalCurrentPage > modalTotalPages && !hasMoreComments && !isLoadingMore) {
       setModalCurrentPage(modalTotalPages);
@@ -856,6 +900,8 @@ const AnalysisPage = () => {
       }
     }
   };
+
+    // ... 기존 렌더링 코드 (JSX) 부분은 동일하게 유지하시면 됩니다. ...
   // ==========================================
 
 
