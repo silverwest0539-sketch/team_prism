@@ -124,18 +124,27 @@ const AnalysisPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editRequestText, setEditRequestText] = useState('');
 
-  const [revealedCommentIds, setRevealedCommentIds] = useState(new Set());
+  const [isMobileCommentsView, setIsMobileCommentsView] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 639px)').matches;
+  });
 
-  const handleRevealComment = useCallback((commentId) => {
-    setRevealedCommentIds((prev) => {
-      const next = new Set(prev);
-      next.add(commentId);
-      return next;
-    });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+    const handleChange = (event) => setIsMobileCommentsView(event.matches);
+
+    setIsMobileCommentsView(mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
   }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 7;
+  const ITEMS_PER_PAGE = isMobileCommentsView ? 4 : 7;
   const commentsTopRef = useRef(null);
 
   const [modalCurrentPage, setModalCurrentPage] = useState(1);
@@ -258,7 +267,7 @@ const AnalysisPage = () => {
     setAiSummary(null);
     setIsAiLoading(true);
     setShowScoreTooltip(false);
-    setRevealedCommentIds(new Set());
+    setIsNegativeRevealed(false);
     
     const todayDate = getFormattedDate(new Date());
     
@@ -450,12 +459,14 @@ const AnalysisPage = () => {
     fetchAiSummary(keyword, yesterdayDate, todayDate);
   };
 
+  const hasAnalysisData = !!data;
+
   // 2) 플랫폼 필터 변경 useEffect 내부 수정
   useEffect(() => {
     setCurrentPage(1);
     setModalCurrentPage(1);
 
-    if (!data || !keyword) return;
+    if (!hasAnalysisData || !keyword) return;
 
     const fetchPlatformComments = async () => {
       setIsLoadingMore(true);
@@ -489,7 +500,7 @@ const AnalysisPage = () => {
     };
 
     fetchPlatformComments();
-  }, [selectedPlatform, keyword, commentStartDate, commentEndDate]);
+  }, [hasAnalysisData, selectedPlatform, keyword, commentStartDate, commentEndDate]);
 
     const resolveScrapKeyword = useCallback(async () => {
     const cachedKeyword = String(data?.keyword || '').trim();
@@ -742,6 +753,12 @@ const AnalysisPage = () => {
     return filteredData.comments;
   }, [filteredData]);
 
+  const hasNegativeComments = useMemo(() => {
+    return usageExamples.some(
+      (comment) => comment?.sentiment === 'negative' || comment?.sentiment === '부정'
+    );
+  }, [usageExamples]);
+
   const loadedItemsCount = usageExamples.length; 
   const totalPages = Math.max(1, Math.ceil(loadedItemsCount / ITEMS_PER_PAGE));
 
@@ -761,7 +778,7 @@ const AnalysisPage = () => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     return usageExamples.slice(startIndex, endIndex);
-  }, [usageExamples, currentPage]);
+  }, [usageExamples, currentPage, ITEMS_PER_PAGE]);
 
   const scrollToTop = () => {
     requestAnimationFrame(() => {
@@ -838,10 +855,10 @@ const AnalysisPage = () => {
   const modalTotalPages = Math.max(1, Math.ceil(modalLoadedItemsCount / MODAL_ITEMS_PER_PAGE));
 
   useEffect(() => {
-    if (modalTotalPages > 0 && modalCurrentPage > modalTotalPages && !hasMoreComments && !isLoadingMore) {
+    if (modalTotalPages > 0 && modalCurrentPage > modalTotalPages && !modalHasMoreComments && !isModalLoadingMore) {
       setModalCurrentPage(modalTotalPages);
     }
-  }, [modalTotalPages, modalCurrentPage, hasMoreComments, isLoadingMore]);
+  }, [modalTotalPages, modalCurrentPage, modalHasMoreComments, isModalLoadingMore]);
 
   const currentModalComments = useMemo(() => {
     const startIndex = (modalCurrentPage - 1) * MODAL_ITEMS_PER_PAGE;
@@ -992,10 +1009,10 @@ const AnalysisPage = () => {
           <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
              <button 
                onClick={() => setIsEditModalOpen(true)}
-               className="flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-gray-50 text-gray-500 border border-gray-200 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm shadow-sm transition-all hover:-translate-y-1"
+               className="analysis-edit-report-btn flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-gray-50 text-gray-500 border border-gray-200 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm shadow-sm transition-all hover:-translate-y-1"
                title="데이터 오류 제보 및 수정 요청"
              >
-               <WarningCircle size={20} className="sm:w-5 sm:h-5 text-gray-400" />
+               <WarningCircle size={20} className="analysis-edit-report-icon sm:w-5 sm:h-5 text-gray-400" />
                <span className="hidden sm:inline">정보 수정 제보</span>
                <span className="sm:hidden">수정제보</span>
              </button>
@@ -1094,7 +1111,7 @@ const AnalysisPage = () => {
                   onClick={() => setIsChartModalOpen(true)}
                   className="text-xs flex items-center gap-1 text-gray-400 hover:text-indigo-600 font-medium transition-colors bg-gray-50 px-2 py-1 rounded hover:bg-indigo-50"
                 >
-                  더보기 <ArrowsOutSimple size={12} />
+                  설정기간 전체보기 <ArrowsOutSimple size={12} />
                 </button>
               )}
             </div>
@@ -1218,10 +1235,24 @@ const AnalysisPage = () => {
                 </p>
               </div>
               
-              {/* 백엔드에서 전달받은 실제 전체 데이터 개수를 출력합니다. */}
-              <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
-                총 {displayTotalCount}건
-              </span>
+              <div className="flex items-center gap-2">
+                {hasNegativeComments && !isPersonKeyword && (
+                  <button
+                    onClick={() => setIsNegativeRevealed(!isNegativeRevealed)}
+                    className={`text-xs px-2.5 py-1.5 rounded-lg font-bold transition-all border whitespace-nowrap ${
+                      isNegativeRevealed
+                        ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
+                    }`}
+                  >
+                    {isNegativeRevealed ? '부정 댓글 가리기' : '부정 댓글 전체 보기 동의'}
+                  </button>
+                )}
+                {/* 백엔드에서 전달받은 실제 전체 데이터 개수를 출력합니다. */}
+                <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
+                  총 {displayTotalCount}건
+                </span>
+              </div>
             </div>
 
             <div className="card h-fit flex flex-col">
@@ -1231,8 +1262,6 @@ const AnalysisPage = () => {
                 {currentUsageExamples?.length > 0 ? (
                   currentUsageExamples.map((comment, i) => {
                     const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
-                    const uniqueId = comment.id || `comment-${globalIndex}`;
-                    const isRevealed = revealedCommentIds.has(uniqueId);
 
                     return (
                       <CommentItem 
@@ -1242,8 +1271,7 @@ const AnalysisPage = () => {
                         keyword={keyword}
                         isIndividualFilter={true} 
                         isPersonKeyword={isPersonKeyword}
-                        isRevealed={isRevealed}
-                        onReveal={() => handleRevealComment(uniqueId)}
+                        isRevealed={isNegativeRevealed}
                       />
                     );
                   })
@@ -1592,7 +1620,7 @@ const AnalysisPage = () => {
                     className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all border ${
                       isNegativeRevealed 
                          ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
-                        : 'bg-white text-gray-500 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
                     }`}
                   >
                     {isNegativeRevealed ? '부정 댓글 가리기' : '부정 댓글 전체 보기 동의'}
@@ -1638,10 +1666,6 @@ const AnalysisPage = () => {
                     {currentModalComments.length > 0 ? (
                       currentModalComments.map((comment, idx) => {
                         const globalIndex = (modalCurrentPage - 1) * MODAL_ITEMS_PER_PAGE + idx + 1;
-                        const uniqueId = comment.id || `modal-comment-${globalIndex}`;
-                        
-                        // ✅ 수정됨: 상단 '전체 보기 동의(isNegativeRevealed)'를 눌렀다면 모두 true로 전달되도록 추가
-                        const isRevealed = isNegativeRevealed || revealedCommentIds.has(uniqueId);
 
                         return (
                           <CommentItem 
@@ -1651,8 +1675,7 @@ const AnalysisPage = () => {
                             keyword={keyword} 
                             isIndividualFilter={true} 
                             isPersonKeyword={isPersonKeyword}
-                            isRevealed={isRevealed}
-                            onReveal={() => handleRevealComment(uniqueId)}
+                            isRevealed={isNegativeRevealed}
                           />
                         );
                       })
@@ -1665,7 +1688,7 @@ const AnalysisPage = () => {
                   </div>
 
                   {/* 모달 전용 페이지네이션 컴포넌트 */}
-                  {(modalTotalPages > 1 || hasMoreComments) && (
+                  {(modalTotalPages > 1 || modalHasMoreComments) && (
                     <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-200 pb-2">
                       
                       {/* << 이전 10페이지 */}

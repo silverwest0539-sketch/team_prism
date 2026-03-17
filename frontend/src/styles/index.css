@@ -144,6 +144,66 @@ html.theme-dark .hover\:text-blue-600:hover {
   color: #93c5fd !important;
 }
 
+html.theme-dark .analysis-edit-report-btn {
+  background-color: #0f172a !important;
+  border-color: #64748b !important;
+  color: #e2e8f0 !important;
+}
+
+html.theme-dark .analysis-edit-report-btn:hover {
+  background-color: #1f2937 !important;
+  border-color: #94a3b8 !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .analysis-edit-report-icon {
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .analysis-comment-title {
+  color: #f1f5f9 !important;
+}
+
+html.theme-dark .analysis-comment-meta {
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .analysis-comment-card {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+html.theme-dark .analysis-comment-card:hover {
+  background-color: #243244 !important;
+  border-color: #475569 !important;
+}
+
+html.theme-dark .analysis-comment-more-btn {
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .analysis-comment-more-btn:hover {
+  color: #a5b4fc !important;
+}
+
+html.theme-dark .analysis-comment-link {
+  color: #a5b4fc !important;
+}
+
+html.theme-dark .analysis-comment-locked {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+html.theme-dark .analysis-comment-locked-title {
+  color: #e2e8f0 !important;
+}
+
+html.theme-dark .analysis-comment-locked-desc {
+  color: #cbd5e1 !important;
+}
+
 .keyword-highlight {
   background-color: #fde68a;
   color: #111827;

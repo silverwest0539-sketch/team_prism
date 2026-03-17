@@ -40,8 +40,7 @@ const CommentItem = ({
   // AnalysisPage에서 받아오는 추가 Props
   isIndividualFilter = false, 
   isPersonKeyword = false, 
-  isRevealed = false, 
-  onReveal
+  isRevealed = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -71,37 +70,29 @@ const CommentItem = ({
     <div className="group">
       {/* 헤더 영역 */}
       <div className="flex justify-between items-center mb-1 border-b border-transparent pb-1">
-        <span className="text-sm font-bold text-gray-700">
+        <span className="analysis-comment-title text-sm font-bold text-gray-700">
           반응 {globalIndex}{' '}
-          <span className="text-xs font-normal text-gray-400 ml-1">({comment.source})</span>
+          <span className="analysis-comment-meta text-xs font-normal text-gray-400 ml-1">({comment.source})</span>
         </span>
         
-        {/* 우측: 날짜 & 부정 댓글 보기 동의 버튼 */}
+        {/* 우측: 날짜 */}
         <div className="flex items-center gap-2">
-          {shouldBlur && (
-            <button
-              onClick={onReveal}
-              className="text-[11px] px-2.5 py-1 bg-white border border-gray-300 text-gray-500 rounded-md hover:border-red-400 hover:text-red-500 hover:bg-red-50 transition-colors shadow-sm font-bold whitespace-nowrap"
-            >
-              부정 댓글 보기 동의
-            </button>
-          )}
-          {formattedDate && <span className="text-xs text-gray-400">{formattedDate}</span>}
+          {formattedDate && <span className="analysis-comment-meta text-xs text-gray-400">{formattedDate}</span>}
         </div>
       </div>
 
       {/* 내용 영역 */}
       {shouldHideAsPerson ? (
         // 케이스 1: 인물 관련 부정 댓글 (아예 차단)
-        <div className="relative p-4 bg-gray-50 rounded-lg text-center border border-dashed border-gray-200">
+        <div className="analysis-comment-locked relative p-4 bg-gray-50 rounded-lg text-center border border-dashed border-gray-200">
           <LockKey size={24} className="mx-auto mb-2 text-gray-400" weight="fill" />
-          <p className="text-sm font-bold text-gray-600">인물 관련 부정 댓글 비공개</p>
-          <p className="text-xs text-gray-500 mt-1">사이트 정책상 인물에 대한 부정 댓글은 공개되지 않습니다.</p>
+          <p className="analysis-comment-locked-title text-sm font-bold text-gray-600">인물 관련 부정 댓글 비공개</p>
+          <p className="analysis-comment-locked-desc text-xs text-gray-500 mt-1">사이트 정책상 인물에 대한 부정 댓글은 공개되지 않습니다.</p>
         </div>
       ) : (
         // 케이스 2 & 3: 일반 댓글 또는 블러 처리된 부정 댓글
         <div 
-          className={`relative p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent hover:border-indigo-100 hover:bg-indigo-50/30 transition-all shadow-sm ${
+          className={`analysis-comment-card relative p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed border border-transparent hover:border-indigo-100 hover:bg-indigo-50/30 transition-all shadow-sm ${
             shouldBlur ? 'blur-[4px] opacity-40 select-none pointer-events-none' : ''
           }`}
         >
@@ -116,7 +107,7 @@ const CommentItem = ({
                 <button
                   type="button"
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-xs font-bold text-gray-400 hover:text-indigo-600 transition-colors"
+                  className="analysis-comment-more-btn text-xs font-bold text-gray-400 hover:text-indigo-600 transition-colors"
                 >
                   {isExpanded ? '접기 ▲' : '더보기 ▼'}
                 </button>
@@ -129,7 +120,7 @@ const CommentItem = ({
                 href={comment.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs text-indigo-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                className="analysis-comment-link flex items-center gap-1 text-xs text-indigo-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity"
                 title="클릭하여 원문 보기"
               >
                 <span>원문 보러가기</span>

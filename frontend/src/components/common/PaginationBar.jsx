@@ -10,12 +10,12 @@ const PaginationBar = ({
   onPageChange,
   className = '',
 }) => {
-  if (totalPages <= 1) return null;
-
   const paginationItems = useMemo(
     () => getPaginationItems(currentPage, totalPages),
     [currentPage, totalPages]
   );
+
+  if (totalPages <= 1) return null;
 
   const safeStart = totalItems > 0 ? pageStartIndex + 1 : 0;
   const safeEnd = totalItems > 0 ? Math.min(pageStartIndex + itemsPerPage, totalItems) : 0;
