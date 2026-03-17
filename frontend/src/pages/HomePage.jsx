@@ -20,8 +20,10 @@ const HomePage = () => {
   const [risingPlatforms, setRisingPlatforms] = useState([]); 
   const [selectedPlatform, setSelectedPlatform] = useState('youtube');
   
-  const [activeTooltip, setActiveTooltip] = useState(null);
-  const toggleTooltip = (type) => setActiveTooltip(prev => prev === type ? null : type);
+  // 툴팁 관련 상태 분리 (호버 상태 vs 클릭 고정 상태)
+  const [hoveredTooltip, setHoveredTooltip] = useState(null);
+  const [pinnedTooltip, setPinnedTooltip] = useState(null);
+  const isTooltipVisible = (type) => hoveredTooltip === type || pinnedTooltip === type;
 
   const [newsKeywords, setNewsKeywords] = useState([]);
   const [selectedNewsTopCategory, setSelectedNewsTopCategory] = useState('korea');
@@ -210,7 +212,8 @@ const HomePage = () => {
   }, [userInfo?.email]);
 
   return (
-    <div className="page" onClick={() => { setIsDropdownOpen(false); setIsNewsDropdownOpen(false); }}>
+    // 여백(배경) 클릭 시 드롭다운 메뉴 및 고정된 툴팁 닫힘 처리
+    <div className="page" onClick={() => { setIsDropdownOpen(false); setIsNewsDropdownOpen(false); setPinnedTooltip(null); }}>
       <div className="flex justify-between items-start mb-6">
         <SearchBar 
           placeholder="관심있는 키워드나 주제를 검색해보세요..." 
@@ -227,22 +230,25 @@ const HomePage = () => {
         
         {/* 1. 트렌드 키워드 */}
         <div className="card-soft">
-          {/* 수정한 부분: flex-wrap 적용, 제목에서 'Top 5' 제거 및 break-keep 적용 */}
           <div className="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2 border-gray-100">
             <div className="flex items-center gap-1 relative">
               <h2 className="text-base xl:text-lg font-bold text-gray-900 break-keep">오늘의 트렌드 키워드</h2>
-              <button onClick={(e) => { e.stopPropagation(); toggleTooltip('trend'); }} className="text-gray-400 hover:text-indigo-500 transition-colors p-1">
+              <button 
+                onMouseEnter={() => setHoveredTooltip('trend')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+                onClick={(e) => { e.stopPropagation(); setPinnedTooltip(prev => prev === 'trend' ? null : 'trend'); }}
+                className={`transition-colors p-1 ${pinnedTooltip === 'trend' ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-500'}`}
+              >
                 <Question size={18} weight="fill" />
               </button>
-              {activeTooltip === 'trend' && (
-                <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in">
+              {isTooltipVisible('trend') && (
+                <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in pointer-events-none">
                   <div className="absolute -top-1 left-6 w-3 h-3 bg-gray-800 transform rotate-45"></div>
                   <p className="font-semibold mb-1">트렌드 키워드란?</p>
                   <p className="opacity-90 leading-relaxed">최근 검색량, 언급량, 확산도를 종합적으로 분석하여 산출된 순위입니다.</p>
                 </div>
               )}
             </div>
-            {/* 수정한 부분: ml-auto 적용으로 줄바꿈 시 우측 정렬 유지 */}
             <button onClick={() => setIsTrendModalOpen(true)} className="text-xs text-gray-400 hover:text-indigo-600 font-medium flex items-center gap-1 ml-auto">
               더보기 <Plus size={12} />
             </button>
@@ -259,22 +265,25 @@ const HomePage = () => {
 
         {/* 2. 플랫폼별 키워드 */}
         <div className="card-soft relative">
-          {/* 수정한 부분: flex-wrap 적용, 제목 폰트 조정 및 간소화 */}
           <div className="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2 border-gray-100">
             <div className="flex items-center gap-1 relative">
               <h2 className="text-base xl:text-lg font-bold text-gray-900 break-keep">오늘의 플랫폼별 키워드</h2>
-              <button onClick={(e) => { e.stopPropagation(); toggleTooltip('platform'); }} className="text-gray-400 hover:text-indigo-500 transition-colors p-1">
+              <button 
+                onMouseEnter={() => setHoveredTooltip('platform')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+                onClick={(e) => { e.stopPropagation(); setPinnedTooltip(prev => prev === 'platform' ? null : 'platform'); }}
+                className={`transition-colors p-1 ${pinnedTooltip === 'platform' ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-500'}`}
+              >
                 <Question size={18} weight="fill" />
               </button>
-              {activeTooltip === 'platform' && (
-                <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in">
+              {isTooltipVisible('platform') && (
+                <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in pointer-events-none">
                   <div className="absolute -top-1 left-6 w-3 h-3 bg-gray-800 transform rotate-45"></div>
                   <p className="font-semibold mb-1">플랫폼 트렌드란?</p>
                   <p className="opacity-90 leading-relaxed">선택된 플랫폼 내에서의 최근 언급량과 반응 급상승 폭을 기준으로 산출된 순위입니다.</p>
                 </div>
               )}
             </div>
-            {/* 수정한 부분: ml-auto 적용 */}
             <div className="tab-wrap ml-auto" onClick={(e) => e.stopPropagation()}>
               <div className="relative">
                 <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className={`tab-btn flex items-center gap-1 ${isDropdownOpen || selectedPlatform ? 'tab-active text-green-600' : 'text-gray-500 hover:text-gray-800'}`}>
@@ -304,22 +313,25 @@ const HomePage = () => {
 
         {/* 3. 뉴스 키워드 */}
         <div className="card-soft relative">
-          {/* 수정한 부분: flex-wrap 적용, 제목 간소화 */}
           <div className="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2 border-gray-100">
             <div className="flex items-center gap-1 relative">
               <h2 className="text-base xl:text-lg font-bold text-gray-900 break-keep">오늘의 뉴스 키워드</h2>
-              <button onClick={(e) => { e.stopPropagation(); toggleTooltip('news'); }} className="text-gray-400 hover:text-indigo-500 transition-colors p-1">
+              <button 
+                onMouseEnter={() => setHoveredTooltip('news')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+                onClick={(e) => { e.stopPropagation(); setPinnedTooltip(prev => prev === 'news' ? null : 'news'); }}
+                className={`transition-colors p-1 ${pinnedTooltip === 'news' ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-500'}`}
+              >
                 <Question size={18} weight="fill" />
               </button>
-              {activeTooltip === 'news' && (
-                <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in">
+              {isTooltipVisible('news') && (
+                <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in pointer-events-none">
                   <div className="absolute -top-1 left-6 w-3 h-3 bg-gray-800 transform rotate-45"></div>
                   <p className="font-semibold mb-1">뉴스 키워드란?</p>
                   <p className="opacity-90 leading-relaxed">주요 언론사 기사에서 언급된 빈도와 사회적 주목도를 종합적으로 분석하여 산출된 순위입니다.</p>
                 </div>
               )}
             </div>
-            {/* 수정한 부분: ml-auto 적용 */}
             <div className="tab-wrap ml-auto" onClick={(e) => e.stopPropagation()}>
               <div className="relative">
                 <button onClick={() => setIsNewsDropdownOpen(!isNewsDropdownOpen)} className={`tab-btn flex items-center gap-1 ${isNewsDropdownOpen || selectedNewsTopCategory ? 'tab-active text-emerald-600' : 'text-gray-500 hover:text-gray-800'}`}>
@@ -361,21 +373,38 @@ const HomePage = () => {
           ))}
         </div>
         <div className="relative">
+          {/* 전체 영역(.group) 호버 시 보이는 스크롤 버튼들 */}
           <button onClick={() => scroll('left')} className="hidden sm:flex absolute left-1 lg:left-0 top-1/2 -translate-y-1/2 lg:-ml-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100" aria-label="Previous videos"><ChevronLeft className="w-6 h-6 text-gray-600" /></button>
+          
           <div ref={scrollRef} className="flex overflow-x-auto gap-4 scrollbar-hide scroll-smooth pb-4 px-1">
             {youtubeVideos.slice(0, 10).map((video) => (
-              <a key={video.id} href={`https://www.youtube.com/watch?v=${encodeURIComponent(String(video.id || ''))}`} target="_blank" rel="noopener noreferrer" className="video-card flex-none w-[240px] sm:w-[260px] md:w-[280px] lg:w-[19%] min-w-[220px] sm:min-w-[240px]">
+              /* 개별 카드 호버 개선: group/item 추가 및 hover 속성 세분화 */
+              <a 
+                key={video.id} 
+                href={`https://www.youtube.com/watch?v=${encodeURIComponent(String(video.id || ''))}`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="video-card flex-none w-[240px] sm:w-[260px] md:w-[280px] lg:w-[19%] min-w-[220px] sm:min-w-[240px] group/item hover:-translate-y-1 transition-transform duration-300 rounded-b-lg hover:shadow-lg"
+              >
                 <div className="relative w-full aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
-                  <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity"><PlayCircle className="text-white w-10 h-10 drop-shadow-lg" /></div>
+                  <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                    <PlayCircle className="text-white w-12 h-12 drop-shadow-lg" />
+                  </div>
                 </div>
-                <div className="p-3 sm:p-4 flex flex-col justify-between flex-1 bg-white border-x border-b border-gray-100 rounded-b-lg">
-                  <div><h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 mb-2">{video.title}</h3><p className="text-xs text-gray-500 font-medium">{video.channel}</p></div>
-                  <div className="mt-2 text-[11px] text-gray-400"><span>{formatViews(video.views)}</span><span>·</span><span>{formatDate(video.publish_time)}</span></div>
+                <div className="p-3 sm:p-4 flex flex-col justify-between flex-1 bg-white border-x border-b border-gray-100 rounded-b-lg group-hover/item:border-gray-200 transition-colors">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 mb-2 group-hover/item:text-blue-600 transition-colors">{video.title}</h3>
+                    <p className="text-xs text-gray-500 font-medium">{video.channel}</p>
+                  </div>
+                  <div className="mt-2 text-[11px] text-gray-400 flex items-center gap-1">
+                    <span>{formatViews(video.views)}</span><span>·</span><span>{formatDate(video.publish_time)}</span>
+                  </div>
                 </div>
               </a>
             ))}
           </div>
+          
           <button onClick={() => scroll('right')} className="hidden sm:flex absolute right-1 lg:right-0 top-1/2 -translate-y-1/2 lg:-mr-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100" aria-label="Next videos"><ChevronRight className="w-6 h-6 text-gray-600" /></button>
         </div>
       </div>
@@ -460,7 +489,7 @@ const HomePage = () => {
             <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">오늘의 트렌드 키워드</h3>
-                <p className="text-sm text-gray-500 mt-1">오늘의 트렌드 키워드 전체 순위입니다.</p>
+                <p className="text-sm text-gray-500 mt-1">오늘의 트렌드 키워 전체 순위입니다.</p>
               </div>
               <button onClick={() => setIsTrendModalOpen(false)} className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
                 <X size={24} />
