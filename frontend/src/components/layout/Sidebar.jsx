@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Moon, Settings, Sun, X } from 'lucide-react';
+import { LogOut, Moon, Sun, X } from 'lucide-react'; // Settings 아이콘은 마이페이지 메뉴 이동으로 사용하지 않아 제거됨
 import { getStoredUser } from '../../utils/authStorage';
 import { THEMES, getStoredTheme, applyTheme, saveTheme, toggleTheme, resetThemeToLight } from '../../utils/theme';
 
@@ -92,6 +92,11 @@ const Sidebar = ({ isOpen = false, onClose }) => {
     onClose?.();
   };
 
+  // 로그인 상태일 때만 마이페이지를 사이드바 메뉴에 동적으로 추가
+  const dynamicMenus = userInfo
+    ? [...MAIN_MENUS, { path: '/mypage', label: '마이페이지' }]
+    : MAIN_MENUS;
+
   const DesktopSidebar = () => (
     <aside className="hidden lg:flex w-64 h-screen bg-white border-r border-gray-200 p-6 fixed left-0 top-0 font-sans z-50 overflow-y-auto">
       <div className="w-full flex flex-col">
@@ -103,7 +108,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
         </h1>
 
         <nav className="flex-1 space-y-2">
-          {MAIN_MENUS.map((menu) => (
+          {dynamicMenus.map((menu) => (
             <div
               key={menu.path}
               className={getMenuClass(menu.path)}
@@ -123,12 +128,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
                     <p className="text-sm font-bold text-gray-900">{userInfo.nickname}님</p>
                     <p className="text-xs text-gray-500 truncate">{userInfo.user_email || userInfo.email}</p>
                   </div>
-                  <button
-                    onClick={() => handleNavigate('/mypage')}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-                  >
-                    <Settings className="w-4 h-4" /> 마이페이지
-                  </button>
+                  {/* 기존 마이페이지 버튼 위치 (사이드바로 이동하여 제거함) */}
                   <button
                     onClick={handleThemeToggle}
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
@@ -211,7 +211,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
           </div>
 
           <nav className="flex-1 space-y-2">
-            {MAIN_MENUS.map((menu) => (
+            {dynamicMenus.map((menu) => (
               <div
                 key={menu.path}
                 className={getMenuClass(menu.path)}
@@ -230,12 +230,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
                   <p className="text-xs text-gray-500 truncate">{userInfo.user_email || userInfo.email}</p>
                 </div>
 
-                <button
-                  onClick={() => handleNavigate('/mypage')}
-                  className="w-full flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  <Settings className="w-4 h-4" /> 마이페이지
-                </button>
+                {/* 기존 모바일용 마이페이지 버튼 위치 (사이드바로 이동하여 제거함) */}
 
                 <button
                   onClick={handleThemeToggle}
