@@ -34,7 +34,7 @@ const OAuthCallback = () => {
         .then(response => {
           if (response.data.success) {
             // 연동 후 업데이트된 유저 정보를 다시 저장 (kakaoId 등 반영 위함)
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+            sessionStorage.setItem('user', JSON.stringify(response.data.user));
             showToast('계정 연동 및 통합이 완료되었습니다.', { type: 'success' });
             navigate('/mypage');
           }
@@ -49,8 +49,8 @@ const OAuthCallback = () => {
       apiClient.post(`/auth/${provider}`, { code, state })
         .then(response => {
           if (response.data.success) {
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+            sessionStorage.setItem('token', response.data.token);
+            sessionStorage.setItem('user', JSON.stringify(response.data.user));
             showToast(`환영합니다! ${response.data.user.nickname}님`, { type: 'success' });
             navigate('/home');
           }

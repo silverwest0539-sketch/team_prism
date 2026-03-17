@@ -42,8 +42,8 @@ const LoginPage = () => {
       });
 
       if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        sessionStorage.setItem('token', response.data.token);
+        sessionStorage.setItem('user', JSON.stringify(response.data.user));
         showToast(`환영합니다! ${response.data.user.nickname}님`, { type: 'success' });
         navigate('/home');
       }

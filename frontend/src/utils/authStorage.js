@@ -6,7 +6,7 @@ export const getStoredUser = () => {
   }
 
   try {
-    const raw = window.localStorage.getItem(USER_STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(USER_STORAGE_KEY);
     if (!raw) return null;
 
     const parsed = JSON.parse(raw);
@@ -17,11 +17,11 @@ export const getStoredUser = () => {
     }
 
     // 유효하지 않은 형식이면 정리
-    window.localStorage.removeItem(USER_STORAGE_KEY);
+    window.sessionStorage.removeItem(USER_STORAGE_KEY);
     return null;
   } catch {
     // JSON 파싱 실패 시 손상 데이터 제거
-    window.localStorage.removeItem(USER_STORAGE_KEY);
+    window.sessionStorage.removeItem(USER_STORAGE_KEY);
     return null;
   }
 };

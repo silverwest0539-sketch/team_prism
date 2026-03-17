@@ -22,7 +22,7 @@ const apiClient = axios.create({
 
 // 요청 인터셉터 — localStorage에 토큰이 있으면 자동 첨부
 apiClient.interceptors.request.use((config) => {
-  const token = window.localStorage.getItem('token');
+  const token = window.sessionStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -34,8 +34,8 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      window.localStorage.removeItem('token');
-      window.localStorage.removeItem('user');
+      window.sessionStorage.removeItem('token');
+      window.sessionStorage.removeItem('user');
       resetThemeToLight();
 
       // 이미 로그인 페이지가 아닐 때만 리다이렉트
