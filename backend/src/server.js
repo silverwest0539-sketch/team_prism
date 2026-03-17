@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { loadTrendData } = require('./dataLoader');
+const { checkAndSyncS3 } = require('./s3Sync');
 const scrapRoutes = require('./routes/scrap.routes');
 const authRoutes = require('./routes/auth.routes');
 const contentRoutes = require('./routes/content.routes');
@@ -33,4 +34,11 @@ loadTrendData().then(() => {
   // 서버 타임아웃을 120,000ms (2분)으로 설정
   // OpenAI API 응답이 길어질 경우를 대비해 넉넉하게 설정합니다.
   server.timeout = 120000;
+  // --- S3 동기화 백그라운드 작업 시작 ---
+  // 1. 서버 시작 시 즉시 1회 확인 및 동기화
+  checkAndSyncS3();
+  // 2. 이후 24시간(86,400,000ms)마다 반복 실행
+  setInterval(() => {
+    checkAndSyncS3();
+  }, 24 * 60 * 60 * 1000);
 });
