@@ -64,7 +64,6 @@ const AnalysisPage = () => {
 
   const initialToday = new Date();
   
-  // [수정됨] 하단 전용 '하루 전' 기준을 삭제하고, 전체 공통으로 쓸 '일주일 전' 기준만 남김
   const initialOneWeekAgo = new Date(initialToday);
   initialOneWeekAgo.setDate(initialToday.getDate() - 7); 
 
@@ -82,6 +81,9 @@ const AnalysisPage = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   
+  // [NEW] 데이터 부족 안내 모달 상태
+  const [isNoDataModalOpen, setIsNoDataModalOpen] = useState(false);
+
   // 댓글 무한 스크롤 & 페이지네이션용 상태
   const [commentOffset, setCommentOffset] = useState(70);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -94,14 +96,12 @@ const AnalysisPage = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   
-  // 입력용 날짜와 실제 적용(차트렌더링)용 날짜
   const [inputStartDate, setInputStartDate] = useState(getFormattedDate(initialOneWeekAgo));
   const [inputEndDate, setInputEndDate] = useState(getFormattedDate(initialToday));
   
   const [appliedStartDate, setAppliedStartDate] = useState(getFormattedDate(initialOneWeekAgo));
   const [appliedEndDate, setAppliedEndDate] = useState(getFormattedDate(initialToday));
 
-  // [수정됨] 하단 댓글 반응도 일주일 전(initialOneWeekAgo)으로 기본값 통일
   const [commentStartDate, setCommentStartDate] = useState(getFormattedDate(initialOneWeekAgo));
   const [commentEndDate, setCommentEndDate] = useState(getFormattedDate(initialToday));
 
@@ -174,8 +174,9 @@ const AnalysisPage = () => {
       const newsData = newsRes.data;
 
       if (analysisData.found) {
+        // [NEW] 데이터가 있으면 모달 닫기
+        setIsNoDataModalOpen(false);
         
-        // 날짜가 다를 경우에만 별도 호출 (이제 초기 로드 시에는 동일하므로 호출 건너뜀)
         if (cStart && cEnd && (currentStart !== cStart || currentEnd !== cEnd)) {
           try {
             const commentsRes = await apiClient.get('/analysis/comments', {
@@ -197,7 +198,6 @@ const AnalysisPage = () => {
             console.error('하단 댓글 로드 실패:', err);
           }
         } else {
-          // 날짜가 동일할 때 (초기 1주일 동기화 상태)
           setBottomTotalCount(
             analysisData.totalCommentCount || 
             analysisData.total_comments || 
@@ -228,6 +228,8 @@ const AnalysisPage = () => {
         }
       } else {
         setData(null);
+        // [NEW] 데이터가 없으면 모달 열기
+        setIsNoDataModalOpen(true);
       }
 
       setNews(newsData || []);
@@ -265,21 +267,20 @@ const AnalysisPage = () => {
     setIsAiLoading(true);
     setShowScoreTooltip(false);
     setIsNegativeRevealed(false);
+    // [NEW] 키워드 변경 시 모달 초기화
+    setIsNoDataModalOpen(false);
     
     const todayDate = getFormattedDate(new Date());
 
-    // 7일전 날짜 계산 (전체 공통 적용)
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const oneWeekAgoDate = getFormattedDate(oneWeekAgo);
 
-    // 상단 3개 메뉴 상태 세팅 (1주일)
     setInputStartDate(oneWeekAgoDate);
     setInputEndDate(todayDate);
     setAppliedStartDate(oneWeekAgoDate);
     setAppliedEndDate(todayDate);
 
-    // [수정됨] 하단 2개 메뉴 상태 세팅 (상단과 동일하게 1주일로 동기화)
     setCommentStartDate(oneWeekAgoDate);
     setCommentEndDate(todayDate);
 
@@ -298,10 +299,7 @@ const AnalysisPage = () => {
       setIsScrapped(false);
     }
 
-    // [수정됨] 메인호출: 상/하단 모두 1주일 기준으로 호출
     fetchData(oneWeekAgoDate, todayDate, oneWeekAgoDate, todayDate);
-    
-    // [수정됨] AI요약: 1주일 기준 적용
     fetchAiSummary(keyword, oneWeekAgoDate, todayDate);
 
   }, [keyword, fetchAiSummary, fetchData, isLoggedIn]); 
@@ -321,7 +319,7 @@ const AnalysisPage = () => {
       const res = await apiClient.get('/analysis/comments', {
         params: {
           keyword,
-          startDate: commentStartDate, // 하단 전용 날짜 사용(현재는 1주일로 동기화됨)
+          startDate: commentStartDate,
           endDate: commentEndDate,
           offset: commentOffset,
           platform: selectedPlatform !== 'all' ? selectedPlatform : undefined
@@ -414,7 +412,6 @@ const AnalysisPage = () => {
     setAppliedStartDate(inputStartDate);
     setAppliedEndDate(inputEndDate);
     
-    // 사용자가 날짜를 수동 검색할 땐 하단 데이터도 맞추어 갱신
     setCommentStartDate(inputStartDate);
     setCommentEndDate(inputEndDate);
 
@@ -431,7 +428,6 @@ const AnalysisPage = () => {
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const oneWeekAgoDate = getFormattedDate(oneWeekAgo);
 
-    // [수정됨] 초기화 시에도 모두 1주일로 세팅
     setInputStartDate(oneWeekAgoDate);
     setInputEndDate(todayDate);
     setAppliedStartDate(oneWeekAgoDate);
@@ -443,14 +439,12 @@ const AnalysisPage = () => {
     setCurrentPage(1);
     setModalCurrentPage(1);
     
-    // [수정됨] 초기화 API 호출 시 모두 1주일 기준으로
     fetchData(oneWeekAgoDate, todayDate, oneWeekAgoDate, todayDate);
     fetchAiSummary(keyword, oneWeekAgoDate, todayDate);
   };
 
   const hasAnalysisData = !!data;
 
-  // 플랫폼 필터 변경 useEffect 내부 수정
   useEffect(() => {
     setCurrentPage(1);
     setModalCurrentPage(1);
@@ -682,7 +676,6 @@ const AnalysisPage = () => {
 
   const mainChartData = useMemo(() => {
     const history = filteredData?.history || [];
-    // 기본 날짜가 1주일(8일치 데이터)이므로 slice 제한을 늘리거나 없애 전체 적용 데이터를 보여줍니다.
     return history.length > 8 ? history.slice(-8) : history;
   }, [filteredData]);
 
@@ -903,7 +896,7 @@ const AnalysisPage = () => {
     }
   };
 
-  // ---------------- Render ----------------
+    // ---------------- Render ----------------
   return (
     <div className="page space-y-6 relative">
       <header className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4 relative z-10">
@@ -1229,7 +1222,6 @@ const AnalysisPage = () => {
                     {isNegativeRevealed ? '부정 댓글 가리기' : '부정 댓글 전체 보기 동의'}
                   </button>
                 )}
-                {/* 1주일 기준의 전체 데이터 개수가 자동 반영됩니다. */}
                 <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
                   총 {displayTotalCount}건
                 </span>
@@ -1265,7 +1257,6 @@ const AnalysisPage = () => {
               {(totalPages > 1 || hasMoreComments) && (
                 <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
                   
-                  {/* << 이전 10페이지 (이전 그룹) */}
                   <button
                     onClick={handlePrevGroupClick}
                     disabled={!hasPrevGroup}
@@ -1275,7 +1266,6 @@ const AnalysisPage = () => {
                     <CaretDoubleLeft size={16} weight="bold" />
                   </button>
 
-                  {/* < 이전 1페이지 */}
                   <button
                     onClick={handlePrevClick}
                     disabled={currentPage === 1}
@@ -1302,7 +1292,6 @@ const AnalysisPage = () => {
                     })}
                   </div>
 
-                  {/* > 다음 1페이지 */}
                   <button
                     onClick={handleNextClick}
                     disabled={currentPage === totalPages && !hasMoreComments}
@@ -1316,7 +1305,6 @@ const AnalysisPage = () => {
                     )}
                   </button>
 
-                  {/* >> 다음 10페이지 (다음 그룹) 버튼 */}
                   {hasNextGroup && (
                     <button
                       onClick={handleNextGroupTextClick}
@@ -1503,7 +1491,7 @@ const AnalysisPage = () => {
       ) : null}
 
       {/* ======================================================= */}
-      {/* 3가지 모달: z-[9999] 및 createPortal 적용으로 여백 문제 해결 */}
+      {/* 모달 영역 */}
       {/* ======================================================= */}
       
       {/* 1. 차트 확대 모달 */}
@@ -1666,11 +1654,10 @@ const AnalysisPage = () => {
                     )}
                   </div>
 
-                  {/* 모달 전용 페이지네이션 컴포넌트 */}
+                  {/* 모달 전용 페이지네이션 */}
                   {(modalTotalPages > 1 || modalHasMoreComments) && (
                     <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-200 pb-2">
                       
-                      {/* << 이전 10페이지 */}
                       <button
                         onClick={handleModalPrevGroupClick}
                         disabled={!modalHasPrevGroup}
@@ -1679,7 +1666,6 @@ const AnalysisPage = () => {
                         <CaretDoubleLeft size={16} weight="bold" />
                       </button>
 
-                      {/* < 이전 1페이지 */}
                       <button
                         onClick={handleModalPrevClick}
                         disabled={modalCurrentPage === 1}
@@ -1704,7 +1690,6 @@ const AnalysisPage = () => {
                         })}
                       </div>
 
-                      {/* > 다음 1페이지 */}
                       <button
                         onClick={handleModalNextClick}
                         disabled={modalCurrentPage === modalTotalPages && !modalHasMoreComments} 
@@ -1717,7 +1702,6 @@ const AnalysisPage = () => {
                         )}
                       </button>
 
-                      {/* >> 다음 10페이지 */}
                       {modalHasNextGroup && (
                         <button
                           onClick={handleModalNextGroupTextClick}
@@ -1797,6 +1781,84 @@ const AnalysisPage = () => {
         document.body
       )}
 
+      {/* [NEW] 4. 데이터 부족 안내 모달 */}
+      {isNoDataModalOpen && (
+        <div className="absolute inset-0 z-40 flex flex-col" style={{ top: 0 }}>
+          {/* 검색창 영역 높이만큼 투명하게 비워두기 (header 영역 보존) */}
+          <div className="shrink-0" style={{ height: '80px' }} />
+          
+          {/* 🌟 수정된 부분: bg-[#F3F4F8] -> bg-gray-50 으로 변경하여 전체 배경색과 통일 */}
+          <div className="flex-1 bg-gray-50 flex items-start justify-center pt-16 sm:pt-24">
+            <div 
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative animate-fade-in border border-gray-200 mx-4"
+            >
+              {/* 모달 헤더 */}
+              <div className="flex justify-end items-center p-4 pb-0">
+                <button 
+                  onClick={() => setIsNoDataModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={22} />
+                </button>
+              </div>
+
+              {/* 모달 본문 */}
+              <div className="px-8 pb-8 pt-2 text-center">
+                {/* 아이콘 */}
+                <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-5">
+                  <WarningCircle size={48} className="text-orange-400" weight="fill" />
+                </div>
+
+                {/* 제목 */}
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">
+                  데이터가 부족합니다
+                </h2>
+
+                {/* 설명 */}
+                <p className="text-gray-500 text-sm sm:text-base leading-relaxed mb-2">
+                  <strong className="text-indigo-600">'{keyword}'</strong> 키워드는
+                </p>
+                <p className="text-gray-500 text-sm sm:text-base leading-relaxed mb-6">
+                  현재 수집된 데이터가 부족하여<br />
+                  분석할 수 없습니다.
+                </p>
+
+                {/* 안내 박스 */}
+                <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    • 트렌드 대시보드의 인기 키워드를 검색해 보세요.<br />
+                    • 다른 키워드로 다시 시도해 주세요.<br />
+                    • 해당 키워드가 분석 대상에 포함되길 원하시면<br />
+                    &nbsp;&nbsp;'정보 수정 제보' 기능을 이용해 주세요.
+                  </p>
+                </div>
+
+                {/* 버튼 영역 */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setIsNoDataModalOpen(false);
+                      navigate('/home');
+                    }}
+                    className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-all"
+                  >
+                    대시보드로 이동
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsNoDataModalOpen(false);
+                      setIsEditModalOpen(true);
+                    }}
+                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg"
+                  >
+                    정보 수정 제보
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div> // 최상위 page 감싸는 div
   );
 };
