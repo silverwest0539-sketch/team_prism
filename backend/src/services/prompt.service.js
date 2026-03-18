@@ -105,7 +105,7 @@ exports.createPromptWithAI = async (formData, trendData, onStream) => {
 
     try {
       const moodResponse = await openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: analysisInput }],
         temperature: 0.5,
         max_tokens: 200,
