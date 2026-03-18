@@ -3,6 +3,8 @@ import json
 import datetime
 import pymysql
 from dotenv import load_dotenv
+import time
+import boto3
 
 import torch
 import torch.nn.functional as F
@@ -175,5 +177,41 @@ def run_daily_batch():
     finally:
         connection.close()
 
+# ==========================================
+# [4] S3 트리거 감지 및 실행 대기
+# ==========================================
+S3_BUCKET_NAME = "prism-dataset-0313"
+POLL_INTERVAL = 30  # 초
+
+def wait_and_run():
+    s3_client = boto3.client('s3')
+    today_str = datetime.datetime.now().strftime('%Y%m%d')
+    trigger_key = f"triggers/sentiment_batch_{today_str}.json"
+
+    print(f"[{datetime.datetime.now()}] 트리거 대기 시작 (s3://{S3_BUCKET_NAME}/{trigger_key})")
+
+    while True:
+        try:
+            # 트리거 파일 존재 확인
+            s3_client.head_object(Bucket=S3_BUCKET_NAME, Key=trigger_key)
+            print(f"[{datetime.datetime.now()}] 트리거 감지! 배치 작업을 시작합니다.")
+
+            # 배치 실행
+            run_daily_batch()
+
+            # 트리거 파일 삭제 (중복 실행 방지)
+            s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=trigger_key)
+            print(f"[{datetime.datetime.now()}] 트리거 파일 삭제 완료.")
+            break
+
+        except s3_client.exceptions.ClientError:
+            # 트리거 파일 없음 → 대기
+            print(f"  대기 중... ({datetime.datetime.now().strftime('%H:%M:%S')})")
+            time.sleep(POLL_INTERVAL)
+
+        except Exception as e:
+            print(f"❌ 예기치 않은 오류 발생: {e}")
+            break
+        
 if __name__ == "__main__":
     run_daily_batch()
