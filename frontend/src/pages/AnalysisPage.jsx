@@ -81,8 +81,9 @@ const AnalysisPage = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   
-  // [NEW] 데이터 부족 안내 모달 상태
+  // 데이터 부족 안내 모달 상태
   const [isNoDataModalOpen, setIsNoDataModalOpen] = useState(false);
+  const [editFromNoData, setEditFromNoData] = useState(false);
 
   // 댓글 무한 스크롤 & 페이지네이션용 상태
   const [commentOffset, setCommentOffset] = useState(70);
@@ -174,7 +175,7 @@ const AnalysisPage = () => {
       const newsData = newsRes.data;
 
       if (analysisData.found) {
-        // [NEW] 데이터가 있으면 모달 닫기
+        // 데이터가 있으면 모달 닫기
         setIsNoDataModalOpen(false);
         
         if (cStart && cEnd && (currentStart !== cStart || currentEnd !== cEnd)) {
@@ -228,7 +229,7 @@ const AnalysisPage = () => {
         }
       } else {
         setData(null);
-        // [NEW] 데이터가 없으면 모달 열기
+        // 데이터가 없으면 모달 열기
         setIsNoDataModalOpen(true);
       }
 
@@ -267,7 +268,7 @@ const AnalysisPage = () => {
     setIsAiLoading(true);
     setShowScoreTooltip(false);
     setIsNegativeRevealed(false);
-    // [NEW] 키워드 변경 시 모달 초기화
+    // 키워드 변경 시 모달 초기화
     setIsNoDataModalOpen(false);
     
     const todayDate = getFormattedDate(new Date());
@@ -593,6 +594,9 @@ const AnalysisPage = () => {
       showToast('소중한 의견 감사합니다. 검토 후 신속히 반영하겠습니다.', { type: 'success' });
       setIsEditModalOpen(false);
       setEditRequestText('');
+      if (editFromNoData) {
+        setEditFromNoData(false);
+        navigate('/home');}
     } catch (error) {
       console.error('제보 메일 전송 실패:', error);
       showToast('의견 전송에 실패했습니다. 잠시 후 다시 시도해주세요.', { type: 'error' });
@@ -1847,6 +1851,7 @@ const AnalysisPage = () => {
                   <button
                     onClick={() => {
                       setIsNoDataModalOpen(false);
+                      setEditFromNoData(true);
                       setIsEditModalOpen(true);
                     }}
                     className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg"
