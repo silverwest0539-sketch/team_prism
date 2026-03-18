@@ -60,7 +60,12 @@ const checkAndSyncS3 = async () => {
         return;
       }
 
-      const latestFile = jsonFiles.sort((a, b) => b.LastModified - a.LastModified)[0];
+      const latestFile = jsonFiles.sort((a, b) => {
+        const nameA = path.basename(a.Key);
+        const nameB = path.basename(b.Key);
+        return nameB.localeCompare(nameA);
+      })[0];      
+      
       latestFile.folderName = folder; 
       latestFilesToDownload.push(latestFile);
     }
