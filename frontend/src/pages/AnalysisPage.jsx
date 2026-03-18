@@ -623,6 +623,14 @@ const AnalysisPage = () => {
     }
   };
 
+  const handleEditModalClose = () => {
+    setIsEditModalOpen(false);
+    setEditRequestText('');
+    if (editFromNoData) {
+      setIsNoDataModalOpen(true);  
+    }
+  };
+
   const filteredData = useMemo(() => {
     const sourceData = data || DUMMY_DATA;
     const chartDataKey = selectedPlatform === 'all' ? 'mentions' : selectedPlatform;
@@ -1774,7 +1782,7 @@ const AnalysisPage = () => {
                 정보 수정 제보
               </h3>
               <button 
-                onClick={() => setIsEditModalOpen(false)}
+                onClick={() => handleEditModalClose()}
                 className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X size={22} />
@@ -1797,7 +1805,7 @@ const AnalysisPage = () => {
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsEditModalOpen(false)}
+                  onClick={() => handleEditModalClose()}
                   className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
                 >
                   취소
