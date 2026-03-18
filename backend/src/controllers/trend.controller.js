@@ -69,3 +69,16 @@ exports.getMoreComments = async (req, res) => {
     res.status(500).json({ error: 'Server Error' });
   }
 };
+
+exports.checkKeywordExists = async (req, res) => {
+  const { keyword } = req.query;
+  if (!keyword) return res.status(400).json({ error: 'Keyword required' });
+
+  try {
+    const result = await trendService.checkKeywordExists(keyword);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ /api/analysis/exists 에러:', error);
+    res.status(500).json({ error: 'Server Error' });
+  }
+};

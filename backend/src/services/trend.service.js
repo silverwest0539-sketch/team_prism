@@ -465,3 +465,15 @@ exports.getMoreComments = async (keyword, startDate, endDate, offset = 0, sentim
     };
   });
 };
+
+exports.checkKeywordExists = async (keyword) => {
+  const [rows] = await db.execute(
+    `SELECT keyword_id, keyword_name, is_person 
+     FROM TREND_KEYWORD 
+     WHERE keyword_name = ?`,
+    [keyword]
+  );
+  return rows.length > 0
+    ? { exists: true, keyword: rows[0].keyword_name, is_person: rows[0].is_person }
+    : { exists: false };
+};

@@ -1,6 +1,6 @@
 // src/pages/AnalysisPage.jsx
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import {
   Bell,
@@ -84,6 +84,7 @@ const AnalysisPage = () => {
   // 데이터 부족 안내 모달 상태
   const [isNoDataModalOpen, setIsNoDataModalOpen] = useState(false);
   const [editFromNoData, setEditFromNoData] = useState(false);
+  const [keywordExists, setKeywordExists] = useState(null);
 
   // 댓글 무한 스크롤 & 페이지네이션용 상태
   const [commentOffset, setCommentOffset] = useState(70);
@@ -229,7 +230,6 @@ const AnalysisPage = () => {
         }
       } else {
         setData(null);
-        // 데이터가 없으면 모달 열기
         setIsNoDataModalOpen(true);
       }
 
@@ -241,6 +241,26 @@ const AnalysisPage = () => {
       setLoading(false);
     }
   }, [keyword, isLoggedIn]); 
+
+  const checkKeyword = useCallback(async (startDate, endDate) => {
+    if (!keyword || !isLoggedIn) return;
+
+    setKeywordExists(null);
+    try {
+      const res = await apiClient.get('/analysis/exists', { params: { keyword } });
+      if (!res.data.exists) {
+        setKeywordExists(false);
+        setIsNoDataModalOpen(true);
+      } else {
+        setKeywordExists(true);
+        fetchData(startDate, endDate, startDate, endDate);  // ✅ 인자로 받은 날짜 사용
+      }
+    } catch (err) {
+      console.error('키워드 확인 실패:', err);
+      setKeywordExists(true);
+      fetchData(startDate, endDate, startDate, endDate);
+    }
+  }, [keyword, isLoggedIn, fetchData]);
 
   const fetchAiSummary = useCallback(async (targetKeyword, start, end) => {
     if (!isLoggedIn) return; 
@@ -268,9 +288,9 @@ const AnalysisPage = () => {
     setIsAiLoading(true);
     setShowScoreTooltip(false);
     setIsNegativeRevealed(false);
-    // 키워드 변경 시 모달 초기화
     setIsNoDataModalOpen(false);
-    
+    setKeywordExists(null); // ✅ 추가 - 확인 중 상태로 초기화
+
     const todayDate = getFormattedDate(new Date());
 
     const oneWeekAgo = new Date();
@@ -286,8 +306,8 @@ const AnalysisPage = () => {
     setCommentEndDate(todayDate);
 
     setCurrentPage(1);
-    setModalCurrentPage(1); 
-    
+    setModalCurrentPage(1);
+
     const savedUser = getStoredUser();
     if (savedUser?.email) {
       apiClient
@@ -300,10 +320,10 @@ const AnalysisPage = () => {
       setIsScrapped(false);
     }
 
-    fetchData(oneWeekAgoDate, todayDate, oneWeekAgoDate, todayDate);
+    checkKeyword(oneWeekAgoDate, todayDate); // ✅ fetchData 대신 checkKeyword 호출
     fetchAiSummary(keyword, oneWeekAgoDate, todayDate);
 
-  }, [keyword, fetchAiSummary, fetchData, isLoggedIn]); 
+  }, [keyword, fetchAiSummary, checkKeyword, isLoggedIn]); 
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
@@ -903,7 +923,7 @@ const AnalysisPage = () => {
     // ---------------- Render ----------------
   return (
     <div className="page space-y-6 relative">
-      <header className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4 relative z-10">
+      <header className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4 relative z-50">
         <Link to="/home" className="p-2 bg-white rounded-full text-gray-500 hover:text-indigo-600 shadow-sm transition">
           <CaretLeft size={20} />
         </Link>
@@ -919,14 +939,23 @@ const AnalysisPage = () => {
       </header>
 
       <div className="relative flex-1"></div>
+      {keywordExists === null && keyword && isLoggedIn && (
+        <div className="flex justify-center items-center py-32">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            <span className="text-indigo-600 font-bold animate-pulse">키워드 확인 중...</span>
+          </div>
+        </div>
+      )}
 
-      <div
-        className={`w-full transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
-          !isLoggedIn
-            ? 'opacity-30 blur-[6px] pointer-events-none select-none'
-            : (!keyword ? 'blur-disabled' : 'blur-enabled')
-        }`}
-      >
+      {keywordExists === true && !isNoDataModalOpen && (
+        <div
+          className={`w-full transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
+            !isLoggedIn
+              ? 'opacity-30 blur-[6px] pointer-events-none select-none'
+              : (!keyword ? 'blur-disabled' : 'blur-enabled')
+          }`}
+        >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-2 mb-2 sm:mb-4 w-full">
           
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-1 w-full sm:w-auto">
@@ -1454,6 +1483,7 @@ const AnalysisPage = () => {
           </div>
         </div>
       </div>
+      )}
 
       {!isLoggedIn ? (
         <div className="absolute inset-x-0 top-[25vh] sm:top-[30vh] z-50 flex items-start justify-center px-4">
@@ -1785,26 +1815,17 @@ const AnalysisPage = () => {
         document.body
       )}
 
-      {/* [NEW] 4. 데이터 부족 안내 모달 */}
+      {/* 4. 데이터 부족 안내 모달 */}
       {isNoDataModalOpen && (
-        <div className="absolute inset-0 z-40 flex flex-col" style={{ top: 0 }}>
+        <div className="fixed inset-0 z-40 flex flex-col pointer-events-none" style={{ top: 0 }}>
           {/* 검색창 영역 높이만큼 투명하게 비워두기 (header 영역 보존) */}
           <div className="shrink-0" style={{ height: '80px' }} />
           
           {/* 🌟 수정된 부분: bg-[#F3F4F8] -> bg-gray-50 으로 변경하여 전체 배경색과 통일 */}
-          <div className="flex-1 bg-gray-50 flex items-start justify-center pt-16 sm:pt-24">
+          <div className="flex-1 bg-gray-50 flex items-start justify-center pt-16 sm:pt-24 pointer-events-auto">
             <div 
               className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative animate-fade-in border border-gray-200 mx-4"
             >
-              {/* 모달 헤더 */}
-              <div className="flex justify-end items-center p-4 pb-0">
-                <button 
-                  onClick={() => setIsNoDataModalOpen(false)}
-                  className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X size={22} />
-                </button>
-              </div>
 
               {/* 모달 본문 */}
               <div className="px-8 pb-8 pt-2 text-center">
@@ -1829,7 +1850,7 @@ const AnalysisPage = () => {
 
                 {/* 안내 박스 */}
                 <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
-                  <p className="text-xs text-gray-500 leading-relaxed">
+                  <p className="text-sm text-gray-500 leading-relaxed">
                     • 트렌드 대시보드의 인기 키워드를 검색해 보세요.<br />
                     • 다른 키워드로 다시 시도해 주세요.<br />
                     • 해당 키워드가 분석 대상에 포함되길 원하시면<br />
