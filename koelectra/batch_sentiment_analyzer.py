@@ -212,6 +212,6 @@ def wait_and_run():
         except Exception as e:
             print(f"❌ 예기치 않은 오류 발생: {e}")
             break
-        
+
 if __name__ == "__main__":
-    run_daily_batch()
+    wait_and_run()
