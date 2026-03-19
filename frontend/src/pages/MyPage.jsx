@@ -309,62 +309,58 @@ const MyPage = () => {
         title="계정 설정 섹션을 표시하지 못했습니다."
         description="잠시 후 다시 시도해 주세요."
       >
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row mb-8 sm:mb-10 min-h-[240px]">
-          <div className="p-5 sm:p-8 md:w-2/5 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50/50">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">프로필</h2>
-            <p className="text-sm text-gray-500 leading-relaxed break-keep">
-              개인정보 및 보안 설정, 선호 플랫폼/뉴스 및<br className="hidden md:block" />
-              회원 탈퇴를 관리할 수 있습니다.
-            </p>
-          </div>
-
-          <div className="p-4 sm:p-6 md:w-3/5 flex flex-col justify-center">
-            <div
-              onClick={() => setActiveModal(MODAL.ACCOUNT)}
-              className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors"
-            >
-              <div>
-                <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">계정 정보</h3>
-                {/* [수정된 부분] text-xs -> text-sm */}
-                <p className="text-sm text-gray-400 mt-1">프로필 편집, 비밀번호 변경, SNS 연동</p>
+        {/* 수정된 프로필 영역 - height를 대폭 줄이고 2x2 그리드로 재배치 */}
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 sm:mb-10 min-h-[160px]">
+          <div className="p-5 sm:p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">프로필</h2>
+            
+            {/* 2x2 그리드 레이아웃 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* 첫 번째 줄 */}
+              <div
+                onClick={() => setActiveModal(MODAL.ACCOUNT)}
+                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
+              >
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition">계정 정보</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">프로필 편집, 비밀번호 변경</p>
+                </div>
+                <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-600 transition" />
               </div>
-              <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
-            </div>
 
-            <div 
-              onClick={() => setPrefModalType('community')}
-              className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors"
-            >
-              <div>
-                <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 플랫폼 설정</h3>
-                {/* [수정된 부분] text-xs -> text-sm */}
-                <p className="text-sm text-gray-400 mt-1">대시보드에서 우선 표시할 플랫폼 설정</p>
+              <div 
+                onClick={() => setPrefModalType('community')}
+                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
+              >
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition">선호 플랫폼 설정</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">우선 표시할 플랫폼</p>
+                </div>
+                <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-600 transition" />
               </div>
-              <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
-            </div>
 
-            <div 
-              onClick={() => setPrefModalType('news')}
-              className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors"
-            >
-              <div>
-                <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 뉴스 카테고리 설정</h3>
-                {/* [수정된 부분] text-xs -> text-sm */}
-                <p className="text-sm text-gray-400 mt-1">대시보드에서 우선 표시할 뉴스 분야 설정</p>
+              {/* 두 번째 줄 */}
+              <div
+                onClick={() => setActiveModal(MODAL.WITHDRAW)}
+                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-red-50 rounded-xl transition-colors border border-gray-100"
+              >
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-red-600 transition">회원탈퇴</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">계정 삭제 및 데이터 파기</p>
+                </div>
+                <ChevronRight size={16} className="text-gray-300 group-hover:text-red-600 transition" />
               </div>
-              <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-600 transition" />
-            </div>
 
-            <div
-              onClick={() => setActiveModal(MODAL.WITHDRAW)}
-              className="group flex items-center justify-between p-4 cursor-pointer hover:bg-red-50 rounded-xl transition-colors"
-            >
-              <div>
-                <h3 className="text-base font-bold text-gray-900 group-hover:text-red-600 transition">회원 탈퇴</h3>
-                {/* [수정된 부분] text-xs -> text-sm */}
-                <p className="text-sm text-gray-400 mt-1">계정 삭제 및 데이터 영구 파기</p>
+              <div 
+                onClick={() => setPrefModalType('news')}
+                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
+              >
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition">선호 뉴스 카테고리 설정</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">우선 표시할 뉴스 분야</p>
+                </div>
+                <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-600 transition" />
               </div>
-              <ChevronRight size={20} className="text-gray-300 group-hover:text-red-600 transition" />
             </div>
           </div>
         </section>
