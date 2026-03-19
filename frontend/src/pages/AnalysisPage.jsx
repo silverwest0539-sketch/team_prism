@@ -1620,6 +1620,9 @@ const AnalysisPage = () => {
                 <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 hidden sm:inline-block">
                   총 {displayModalTotalCount}건
                 </span>
+                <span className="text-xs"> 
+                  AI 분석결과로 정확하지 않을 수 있습니다.
+                </span>
               </div>
               
               <div className="flex items-center gap-3">
@@ -1632,7 +1635,7 @@ const AnalysisPage = () => {
                         : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
                     }`}
                   >
-                    {isNegativeRevealed ? '부정 댓글 가리기' : '부정 댓글 전체 보기 동의'}
+                    {isNegativeRevealed ? '부정 댓글 가리기' : '부정 댓글 보기 동의'}
                   </button>
                 )}
 
