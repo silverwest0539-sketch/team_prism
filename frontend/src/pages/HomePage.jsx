@@ -350,15 +350,47 @@ const HomePage = () => {
               </div>
             </div>
           </div>
-          <ul className="flex flex-col gap-2">
+          <div className="flex flex-wrap justify-center items-center content-center gap-x-2 gap-y-1 px-2 py-4 h-[260px] overflow-hidden leading-none">
             {newsKeywords.length > 0 ? (
-                newsKeywords.slice(0, 5).map((item, index) => (
-                <li key={index} onClick={() => { window.open(`https://news.google.com/search?q=${encodeURIComponent(item.keyword)}&hl=ko&gl=KR&ceid=KR%3Ako`, '_blank', 'noopener,noreferrer'); }} className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12">
-                    <div className="flex items-center gap-4"><span className="font-bold text-emerald-600 w-3 text-center">{item.rank}</span><p className="font-medium text-gray-900">{item.keyword}</p></div>
-                </li>
-                ))
-            ) : ( <li className="text-center text-gray-400 text-xs py-10">데이터를 불러오는 중입니다.</li> )}
-          </ul>
+              newsKeywords.slice(0, 20).map((item, index) => {
+                // 1. 다양한 색상 팔레트 (시인성이 좋은 색상들로 구성)
+                const colors = [
+                  'text-emerald-600', 'text-blue-600', 'text-rose-500', 'text-amber-600', 
+                  'text-purple-600', 'text-teal-600', 'text-indigo-600', 'text-pink-600',
+                  'text-cyan-600', 'text-orange-600'
+                ];
+                // 인덱스를 활용해 색상을 순환 배정합니다.
+                const colorClass = colors[index % colors.length];
+
+                // 2. 빈도수 기반 폰트 크기 계산
+                const frequency = item.count || item.score || (30 - index); 
+                
+                // 빈도수 값에 따라 최소 16px ~ 최대 48px 사이로 크기를 동적 제한합니다.
+                // 실제 빈도수 숫자의 단위가 크다면 frequency 곱셈 수치(1.2)를 줄이거나 늘려 조정하십시오.
+                const calculatedSize = Math.max(22, Math.min(64, (frequency * 3.5) + 12));
+
+                return (
+                  <span
+                    key={index}
+                    onClick={() => {
+                      window.open(
+                        `https://news.google.com/search?q=${encodeURIComponent(item.keyword)}&hl=ko&gl=KR&ceid=KR%3Ako`,
+                        '_blank',
+                        'noopener,noreferrer'
+                      );
+                    }}
+                    className={`${colorClass} font-extrabold cursor-pointer hover:opacity-70 hover:scale-105 transition-transform duration-200 inline-block break-keep m-0 p-0`}
+                    style={{ fontSize: `${calculatedSize}px` }}
+                    title={`${item.keyword} (빈도: ${item.count || item.score || '정보 없음'})`}
+                  >
+                    {item.keyword}
+                  </span>
+                );
+              })
+            ) : (
+              <div className="w-full text-center text-gray-400 text-xs py-10">데이터를 불러오는 중입니다.</div>
+            )}
+          </div>
         </div>
       </div>
 

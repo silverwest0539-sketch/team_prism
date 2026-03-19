@@ -118,11 +118,11 @@ const updateSingleCategoryKeyword = async (category) => {
     const formattedData = Object.entries(keywordMap)
       .map(([keyword, count]) => ({ keyword, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
+      .slice(0, 50)
       .map((item, index) => ({
         rank: index + 1,
         keyword: item.keyword,
-        change: 'NEW' 
+        count: item.count 
       }));
 
     newsKeywordCache[category] = { data: formattedData, timestamp: Date.now() };
@@ -166,15 +166,15 @@ const updateNewsKeywords = async () => {
         keywordMap[noun] = (keywordMap[noun] || 0) + 1;
       });
 
-      // 4. 빈도수 기준 상위 5개 추출
+      // 4. 빈도수 기준 상위 20개 추출
       const formattedData = Object.entries(keywordMap)
         .map(([keyword, count]) => ({ keyword, count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 5)
+        .slice(0, 20)
         .map((item, index) => ({
           rank: index + 1,
           keyword: item.keyword,
-          change: 'NEW' 
+          count: item.count
         }));
 
       // 카테고리를 키 값으로 하여 캐시 저장
@@ -406,7 +406,7 @@ exports.getNews = async (keyword, startDate, endDate) => {
       });
 
     // 2. 정렬된 데이터에서 상위 5개 추출
-    return sortedItems.slice(0, 5).map(item => {
+    return sortedItems.slice(0, 50).map(item => {
       let publisher = 'Google News';
       if (item.newsSource) {
         if (typeof item.newsSource === 'string') publisher = item.newsSource;
@@ -449,8 +449,8 @@ exports.getNewsByCategory = async (category) => {
       return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
     });
 
-    // 상위 5개 추출
-    return sortedItems.slice(0, 10).map(item => {
+    // 상위 100개 추출
+    return sortedItems.slice(0, 100).map(item => {
       let publisher = 'Google News';
       if (item.newsSource) {
         if (typeof item.newsSource === 'string') publisher = item.newsSource;
