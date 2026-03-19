@@ -444,7 +444,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                     <div>
                         <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
                             <BookmarkSimple className="text-blue-600" size={32} weight="fill" />
-                            내 스크랩
+                            저장한 키워드
                         </h1>
                         <p className="text-gray-500 text-sm mt-1">
                             카드를 클릭하면 해당 키워드의 분석 요약 정보를 볼 수 있습니다.

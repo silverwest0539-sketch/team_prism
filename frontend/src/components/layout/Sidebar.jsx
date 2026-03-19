@@ -94,7 +94,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
 
   // 로그인 상태일 때만 마이페이지를 사이드바 메뉴에 동적으로 추가
   const dynamicMenus = userInfo
-    ? [...MAIN_MENUS, { path: '/mypage', label: '마이페이지 / 스크랩' }]
+    ? [...MAIN_MENUS, { path: '/mypage', label: '마이페이지 / 저장내역' }]
     : MAIN_MENUS;
 
   const DesktopSidebar = () => (
