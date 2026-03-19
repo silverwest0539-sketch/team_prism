@@ -13,7 +13,11 @@ const app = express();
 const PORT = 5000;
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://prism-server-0313.s3-website.ap-northeast-2.amazonaws.com'], 
+  origin: [
+    'http://localhost:5173', // 로컬 개발용
+    'https://pickey.cloud',  // 새로 연결한 프론트엔드 도메인
+    'https://www.pickey.cloud' // www를 사용할 경우를 대비해 추가
+  ], 
   credentials: true,
 }));
 app.use(express.json());
