@@ -1,3 +1,4 @@
+// src/components/creation/useCreationForm.js
 import { useEffect, useMemo, useState } from 'react';
 
 const CONTENT_TYPES = ['카드뉴스', '포스터', '썸네일'];
@@ -14,7 +15,7 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
   const [userType, setUserType] = useState(USER_TYPES[0]);
   const [purpose, setPurpose] = useState('');
   const [target, setTarget] = useState('');
-  const [essentialDetails, setEssentialDetails] = useState('');
+  // const [essentialDetails, setEssentialDetails] = useState(''); 제거됨
   const [otherRequests, setOtherRequests] = useState('');
 
   // 쿼리 파라미터(URL)로 넘어온 초기 키워드 세팅
@@ -24,30 +25,28 @@ export const useCreationForm = ({ initialKeyword = '' }) => {
 
   // 백엔드(prompt.service.js)가 요구하는 포맷으로 페이로드 조립
   const buildSubmitPayload = () => {
-  const mergedRequests = [essentialDetails, otherRequests]
-    .filter((text) => text && text.trim() !== '')
-    .join(' / ');
+    // 합치는 로직(mergedRequests) 제거
 
-  return {
-    keyword: keyword.trim(),
-    type: selectedType,
-    industry,
-    userType,        
-    context: purpose,
-    target,
-    otherRequests: mergedRequests,
+    return {
+      keyword: keyword.trim(),
+      type: selectedType,
+      industry,
+      userType,        
+      context: purpose,
+      target,
+      otherRequests: otherRequests.trim(), // 기타 요구사항 텍스트만 전송
+    };
   };
-};
 
   return {
     // States
-    keyword, selectedType, industry, userType, purpose, target, essentialDetails, otherRequests,
+    keyword, selectedType, industry, userType, purpose, target, otherRequests,
     contentTypes: CONTENT_TYPES,
     industries: INDUSTRIES,
     userTypes: USER_TYPES,
     
     // Setters
-    setKeyword, setSelectedType, setIndustry, setUserType, setPurpose, setTarget, setEssentialDetails, setOtherRequests,
+    setKeyword, setSelectedType, setIndustry, setUserType, setPurpose, setTarget, setOtherRequests,
     
     // Methods
     buildSubmitPayload,

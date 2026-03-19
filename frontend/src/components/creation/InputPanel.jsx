@@ -25,7 +25,6 @@ const InputPanel = ({
     userType,
     purpose,
     target,
-    essentialDetails,
     otherRequests,
     contentTypes,
     industries,
@@ -36,14 +35,12 @@ const InputPanel = ({
     setUserType,
     setPurpose,
     setTarget,
-    setEssentialDetails,
     setOtherRequests,
     buildSubmitPayload,
   } = useCreationForm({ initialKeyword });
 
   const handleSubmit = () => {
     const payload = buildSubmitPayload();
-    console.log('payload:', payload);
     let hasError = false;
 
     if (!payload.keyword) {
@@ -61,14 +58,13 @@ const InputPanel = ({
     }
 
     if (hasError) return;
-
     onGenerate(payload);
   };
 
   return (
     <div className="creation-input-panel bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col">
-      {/* ✅ 각 섹션 간의 여백(gap)을 줄여서 전체적으로 위로 끌어올렸습니다. */}
-      <div className="creation-input-stack flex flex-col gap-2.5 flex-1">
+      {/* ✅ flex-1을 제거하여 박스가 불필요하게 늘어나는 것을 방지했습니다. */}
+      <div className="creation-input-stack flex flex-col gap-2.5">
         <div className="creation-input-main">
           <div className="creation-input-keyword order-1">
             <CreationKeywordSection
@@ -103,26 +99,23 @@ const InputPanel = ({
           </div>
         </div>
 
-        {/* ✅ 불필요한 하단 마진(mb) 제거하여 선택 항목을 밀착시켰습니다. */}
-        <div className="creation-input-middle-spacer" aria-hidden="true" />
+        {/* ✅ 불필요하게 자리만 차지하던 middle-spacer와 bottom-spacer를 완전히 제거했습니다. */}
         <div className="creation-input-target order-3">
           <CreationTargetSection
             target={target}
-            essentialDetails={essentialDetails}
             otherRequests={otherRequests}
             onChangeTarget={setTarget}
-            onChangeEssentialDetails={setEssentialDetails}
             onChangeOtherRequests={setOtherRequests}
           />
         </div>
-        <div className="creation-input-bottom-spacer" aria-hidden="true" />
       </div>
 
+      {/* ✅ 버튼 상단 마진을 mt-3으로 적절히 고정하여 섹션 바로 아래에 붙도록 수정했습니다. */}
       <button
         type="button"
         onClick={handleSubmit}
         disabled={isLoading}
-        className={`creation-submit-button w-full text-white font-bold py-2.5 sm:py-3 rounded-xl transition flex items-center justify-center mt-[3px] text-base sm:text-lg shadow-md ${
+        className={`creation-submit-button w-full text-white font-bold py-2.5 sm:py-3 rounded-xl transition flex items-center justify-center mt-3 text-base sm:text-lg shadow-md ${
           isLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
         }`}
       >
