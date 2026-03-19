@@ -1,11 +1,14 @@
 // src/components/creation/ResultPanel.jsx
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, ArrowsClockwise, WarningCircle, BookmarkSimple } from '@phosphor-icons/react';
+import { Copy, Check, ArrowsClockwise, WarningCircle, BookmarkSimple, MagicWand, Sparkle } from '@phosphor-icons/react';
 
 const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, onSave }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [editableContent, setEditableContent] = useState(() => String(content || ''));
+  
+  // 로딩 진행 단계를 위한 상태 (0, 1, 2, 3)
+  const [loadingStep, setLoadingStep] = useState(0);
 
   useEffect(() => {
     if (content) {
@@ -14,16 +17,36 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
   }, [content]);
 
   const v1Content = editableContent.trim();
+  
+  // 새로운 내용이 오면 저장 상태 초기화
   useEffect(() => {
     setIsSaved(false);
   }, [v1Content]);
+
+  // 로딩 중일 때 5초마다 텍스트와 게이지를 변경하는 로직
+  useEffect(() => {
+    let timer1, timer2, timer3;
+    if (isLoading) {
+      setLoadingStep(0);
+      timer1 = setTimeout(() => setLoadingStep(1), 5000); // 5초
+      timer2 = setTimeout(() => setLoadingStep(2), 10000); // 10초
+      timer3 = setTimeout(() => setLoadingStep(3), 15000); // 15초 (이후 홀딩)
+    } else {
+      setLoadingStep(0);
+    }
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, [isLoading]);
 
   const handleCopy = async () => {
     if (!v1Content) return;
     try {
       await navigator.clipboard.writeText(v1Content);
       setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
+      setTimeout(() => setIsCopied(false), 2000); // 복사는 2초 후 원상복구 유지
     } catch (err) {
       console.error('복사 실패:', err);
     }
@@ -36,11 +59,19 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
       const didSave = await onSave(v1Content);
       if (!didSave) return;
       setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 2000);
+      // 🔥 수정됨: 저장 버튼은 setTimeout을 제거하여 상태가 원상복구되지 않도록 함
     } catch (err) {
       console.error('저장 실패:', err);
     }
   };
+
+  // 로딩 단계별 문구 설정
+  const loadingMessages = [
+    "AI가 입력된 조건을 꼼꼼히 분석하고 있어요 🧐",
+    "가장 효과적인 키워드를 조합하는 중이에요 🧩",
+    "매력적인 문장으로 프롬프트를 다듬고 있어요 ✍️",
+    "거의 다 왔어요! 잠시만 기다려주세요 ✨" // 생성이 길어질 때 여기서 홀딩
+  ];
 
   let bodyContent;
   if (!v1Content && errorMessage) {
@@ -61,7 +92,6 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
     );
   } else if (!v1Content) {
     bodyContent = (
-      // ✅ 문구를 화면 정중앙에 배치 (flex-col, items-center, justify-center, h-full 적용)
       <div className="creation-result-empty flex flex-col items-center justify-center h-full border border-gray-200 bg-gray-50 rounded-xl p-4 sm:p-5 text-center space-y-1.5 -translate-y-4">
         <p className="font-semibold text-gray-700 text-base sm:text-lg">생성된 프롬프트가 아직 없습니다.</p>
         <p className="text-gray-500 text-sm sm:text-base">왼쪽 정보를 입력하고 생성 버튼을 눌러 프롬프트를 만들어 보세요.</p>
@@ -77,7 +107,6 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
         )}
         <div className="flex flex-col flex-1 min-h-0">
           <label className="block text-sm font-bold text-gray-700 mb-2">생성 프롬프트</label>
-          {/* ✅ 텍스트 에어리어가 영역 전체를 채우도록 flex-1 설정 */}
           <textarea
             className="flex-1 w-full h-full border border-gray-200 rounded-xl p-3 sm:p-4 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 resize-none whitespace-pre-wrap text-gray-800 leading-relaxed text-sm sm:text-base"
             value={editableContent}
@@ -90,7 +119,6 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
   }
 
   return (
-    // ✅ 모바일에서 너무 작게 찌그러지지 않도록 min-h-[400px] 추가. 데스크탑은 h-full로 꽉 참.
     <div className="creation-result-panel bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col h-full min-h-[280px]">
 
       {/* 헤더 */}
@@ -101,6 +129,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
         </div>
 
         <div className="flex items-center gap-2">
+          {/* 🔥 수정됨: 저장 버튼 아이콘 상태 명확히 변경 (빈 아이콘 -> 색칠된 아이콘) */}
           <button
             onClick={handleSave}
             disabled={!v1Content || isLoading || typeof onSave !== 'function'}
@@ -113,8 +142,9 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
           >
             {isSaved ? (
               <>
-                <Check size={22} weight="bold" className="text-green-600" />
-                <span className="text-sm font-bold text-green-600 hidden sm:inline">저장됨</span>
+                {/* 저장 완료 시 꽉 찬 아이콘과 파란색 텍스트 */}
+                <BookmarkSimple size={22} weight="fill" className="text-indigo-600" />
+                <span className="text-sm font-bold text-indigo-600 hidden sm:inline">저장됨</span>
               </>
             ) : (
               <BookmarkSimple size={22} weight="bold" />
@@ -145,16 +175,38 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
 
       {/* 본문 컨텐츠 영역 */}
       <div className="relative flex-1 min-h-0 flex flex-col">
-        {/* h-full을 주어 내부 bodyContent가 꽉 차도록 설정 */}
         <div className="creation-result-body absolute inset-0 p-3 h-full">
           {bodyContent}
         </div>
 
-        {/* 로딩 오버레이 */}
+        {/* 🔥 수정됨: 지루하지 않은 로딩 오버레이 애니메이션 */}
         {isLoading && (
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-b-xl transition-all duration-300">
-            <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
-            <span className="text-indigo-600 font-bold animate-pulse text-lg">프롬프트 생성중...</span>
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center rounded-b-xl transition-all duration-300">
+            {/* 재미를 더하는 아이콘 애니메이션 */}
+            <div className="relative mb-6">
+              <MagicWand size={48} weight="duotone" className="text-indigo-500 animate-bounce" />
+              <Sparkle size={24} weight="fill" className="text-yellow-400 absolute -top-1 -right-3 animate-pulse" />
+            </div>
+
+            {/* 단계별로 변하는 텍스트 */}
+            <span className="text-indigo-700 font-bold text-[15px] sm:text-base mb-4 tracking-tight transition-opacity duration-300">
+              {loadingMessages[loadingStep]}
+            </span>
+
+            {/* 가상의 프로그레스 바 (자연스럽게 차오르다가 95%에서 홀딩) */}
+            <div className="w-48 sm:w-64 h-2 bg-indigo-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-indigo-500 ease-out"
+                style={{
+                  width: loadingStep === 0 ? '25%' 
+                       : loadingStep === 1 ? '55%' 
+                       : loadingStep === 2 ? '80%' 
+                       : '95%',
+                  transitionDuration: '5000ms', // CSS만으로 부드럽게 차오르는 효과
+                  transitionProperty: 'width'
+                }}
+              />
+            </div>
           </div>
         )}
       </div>
