@@ -84,8 +84,8 @@ const Sidebar = ({ isOpen = false, onClose }) => {
 
   const confirmLogout = () => {
     setIsLogoutConfirmOpen(false);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    window.sessionStorage.removeItem('token');
+    window.sessionStorage.removeItem('user');
     resetThemeToLight();
     setTheme(THEMES.LIGHT);
     navigate('/');

@@ -10,7 +10,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const EMAIL_CODE_REGEX = /^\d{6}$/;
 const NICKNAME_MAX_LENGTH = 20;
 const PASSWORD_MAX_LENGTH = 64;
-const EMAIL_SEND_COOLDOWN_SECONDS = 60;
+const EMAIL_SEND_COOLDOWN_SECONDS = 30;
 
 const getSafeErrorMessage = (error, fallbackMessage) => {
   const serverMessage = String(error?.response?.data?.message || error?.response?.data?.error || '').trim();

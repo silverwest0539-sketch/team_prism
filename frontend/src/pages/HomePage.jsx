@@ -123,7 +123,7 @@ const HomePage = () => {
       console.error('취향 설정 저장 실패:', error);
     }
     
-    localStorage.setItem(`hasSeenWizard_${userInfo?.email}`, 'true');
+    window.localStorage.setItem(`hasSeenWizard_${userInfo?.email}`, 'true');
     setIsInitialModalOpen(false);
   };
 

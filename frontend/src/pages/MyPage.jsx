@@ -141,7 +141,7 @@ const MyPage = () => {
           
           const updatedUser = { ...userInfo, kakaoId: null };
           setUserInfo(updatedUser);
-          localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
+          window.sessionStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         } catch {
           showToast('연동 해제에 실패했습니다.', { type: 'error' });
         }
@@ -166,7 +166,7 @@ const MyPage = () => {
           showToast('네이버 연동이 해제되었습니다.', { type: 'success' });
           const updatedUser = { ...userInfo, naverId: null };
           setUserInfo(updatedUser);
-          localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
+          window.sessionStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         } catch {
           showToast('연동 해제에 실패했습니다.', { type: 'error' });
         }
@@ -190,7 +190,7 @@ const MyPage = () => {
       if (response.data.success) {
         const updatedUser = { ...userInfo, nickname: editNickname };
         setUserInfo(updatedUser);
-        localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
+        window.sessionStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         
         showToast(response.data.message || TOAST_MESSAGE.PROFILE_UPDATE_SUCCESS, { type: 'success' });
         closeModal();
@@ -227,8 +227,9 @@ const MyPage = () => {
 
       if (response.data.success) {
         showToast(response.data.message || TOAST_MESSAGE.WITHDRAW_SUCCESS, { type: 'success' });
-        localStorage.removeItem(STORAGE_KEY.USER);
-        localStorage.removeItem(STORAGE_KEY.TOKEN);
+        window.sessionStorage.removeItem(STORAGE_KEY.USER);
+        window.sessionStorage.removeItem('token');
+        window.localStorage.removeItem(`hasSeenWizard_${userInfo.email}`);
         window.location.href = ROUTE.LOGIN; 
       }
     } catch (error) {
@@ -257,7 +258,7 @@ const MyPage = () => {
         if (prefModalType === 'news') updatedUser.preferredNews = value;
 
         setUserInfo(updatedUser);
-        localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
+        window.sessionStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         
         showToast('설정이 성공적으로 변경되었습니다.', { type: 'success' });
         setPrefModalType(null);
@@ -281,7 +282,7 @@ const MyPage = () => {
         if (prefModalType === 'news') updatedUser.preferredNews = '';
 
         setUserInfo(updatedUser);
-        localStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
+        window.sessionStorage.setItem(STORAGE_KEY.USER, JSON.stringify(updatedUser));
         
         showToast('설정이 초기화되었습니다.', { type: 'success' });
         setPrefModalType(null);
