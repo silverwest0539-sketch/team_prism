@@ -30,6 +30,18 @@ exports.signup = async (req, res) => {
   }
 };
 
+exports.verifyCode = async (req, res) => {
+  const { email, code } = req.body;
+  try {
+    await authService.verifyOnly(email, code);
+    res.json({ success: true, message: "인증되었습니다." });
+  } catch (error) {
+    if (error.message === "INVALID_CODE") return res.status(400).json({ success: false, message: "인증번호가 일치하지 않습니다." });
+    if (error.message === "EXPIRED_CODE") return res.status(400).json({ success: false, message: "인증번호가 만료되었습니다. 다시 요청해주세요." });
+    res.status(500).json({ success: false, message: "서버 에러가 발생했습니다." });
+  }
+};
+
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {

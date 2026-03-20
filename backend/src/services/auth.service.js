@@ -55,6 +55,22 @@ exports.signup = async (email, nickname, password, code) => {
   delete emailAuthCache[email];
 };
 
+exports.verifyOnly = async (email, code) => {
+  const cached = emailAuthCache[email];
+  
+  // 캐시에 없거나 코드가 다르면 에러
+  if (!cached || cached.code !== code) throw new Error("INVALID_CODE");
+  
+  // 만료되었으면 삭제하고 에러
+  if (Date.now() > cached.expiresAt) {
+    delete emailAuthCache[email];
+    throw new Error("EXPIRED_CODE");
+  }
+  
+  // 가입 시에 한번 더 체크해야 하므로 캐시를 삭제하지 않고 넘어갑니다.
+  cached.verified = true; 
+};
+
 exports.getPreferences = async (email) => {
   const [rows] = await db.execute(
     'SELECT preferred_community, preferred_newscategory FROM USERS WHERE user_email = ?', 
