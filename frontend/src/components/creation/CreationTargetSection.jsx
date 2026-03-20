@@ -9,13 +9,13 @@ const CreationTargetSection = ({
   return (
     <div className="creation-target-section bg-gray-50 rounded-xl border border-gray-100 mb-0">
       <div className="creation-target-header border-b border-gray-200 mb-3">
-        <span className="inline-flex items-center text-base font-bold text-gray-700">
+        <span className="creation-target-title inline-flex items-center text-base font-bold text-gray-700">
           선택 항목
         </span>
       </div>
       
       <div className="px-3">
-        <label className="block text-sm font-bold text-gray-800 mb-1">
+        <label className="creation-target-label block text-sm font-bold text-gray-800 mb-1">
           상세 타겟 설정
         </label>
         <input
@@ -26,7 +26,7 @@ const CreationTargetSection = ({
           placeholder="예: 20~30대 직장인, 간편식/헬스 관심 사용자"
         />
 
-        <label className="block text-sm font-bold text-gray-800 mb-1">
+        <label className="creation-target-label block text-sm font-bold text-gray-800 mb-1">
           기타 요구사항
         </label>
         <textarea

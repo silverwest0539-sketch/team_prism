@@ -376,7 +376,7 @@ const MyPage = () => {
           title="스크랩 섹션을 표시하지 못했습니다."
           description="잠시 후 다시 시도해 주세요."
         >
-          <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden xl:col-span-6 h-full xl:min-h-[860px]">
+          <section className="mypage-saved-shell bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden xl:col-span-6 h-full xl:min-h-[860px]">
             <ScrapPage isEmbedded />
           </section>
         </ErrorBoundary>
@@ -387,7 +387,7 @@ const MyPage = () => {
           title="저장 프롬프트 섹션을 표시하지 못했습니다."
           description="잠시 후 다시 시도해 주세요."
         >
-          <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden xl:col-span-6 h-full xl:min-h-[860px]">
+          <section className="mypage-saved-shell bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden xl:col-span-6 h-full xl:min-h-[860px]">
             <SavedPromptsSection email={userInfo.email} />
           </section>
         </ErrorBoundary>

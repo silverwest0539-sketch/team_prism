@@ -427,15 +427,15 @@ const SavedPromptsSection = ({ email = '' }) => {
       <div className="mb-5 sm:mb-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 xl:pt-7 xl:min-h-[120px]">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-              <BookmarkSimple className="text-blue-600" size={32} weight="fill" />
+            <h1 className="mypage-saved-title text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <BookmarkSimple className="mypage-saved-title-icon text-blue-600" size={32} weight="fill" />
               저장한 프롬프트
             </h1>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="mypage-saved-subtitle text-gray-500 text-sm mt-1">
               카드를 클릭하면 전체 프롬프트 내용을 볼 수 있습니다.
             </p>
           </div>
-          <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3.5 py-1 rounded-full border border-indigo-100 whitespace-nowrap self-start">
+          <span className="mypage-saved-count-badge text-xs font-semibold text-indigo-600 bg-indigo-50 px-3.5 py-1 rounded-full border border-indigo-100 whitespace-nowrap self-start">
             {savedPrompts.length}개 프롬프트 저장됨
           </span>
         </div>
@@ -457,19 +457,19 @@ const SavedPromptsSection = ({ email = '' }) => {
       ) : (
         <>
           <div className="relative mb-4">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="mypage-saved-search-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="키워드 검색..."
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all bg-white"
+              className="mypage-saved-search-input w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all bg-white"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="mypage-saved-search-clear absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 title="검색어 지우기"
               >
                 <X size={14} />
@@ -483,13 +483,13 @@ const SavedPromptsSection = ({ email = '' }) => {
                 <button
                   type="button"
                   onClick={() => setIsSortOpen(!isSortOpen)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border bg-white text-gray-500 border-gray-200 hover:border-gray-400 transition-all"
+                  className="mypage-saved-toolbar-btn flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border bg-white text-gray-500 border-gray-200 hover:border-gray-400 transition-all"
                 >
                   <SortAscending size={12} />
                   {SORT_OPTIONS.find((option) => option.value === sortBy)?.label}
                 </button>
                 {isSortOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-28 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-10">
+                  <div className="mypage-saved-dropdown absolute top-full left-0 mt-1 w-28 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-10">
                     {SORT_OPTIONS.map((option) => (
                       <button
                         key={option.value}
@@ -498,7 +498,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                           setSortBy(option.value);
                           setIsSortOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${sortBy === option.value ? 'text-indigo-600 font-bold bg-indigo-50' : 'text-gray-600'
+                        className={`mypage-saved-dropdown-item w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${sortBy === option.value ? 'text-indigo-600 font-bold bg-indigo-50' : 'text-gray-600'
                           }`}
                       >
                         {option.label}
@@ -515,7 +515,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                   <button
                     type="button"
                     onClick={toggleSelectAll}
-                    className="px-2 py-1.5 rounded-lg text-xs font-bold text-gray-500 border border-gray-200 hover:border-gray-400 transition-all"
+                    className="mypage-saved-toolbar-btn px-2 py-1.5 rounded-lg text-xs font-bold text-gray-500 border border-gray-200 hover:border-gray-400 transition-all"
                   >
                     {isAllVisibleSelected ? '전체 해제' : '전체 선택'}
                   </button>
@@ -523,7 +523,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                     type="button"
                     onClick={handleBulkDelete}
                     disabled={selectedPromptIds.size === 0}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedPromptIds.size > 0
+                    className={`mypage-saved-toolbar-btn mypage-saved-toolbar-btn-danger px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedPromptIds.size > 0
                       ? 'bg-red-500 text-white hover:bg-red-600 shadow-sm'
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       }`}
@@ -536,7 +536,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                 <button
                   type="button"
                   onClick={enterDeleteMode}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-white text-gray-500 border-gray-200 hover:border-red-300 hover:text-red-500"
+                  className="mypage-saved-toolbar-btn mypage-saved-toolbar-btn-danger px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-white text-gray-500 border-gray-200 hover:border-red-300 hover:text-red-500"
                 >
                   선택 삭제
                 </button>
@@ -544,7 +544,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                 <button
                   type="button"
                   onClick={exitDeleteMode}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                  className="mypage-saved-toolbar-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
                 >
                   취소
                 </button>
@@ -588,7 +588,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                           handleCardClick(item);
                         }
                       }}
-                      className={`group cursor-pointer transition-all duration-300 border bg-white rounded-xl p-3 sm:p-4 lg:p-5 min-h-[132px] sm:min-h-[148px] lg:min-h-[160px] h-full flex flex-col hover:shadow-md relative ${isSelected
+                      className={`mypage-saved-card group cursor-pointer transition-all duration-300 border bg-white rounded-xl p-3 sm:p-4 lg:p-5 min-h-[132px] sm:min-h-[148px] lg:min-h-[160px] h-full flex flex-col hover:shadow-md relative ${isSelected
                         ? 'delete-selection-card border-red-400 bg-red-50/20'
                         : 'border-gray-100 hover:border-blue-200'
                         }`}
@@ -607,7 +607,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                       )}
                       <div className="flex items-start justify-between gap-3">
                         <div className={`min-w-0 ${isDeleteMode ? 'ml-7' : ''}`}>
-                          <h3 className="text-base font-bold text-gray-900 transition-colors group-hover:text-blue-600 whitespace-normal break-all leading-snug">
+                          <h3 className="mypage-saved-card-title text-base font-bold text-gray-900 transition-colors group-hover:text-blue-600 whitespace-normal break-all leading-snug">
                             {getPromptKeyword(item)}
                           </h3>
                         </div>
@@ -620,7 +620,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                                 event.stopPropagation();
                                 handleCopyPrompt(item);
                               }}
-                              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                              className="mypage-saved-card-icon-btn p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
                               title="복사"
                             >
                               {copiedId === item.id ? (
@@ -635,7 +635,7 @@ const SavedPromptsSection = ({ email = '' }) => {
                                 event.stopPropagation();
                                 setDeleteTargetId(item.id);
                               }}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              className="mypage-saved-card-icon-btn p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                               title="삭제"
                             >
                               <Trash2 size={16} />
@@ -646,25 +646,25 @@ const SavedPromptsSection = ({ email = '' }) => {
 
                       <div className={`mt-2.5 flex w-full min-w-0 items-center justify-start gap-1.5 ${isDeleteMode ? 'ml-7' : ''}`}>
                         {promptType && (
-                          <span className={`inline-flex min-w-0 w-auto items-center justify-center ${metaBadgePaddingClass} rounded text-[10px] leading-tight font-semibold text-center bg-white border border-gray-200 text-gray-600 overflow-hidden text-ellipsis whitespace-nowrap ${metaBadgeWidthClass}`}>
-                            {promptType}
-                          </span>
-                        )}
-                        {promptIndustry && (
-                          <span className={`inline-flex min-w-0 w-auto items-center justify-center ${metaBadgePaddingClass} rounded text-[10px] leading-tight font-semibold text-center bg-white border border-gray-200 text-gray-600 overflow-hidden text-ellipsis whitespace-nowrap ${metaBadgeWidthClass}`}>
-                            {promptIndustry}
-                          </span>
-                        )}
+                           <span className={`mypage-saved-meta-chip inline-flex min-w-0 w-auto items-center justify-center ${metaBadgePaddingClass} rounded text-[10px] leading-tight font-semibold text-center bg-white border border-gray-200 text-gray-600 overflow-hidden text-ellipsis whitespace-nowrap ${metaBadgeWidthClass}`}>
+                             {promptType}
+                           </span>
+                         )}
+                         {promptIndustry && (
+                           <span className={`mypage-saved-meta-chip inline-flex min-w-0 w-auto items-center justify-center ${metaBadgePaddingClass} rounded text-[10px] leading-tight font-semibold text-center bg-white border border-gray-200 text-gray-600 overflow-hidden text-ellipsis whitespace-nowrap ${metaBadgeWidthClass}`}>
+                             {promptIndustry}
+                           </span>
+                         )}
                       </div>
 
                       {/* 변경된 코드 */}
-                      <div className={`flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-auto ${isDeleteMode ? 'ml-7' : ''}`}>
+                      <div className={`mypage-saved-card-meta flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-auto ${isDeleteMode ? 'ml-7' : ''}`}>
                         {/* 왼쪽: 날짜 영역 */}
                         <span>{formatSavedAt(item.savedAt)} 저장됨</span>
 
                         {/* 오른쪽: 프롬프트 전체보기 영역 (삭제 모드가 아닐 때만 보임) */}
                         {!isDeleteMode && (
-                          <span className="text-[12px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="mypage-saved-card-link text-[12px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
                             프롬프트 전체보기
                           </span>
                         )}

@@ -351,7 +351,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 onDrop={(e) => handleDrop(e, index)}
                 onDragEnd={handleDragEnd}
                 onClick={() => handleCardClick(item)}
-                className={`group cursor-pointer transition-all duration-300 border relative
+                className={`mypage-saved-card group cursor-pointer transition-all duration-300 border relative
                     ${viewMode === 'grid'
                         ? 'bg-white rounded-2xl border border-gray-100 shadow-sm p-3 sm:p-4 lg:p-5 min-h-[132px] sm:min-h-[148px] lg:min-h-[160px] h-full'
                         : 'bg-white rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 p-4'}
@@ -366,7 +366,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
             >
                 {/* 드래그 핸들 (커스텀 정렬 + 모드 비활성 시만) */}
                 {!isDeleteMode && sortBy === 'custom' && (
-                    <div className={`absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500`}>
+                    <div className={`mypage-saved-card-handle absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500`}>
                         <DotsSixVertical size={16} weight="bold" />
                     </div>
                 )}
@@ -392,7 +392,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 <div className={`flex-1 flex flex-col h-full ${viewMode === 'list' ? 'min-w-0' : ''}`}>
                     <div className="flex justify-between items-start mb-3">
                         <div className={isDeleteMode && viewMode === 'grid' ? 'ml-7' : ''}>
-                            <h3 className={`font-bold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors ${viewMode === 'list' ? 'text-base' : 'text-lg'}`}>
+                            <h3 className={`mypage-saved-card-title font-bold text-gray-900 mt-2 group-hover:text-blue-600 transition-colors ${viewMode === 'list' ? 'text-base' : 'text-lg'}`}>
                                 {keyword || '키워드 없음'}
                             </h3>
                             {/* ✂️ 원래 여기 있던 '분석 보기' span 코드를 지워줍니다. */}
@@ -400,7 +400,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                         {!isDeleteMode && viewMode === 'grid' && (
                             <button
                                 onClick={(e) => handleDelete(e, item)}
-                                className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition"
+                                className="mypage-saved-card-icon-btn p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition"
                                 title="삭제"
                             >
                                 <Trash size={18} />
@@ -409,11 +409,11 @@ const ScrapPage = ({ isEmbedded = false }) => {
                     </div>
                     
                     {/* 👇 여기 div에 flex justify-between items-center 를 추가했습니다! */}
-                    <div className="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-auto">
+                    <div className="mypage-saved-card-meta flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50 mt-auto">
                         <span>{savedAtText} 저장됨</span>
                         
                         {!isDeleteMode && (
-                            <span className="text-[12px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="mypage-saved-card-link text-[12px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                 분석 보기
                             </span>
                         )}
@@ -424,7 +424,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 {!isDeleteMode && viewMode === 'list' && (
                     <button
                         onClick={(e) => handleDelete(e, item)}
-                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition flex-shrink-0 self-center"
+                        className="mypage-saved-card-icon-btn p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition flex-shrink-0 self-center"
                         title="삭제"
                     >
                         <Trash size={18} />
@@ -442,15 +442,15 @@ const ScrapPage = ({ isEmbedded = false }) => {
             <div className="mb-5 sm:mb-6">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 xl:pt-7 xl:min-h-[120px]">
                     <div>
-                        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-                            <BookmarkSimple className="text-blue-600" size={32} weight="fill" />
+                        <h1 className="mypage-saved-title text-xl sm:text-2xl font-bold flex items-center gap-2">
+                            <BookmarkSimple className="mypage-saved-title-icon text-blue-600" size={32} weight="fill" />
                             저장한 키워드
                         </h1>
-                        <p className="text-gray-500 text-sm mt-1">
+                        <p className="mypage-saved-subtitle text-gray-500 text-sm mt-1">
                             카드를 클릭하면 해당 키워드의 분석 요약 정보를 볼 수 있습니다.
                         </p>
                     </div>
-                    <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3.5 py-1 rounded-full border border-indigo-100 whitespace-nowrap self-start">
+                    <span className="mypage-saved-count-badge text-xs font-semibold text-indigo-600 bg-indigo-50 px-3.5 py-1 rounded-full border border-indigo-100 whitespace-nowrap self-start">
                         {scraps.length}개 키워드 저장됨
                     </span>
                 </div>
@@ -460,18 +460,18 @@ const ScrapPage = ({ isEmbedded = false }) => {
                 <>
                     {/* ─── 검색 바 ─── */}
                     <div className="relative mb-4">
-                        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <MagnifyingGlass size={16} className="mypage-saved-search-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="키워드 검색..."
-                            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all bg-white"
+                            className="mypage-saved-search-input w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition-all bg-white"
                         />
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                className="mypage-saved-search-clear absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
                                 <X size={14} weight="bold" />
                             </button>
@@ -485,19 +485,19 @@ const ScrapPage = ({ isEmbedded = false }) => {
                             <div className="relative" onClick={(e) => e.stopPropagation()}>
                                 <button
                                     onClick={() => setIsSortOpen(!isSortOpen)}
-                                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                                    className="mypage-saved-toolbar-btn flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all bg-white text-gray-500 border-gray-200 hover:border-gray-400"
                                 >
                                     <SortAscending size={12} />
                                     {SORT_OPTIONS.find(o => o.value === sortBy)?.label}
                                 </button>
 
                                 {isSortOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-28 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
+                                    <div className="mypage-saved-dropdown absolute top-full left-0 mt-1 w-28 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 z-50">
                                         {SORT_OPTIONS.map(option => (
                                             <button
                                                 key={option.value}
                                                 onClick={() => { setSortBy(option.value); setIsSortOpen(false); }}
-                                                className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                                                className={`mypage-saved-dropdown-item w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                                                     sortBy === option.value ? 'text-gray-700 font-bold' : 'text-gray-600'
                                                 }`}
                                             >
@@ -518,7 +518,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                                 <>
                                     <button
                                         onClick={toggleSelectAll}
-                                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-gray-500 border border-gray-200 hover:border-gray-400 transition-all"
+                                        className="mypage-saved-toolbar-btn flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-gray-500 border border-gray-200 hover:border-gray-400 transition-all"
                                     >
                                         <Checks size={14} />
                                         {deleteSelection.size === processedScraps.length ? '전체 해제' : '전체 선택'}
@@ -526,7 +526,7 @@ const ScrapPage = ({ isEmbedded = false }) => {
                                     <button
                                         onClick={handleBulkDelete}
                                         disabled={deleteSelection.size === 0}
-                                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                        className={`mypage-saved-toolbar-btn mypage-saved-toolbar-btn-danger flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                             deleteSelection.size > 0
                                                 ? 'bg-red-500 text-white hover:bg-red-600 shadow-sm'
                                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -542,14 +542,14 @@ const ScrapPage = ({ isEmbedded = false }) => {
                             {!isDeleteMode ? (
                                 <button
                                     onClick={enterDeleteMode}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-white text-gray-500 border-gray-200 hover:border-red-300 hover:text-red-500"
+                                    className="mypage-saved-toolbar-btn mypage-saved-toolbar-btn-danger px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-white text-gray-500 border-gray-200 hover:border-red-300 hover:text-red-500"
                                 >
                                     선택 삭제
                                 </button>
                             ) : (
                                 <button
                                     onClick={exitAllModes}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                                    className="mypage-saved-toolbar-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
                                 >
                                     취소
                                 </button>

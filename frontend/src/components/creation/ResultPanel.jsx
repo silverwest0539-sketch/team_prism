@@ -130,8 +130,8 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
   } else if (!v1Content) {
     bodyContent = (
       <div className="creation-result-empty flex flex-col items-center justify-center h-full border border-gray-200 bg-gray-50 rounded-xl p-4 sm:p-5 text-center space-y-1.5 -translate-y-4">
-        <p className="font-semibold text-gray-700 text-base sm:text-lg">생성된 프롬프트가 아직 없습니다.</p>
-        <p className="text-gray-500 text-sm sm:text-base">왼쪽 정보를 입력하고 생성 버튼을 눌러 프롬프트를 만들어 보세요.</p>
+        <p className="creation-result-empty-title font-semibold text-gray-700 text-base sm:text-lg">생성된 프롬프트가 아직 없습니다.</p>
+        <p className="creation-result-empty-desc text-gray-500 text-sm sm:text-base">왼쪽 정보를 입력하고 생성 버튼을 눌러 프롬프트를 만들어 보세요.</p>
       </div>
     );
   } else {
@@ -143,9 +143,9 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
           </div>
         )}
         <div className="flex flex-col flex-1 min-h-0">
-          <label className="block text-sm font-bold text-gray-700 mb-2">생성 프롬프트</label>
+          <label className="creation-result-label block text-sm font-bold text-gray-700 mb-2">생성 프롬프트</label>
           <textarea
-            className="flex-1 w-full h-full border border-gray-200 rounded-xl p-3 sm:p-4 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 resize-none whitespace-pre-wrap text-gray-800 leading-relaxed text-sm sm:text-base"
+            className="creation-result-textarea flex-1 w-full h-full border border-gray-200 rounded-xl p-3 sm:p-4 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 resize-none whitespace-pre-wrap text-gray-800 leading-relaxed text-sm sm:text-base"
             value={editableContent}
             onChange={(event) => setEditableContent(event.target.value)}
             placeholder="생성된 프롬프트를 자유롭게 다듬어 보세요."
@@ -164,7 +164,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
       {/* 헤더 */}
       <div className="creation-result-header flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <span className="text-base sm:text-lg font-bold text-gray-800">AI 생성 프롬프트</span>
+          <span className="creation-result-title text-base sm:text-lg font-bold text-gray-800">AI 생성 프롬프트</span>
           {v1Content && <span className="w-2.5 h-2.5 rounded-full bg-green-500" />}
         </div>
 
@@ -173,7 +173,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
           <button
             onClick={handleSave}
             disabled={!v1Content || isLoading || typeof onSave !== 'function'}
-            className={`flex items-center gap-1 p-2 rounded-lg transition ${
+            className={`creation-result-action-btn flex items-center gap-1 p-2 rounded-lg transition ${
               v1Content && !isLoading && typeof onSave === 'function'
                 ? 'text-gray-600 hover:bg-gray-100 cursor-pointer'
                 : 'text-gray-300 cursor-not-allowed'
@@ -194,7 +194,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
           <button
             onClick={handleCopy}
             disabled={!v1Content || isLoading}
-            className={`flex items-center gap-1 p-2 rounded-lg transition ${
+            className={`creation-result-action-btn flex items-center gap-1 p-2 rounded-lg transition ${
               v1Content && !isLoading
                 ? 'text-gray-600 hover:bg-gray-100 cursor-pointer'
                 : 'text-gray-300 cursor-not-allowed'
@@ -221,7 +221,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
 
         {/* 🔥 수정됨: 지루하지 않은 로딩 오버레이 애니메이션 */}
         {isLoading && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center rounded-b-xl transition-all duration-300">
+          <div className="creation-result-loading-overlay absolute inset-0 bg-white/80 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center rounded-b-xl transition-all duration-300">
             {/* 재미를 더하는 아이콘 애니메이션 */}
             <div className="relative mb-6">
               <MagicWand size={48} weight="duotone" className="text-indigo-500 animate-bounce" />
@@ -229,7 +229,7 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
             </div>
 
             {/* 단계별로 변하는 텍스트 */}
-            <span className="text-indigo-700 font-bold text-[15px] sm:text-base mb-4 tracking-tight transition-opacity duration-300">
+            <span className="creation-result-loading-text text-indigo-700 font-bold text-[15px] sm:text-base mb-4 tracking-tight transition-opacity duration-300">
               {loadingMessages[loadingStep]}
             </span>
 

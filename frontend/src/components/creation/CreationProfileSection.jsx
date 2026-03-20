@@ -33,7 +33,7 @@ const CreationProfileSection = ({
               key={item}
               type="button"
               onClick={() => onSelectType(item)}
-              className={`border rounded-lg p-2.5 2xl:p-2 text-center transition text-sm ${
+              className={`creation-profile-option border rounded-lg p-2.5 2xl:p-2 text-center transition text-sm ${
                 selectedType === item
                   ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
                   : 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 font-normal'
@@ -55,7 +55,7 @@ const CreationProfileSection = ({
               key={item}
               type="button"
               onClick={() => onChangeIndustry(item)}
-              className={`border rounded-lg p-2.5 2xl:p-2 text-center transition text-sm ${
+              className={`creation-profile-option border rounded-lg p-2.5 2xl:p-2 text-center transition text-sm ${
                 industry === item
                   ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
                   : 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 font-normal'
@@ -77,7 +77,7 @@ const CreationProfileSection = ({
               key={item}
               type="button"
               onClick={() => onChangeUserType(item)}
-              className={`border rounded-lg p-2.5 2xl:p-2 text-center transition text-sm ${
+              className={`creation-profile-option border rounded-lg p-2.5 2xl:p-2 text-center transition text-sm ${
                 userType === item
                   ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
                   : 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 font-normal'
@@ -94,7 +94,7 @@ const CreationProfileSection = ({
           {PURPOSE_LABEL}
         </label>
         <textarea
-          className={`w-full border rounded-lg p-2.5 2xl:p-2 focus:outline-none focus:ring-2 resize-none text-sm ${
+          className={`creation-purpose-textarea w-full border rounded-lg p-2.5 2xl:p-2 focus:outline-none focus:ring-2 resize-none text-sm ${
             purposeError
               ? 'border-red-400 focus:ring-red-200'
               : 'border-gray-300 focus:ring-indigo-500'
@@ -104,7 +104,7 @@ const CreationProfileSection = ({
           onChange={(event) => onChangePurpose(event.target.value)}
           placeholder={PURPOSE_PLACEHOLDER}
         />
-        {purposeError && <p className="text-sm mt-1 text-red-500">{purposeError}</p>}
+        {purposeError && <p className="creation-purpose-error text-sm mt-1 text-red-500">{purposeError}</p>}
       </div>
     </>
   );

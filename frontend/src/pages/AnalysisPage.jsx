@@ -930,9 +930,9 @@ const AnalysisPage = () => {
 
     // ---------------- Render ----------------
   return (
-    <div className="page space-y-6 relative">
-      <header className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4 relative z-50">
-        <Link to="/home" className="p-2 bg-white rounded-full text-gray-500 hover:text-indigo-600 shadow-sm transition">
+    <div className="analysis-page-shell page space-y-6 relative">
+      <header className="analysis-top-header flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4 relative z-50">
+        <Link to="/home" className="analysis-top-back-btn p-2 bg-white rounded-full text-gray-500 hover:text-indigo-600 shadow-sm transition">
           <CaretLeft size={20} />
         </Link>
         <div className="flex-1">
@@ -958,7 +958,7 @@ const AnalysisPage = () => {
 
       {keywordExists === true && !isNoDataModalOpen && (
         <div
-          className={`w-full transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
+          className={`analysis-content-shell w-full transition-all duration-500 ease-in-out flex flex-col gap-6 sm:gap-8 ${
             !isLoggedIn
               ? 'opacity-30 blur-[6px] pointer-events-none select-none'
               : (!keyword ? 'blur-disabled' : 'blur-enabled')
@@ -980,16 +980,16 @@ const AnalysisPage = () => {
             </button>
 
             <div className="flex items-baseline gap-2 flex-wrap">
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-none">
+              <h1 className="analysis-main-keyword text-3xl sm:text-4xl font-bold text-gray-900 leading-none">
                 {keyword || '검색 키워드 예시'}
               </h1>
               {isPersonKeyword && (
-                <span className="bg-indigo-100 text-indigo-700 text-sm font-bold px-2.5 py-1 rounded-full align-middle ml-1">
+                <span className="analysis-person-badge bg-indigo-100 text-indigo-700 text-sm font-bold px-2.5 py-1 rounded-full align-middle ml-1">
                   인물
                 </span>
               )}
               
-              <div className="flex items-center gap-1 text-gray-600 relative ml-1">
+              <div className="analysis-score-wrap flex items-center gap-1 text-gray-600 relative ml-1">
                 {todayScore > 0 ? (
                   <>
                     <span className="text-sm sm:text-base font-bold text-indigo-600">
@@ -1013,7 +1013,7 @@ const AnalysisPage = () => {
                     )}
                   </>
                 ) : (
-                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md mt-1 sm:mt-0">
+                  <span className="analysis-nontrend-badge text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md mt-1 sm:mt-0">
                     오늘의 트렌드 키워드가 아닙니다
                   </span>
                 )}
@@ -1021,7 +1021,7 @@ const AnalysisPage = () => {
             </div>
           </div>
           
-          <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
+          <div className="analysis-top-actions flex-shrink-0 flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
              <button 
                onClick={() => setIsEditModalOpen(true)}
                className="analysis-edit-report-btn flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-gray-50 text-gray-500 border border-gray-200 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm shadow-sm transition-all hover:-translate-y-1"
@@ -1034,7 +1034,7 @@ const AnalysisPage = () => {
  
              <button 
                onClick={handleGoToNamuwiki}
-               className="flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-teal-50 text-gray-700 border border-gray-200 px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-sm transition-all hover:-translate-y-1"
+               className="analysis-namu-btn flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-teal-50 text-gray-700 border border-gray-200 px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-sm transition-all hover:-translate-y-1"
                title="나무위키에서 검색"
              >
                <Book size={20} className="sm:w-5 sm:h-5 text-teal-600" weight="bold" />
@@ -1043,7 +1043,7 @@ const AnalysisPage = () => {
 
              <button 
                onClick={handleGoToCreation}
-               className="flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base transition-all hover:-translate-y-1"
+               className="analysis-create-btn flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base transition-all hover:-translate-y-1"
              >
                <Export size={20} className="sm:w-5 sm:h-5" />
                <span>콘텐츠 생성</span>
@@ -1052,14 +1052,14 @@ const AnalysisPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full">
-          <div className="card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
+          <div className="analysis-top-filter-card analysis-overview-card card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
-              <h3 className="text-gray-500 font-medium text-sm flex items-center gap-2">
+              <h3 className="analysis-top-filter-title text-gray-500 font-medium text-sm flex items-center gap-2">
                 <ArrowsClockwise size={18} /> 분석 기간 설정
               </h3>
               <button 
                   onClick={handleDateReset}
-                  className="p-1.5 rounded-lg bg-gray-50 text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
+                  className="analysis-top-filter-reset p-1.5 rounded-lg bg-gray-50 text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
                   title="분석 기간 초기화"
                 >
                   <ArrowsClockwise size={16} weight="bold"/>
@@ -1071,29 +1071,29 @@ const AnalysisPage = () => {
                   type="date" 
                   value={inputStartDate} 
                   onChange={(e) => setInputStartDate(e.target.value)} 
-                  className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all" 
+                  className="analysis-top-date-input flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all" 
                 />
                 <span className="text-gray-400">~</span>
                 <input 
                   type="date" 
                   value={inputEndDate} 
                   onChange={(e) => setInputEndDate(e.target.value)} 
-                  className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all" 
+                  className="analysis-top-date-input flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all" 
                 />
                 <button
                   onClick={handleDateApply}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                  className="analysis-top-filter-apply px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
                 >
                   조회
                 </button>
               </div>
-              <div className="text-xs text-gray-400 text-right">원하는 기간을 직접 선택하세요</div>
+              <div className="analysis-top-filter-hint text-xs text-gray-400 text-right">원하는 기간을 직접 선택하세요</div>
             </div>
           </div>
 
-          <div className="card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
+          <div className="analysis-top-filter-card analysis-overview-card card h-40 flex flex-col justify-between shadow-sm border border-gray-100">
             <div className="flex justify-between items-start">
-              <h3 className="text-gray-500 font-medium text-sm flex items-center gap-2">
+              <h3 className="analysis-top-filter-title text-gray-500 font-medium text-sm flex items-center gap-2">
                 <BookmarkSimple size={18} /> 플랫폼 필터
               </h3>
             </div>
@@ -1101,7 +1101,7 @@ const AnalysisPage = () => {
               <select
                 value={selectedPlatform}
                 onChange={(e) => setSelectedPlatform(e.target.value)}
-                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-gray-700 bg-gray-50 focus:bg-white cursor-pointer transition-all"
+                className="analysis-platform-select w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 text-gray-700 bg-gray-50 focus:bg-white cursor-pointer transition-all"
                >
                 {filteredPlatforms.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -1109,14 +1109,14 @@ const AnalysisPage = () => {
                   </option>
                 ))}
               </select>
-              <div className="text-xs text-gray-400 mt-2 text-right">특정 커뮤니티 반응만 모아보기</div>
+              <div className="analysis-top-filter-hint text-xs text-gray-400 mt-2 text-right">특정 커뮤니티 반응만 모아보기</div>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:h-80 w-full">
           
-          <div className="card lg:col-span-1 flex flex-col min-h-[280px] lg:min-h-0 relative overflow-hidden">
+          <div className="analysis-overview-card card lg:col-span-1 flex flex-col min-h-[280px] lg:min-h-0 relative overflow-hidden">
             <div className="card-header flex justify-between items-center">
               <h3 className="section-title">
                 <ChartLineUp className="text-indigo-500" /> 언급량 추이
@@ -1124,7 +1124,7 @@ const AnalysisPage = () => {
               {showMoreChartBtn && (
                 <button
                   onClick={() => setIsChartModalOpen(true)}
-                  className="text-xs flex items-center gap-1 text-gray-400 hover:text-indigo-600 font-medium transition-colors bg-gray-50 px-2 py-1 rounded hover:bg-indigo-50"
+                  className="analysis-chart-more-btn text-xs flex items-center gap-1 text-gray-400 hover:text-indigo-600 font-medium transition-colors bg-gray-50 px-2 py-1 rounded hover:bg-indigo-50"
                 >
                   설정기간 전체보기 <ArrowsOutSimple size={12} />
                 </button>
@@ -1132,9 +1132,9 @@ const AnalysisPage = () => {
             </div>
             <div className="flex-1 w-full min-h-0 relative">
               {loading && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
-                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
-                  <span className="text-indigo-600 font-bold animate-pulse text-lg">분석중...</span>
+                <div className="analysis-card-loading-overlay absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
+                  <div className="analysis-card-loading-spinner w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                  <span className="analysis-card-loading-text text-indigo-600 font-bold animate-pulse text-lg">분석중...</span>
                 </div>
               )}
 
@@ -1180,35 +1180,35 @@ const AnalysisPage = () => {
             </div>
           </div>
 
-          <div className="card flex flex-col min-h-[260px] lg:min-h-0 relative overflow-hidden">
+          <div className="analysis-overview-card card flex flex-col min-h-[260px] lg:min-h-0 relative overflow-hidden">
             <h3 className="section-title card-header">
               <BookmarkSimple className="text-yellow-500" /> 워드 클라우드
             </h3>
             <div className="flex-1 flex flex-wrap content-center justify-center gap-2 overflow-hidden relative">
               {loading && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
-                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
-                  <span className="text-indigo-600 font-bold animate-pulse text-lg">분석중...</span>
+                <div className="analysis-card-loading-overlay absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
+                  <div className="analysis-card-loading-spinner w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                  <span className="analysis-card-loading-text text-indigo-600 font-bold animate-pulse text-lg">분석중...</span>
                 </div>
               )}
               <SimpleWordCloud words={filteredData.wordCloud} />
             </div>
           </div>
 
-          <div className="card flex flex-col min-h-[260px] lg:min-h-0 relative overflow-hidden">
+          <div className="analysis-overview-card card flex flex-col min-h-[260px] lg:min-h-0 relative overflow-hidden">
             <h3 className="section-title card-header flex items-baseline gap-2">
               <div className="flex items-center gap-1">
                 <BookmarkSimple className="text-yellow-500" /> 여론 분석
               </div>
-              <span className="text-[11px] font-normal text-gray-400 tracking-tight">
+              <span className="analysis-sentiment-help text-[11px] font-normal text-gray-400 tracking-tight">
                 * 해당 반응 선택시 댓글 확인 가능
               </span>
             </h3>
             <div className="flex-1 relative">
               {loading && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
-                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
-                  <span className="text-indigo-600 font-bold animate-pulse text-lg">분석중...</span>
+                <div className="analysis-card-loading-overlay absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in">
+                  <div className="analysis-card-loading-spinner w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                  <span className="analysis-card-loading-text text-indigo-600 font-bold animate-pulse text-lg">분석중...</span>
                 </div>
               )}
 
@@ -1240,12 +1240,12 @@ const AnalysisPage = () => {
           
           <div className="flex flex-col h-full w-full gap-4">
             
-            <div className="flex justify-between items-end pb-2 border-b-2 border-gray-200 px-1">
+            <div className="analysis-section-header flex justify-between items-end pb-2 border-b-2 border-gray-200 px-1">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+                <h2 className="analysis-section-title text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
                   관련 댓글 반응
                 </h2>
-                <p className="text-xs text-gray-500 mt-1 hidden sm:block">
+                <p className="analysis-section-subtitle text-xs text-gray-500 mt-1 hidden sm:block">
                   커뮤니티 및 미디어 주요 여론
                 </p>
               </div>
@@ -1254,7 +1254,7 @@ const AnalysisPage = () => {
                 {hasNegativeComments && !isPersonKeyword && (
                   <button
                     onClick={() => setIsNegativeRevealed(!isNegativeRevealed)}
-                    className={`text-xs px-2.5 py-1.5 rounded-lg font-bold transition-all border whitespace-nowrap ${
+                    className={`analysis-negative-consent-btn text-xs px-2.5 py-1.5 rounded-lg font-bold transition-all border whitespace-nowrap ${
                       isNegativeRevealed
                         ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
                         : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
@@ -1263,13 +1263,13 @@ const AnalysisPage = () => {
                     {isNegativeRevealed ? '부정 댓글 가리기' : '부정 댓글 전체 보기 동의'}
                   </button>
                 )}
-                <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
+                <span className="analysis-total-count text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
                   총 {displayTotalCount}건
                 </span>
               </div>
             </div>
 
-            <div className="card h-fit flex flex-col">
+            <div className="analysis-comments-card card h-fit flex flex-col">
               <div ref={commentsTopRef} />
 
               <div className="space-y-4 flex-1">
@@ -1290,18 +1290,18 @@ const AnalysisPage = () => {
                     );
                   })
                 ) : (
-                  <div className="text-center py-10 text-gray-400">데이터가 없습니다.</div>
+                  <div className="analysis-comments-empty text-center py-10 text-gray-400">데이터가 없습니다.</div>
                 )}
               </div>
 
               {/* 메인 리스트 페이지네이션 */}
               {(totalPages > 1 || hasMoreComments) && (
-                <div className="flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
+                <div className="analysis-pagination flex flex-wrap justify-center items-center gap-1.5 mt-6 pt-4 border-t border-gray-100">
                   
                   <button
                     onClick={handlePrevGroupClick}
                     disabled={!hasPrevGroup}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    className="analysis-pagination-btn p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                     aria-label="이전 10페이지"
                   >
                     <CaretDoubleLeft size={16} weight="bold" />
@@ -1310,7 +1310,7 @@ const AnalysisPage = () => {
                   <button
                     onClick={handlePrevClick}
                     disabled={currentPage === 1}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    className="analysis-pagination-btn p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                     aria-label="이전 페이지"
                   >
                     <CaretLeft size={16} weight="bold" />
@@ -1323,7 +1323,7 @@ const AnalysisPage = () => {
                         <button
                           key={pageNum}
                           onClick={() => goToPage(pageNum)}
-                          className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-medium transition-all
+                          className={`analysis-pagination-number w-7 h-7 flex items-center justify-center rounded-full text-xs font-medium transition-all
                             ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-indigo-600'}`}
                           aria-current={isActive ? 'page' : undefined}
                         >
@@ -1336,7 +1336,7 @@ const AnalysisPage = () => {
                   <button
                     onClick={handleNextClick}
                     disabled={currentPage === totalPages && !hasMoreComments}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    className="analysis-pagination-btn p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                     aria-label="다음 페이지"
                   >
                     {isLoadingMore && currentPage === totalPages ? (
@@ -1350,7 +1350,7 @@ const AnalysisPage = () => {
                     <button
                       onClick={handleNextGroupTextClick}
                       disabled={isLoadingMore}
-                      className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                      className="analysis-pagination-btn p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                       aria-label="다음 10페이지"
                     >
                       {isLoadingMore ? (
@@ -1367,22 +1367,22 @@ const AnalysisPage = () => {
 
           <div className="flex flex-col h-full w-full gap-4">
             
-            <div className="flex justify-between items-end pb-2 border-b-2 border-gray-200 px-1">
+            <div className="analysis-section-header flex justify-between items-end pb-2 border-b-2 border-gray-200 px-1">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+                <h2 className="analysis-section-title text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
                   종합 트렌드 인사이트
                 </h2>
-                <p className="text-xs text-gray-500 mt-1 hidden sm:block">
+                <p className="analysis-section-subtitle text-xs text-gray-500 mt-1 hidden sm:block">
                   AI 요약 및 주요 뉴스, 미디어 반응 종합 리포트
                 </p>
               </div>
               
-              <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
+              <span className="analysis-base-date-badge text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full shadow-sm border border-indigo-100 whitespace-nowrap">
                 {baseDateText}
               </span>
             </div>
 
-            <div className="card h-fit flex flex-col space-y-8">
+            <div className="analysis-insight-card card h-fit flex flex-col space-y-8">
               
               <div>
                 <h3 className="section-title mb-4 pb-2 border-b">
@@ -1396,7 +1396,7 @@ const AnalysisPage = () => {
                         <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-75"></div>
                         <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-150"></div>
                       </div>
-                      <span className="text-xs text-indigo-400 font-medium animate-pulse">
+                      <span className="analysis-ai-loading-text text-xs text-indigo-400 font-medium animate-pulse">
                         AI가 데이터를 분석하여 리포트를 작성 중입니다...
                       </span>
                     </div>
@@ -1409,7 +1409,7 @@ const AnalysisPage = () => {
                           />
                       </div>
                     ) : (
-                      <p className="text-gray-400 text-center text-xs">키워드를 분석할 준비가 되었습니다.</p>
+                      <p className="analysis-ai-ready text-gray-400 text-center text-xs">키워드를 분석할 준비가 되었습니다.</p>
                     )
                   )}
                 </div>
@@ -1428,23 +1428,23 @@ const AnalysisPage = () => {
                         href={item.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="row-hover border border-transparent hover:border-gray-100"
+                        className="analysis-news-row row-hover border border-transparent hover:border-gray-100"
                       >
                         <div className="flex justify-between items-start">
-                          <p className="text-sm font-medium text-gray-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                          <p className="analysis-news-title text-sm font-medium text-gray-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
                             {item.title}
                           </p>
-                          <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2 mt-0.5">
+                          <span className="analysis-news-date text-[10px] text-gray-400 whitespace-nowrap ml-2 mt-0.5">
                             {new Date(item.pubDate).toLocaleDateString()}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="badge bg-gray-100 text-gray-500">{item.source}</span>
+                          <span className="analysis-news-source badge bg-gray-100 text-gray-500">{item.source}</span>
                         </div>
                       </a>
                     ))
                   ) : (
-                    <div className="text-center py-8 text-gray-400 text-sm">관련 뉴스가 없습니다.</div>
+                    <div className="analysis-news-empty text-center py-8 text-gray-400 text-sm">관련 뉴스가 없습니다.</div>
                   )}
                 </div>
               </div>
@@ -1461,19 +1461,19 @@ const AnalysisPage = () => {
                         href={video.views === 0 ? '#' : `https://www.youtube.com/watch?v=${encodeURIComponent(String(video.id || ''))}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex flex-col sm:flex-row gap-3 sm:gap-4 group cursor-pointer"
+                        className="analysis-video-row flex flex-col sm:flex-row gap-3 sm:gap-4 group cursor-pointer"
                       >
-                        <div className="w-full sm:w-32 h-44 sm:h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative">
+                        <div className="analysis-video-thumb w-full sm:w-32 h-44 sm:h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative">
                           <img src={video.thumbnail} alt="" className="w-full h-full object-cover" />
                           {video.views > 0 && (
                             <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 rounded">Video</div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition leading-snug">
+                          <h4 className="analysis-video-title text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition leading-snug">
                             {video.title}
                           </h4>
-                          <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
+                          <div className="analysis-video-meta flex items-center gap-2 mt-1.5 text-xs text-gray-500">
                             <span className="truncate">{video.channel}</span>
                             {video.views > 0 && <span>• 조회수 {formatViews(video.views)}</span>}
                           </div>
@@ -1481,7 +1481,7 @@ const AnalysisPage = () => {
                       </a>
                     ))
                   ) : (
-                    <div className="text-gray-400 text-sm py-4 text-center bg-gray-50 rounded-lg">
+                    <div className="analysis-video-empty text-gray-400 text-sm py-4 text-center bg-gray-50 rounded-lg">
                       관련 유튜브 영상을 찾을 수 없습니다.
                     </div>
                   )}

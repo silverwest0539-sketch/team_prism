@@ -31,18 +31,18 @@ const BasePreferenceModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 flex flex-col gap-6 relative">
+    <div className="base-pref-overlay fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+      <div className="base-pref-panel bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 flex flex-col gap-6 relative">
         
         {onClose && (
-          <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="base-pref-close-btn absolute top-4 right-4 text-gray-400 hover:text-gray-600">
             ✕
           </button>
         )}
 
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-          <p className="text-sm text-gray-500">{subtitle}</p>
+          <h2 className="base-pref-title text-2xl font-bold text-gray-900">{title}</h2>
+          <p className="base-pref-subtitle text-sm text-gray-500">{subtitle}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -56,7 +56,7 @@ const BasePreferenceModal = ({
                 onClick={() => setSelected(opt.value)}
                 className={`
                   ${isLastOdd ? 'col-span-2' : 'col-span-1'} 
-                  relative flex items-center justify-center p-4 rounded-xl border-2 transition-all duration-200
+                  base-pref-option relative flex items-center justify-center p-4 rounded-xl border-2 transition-all duration-200
                   ${isSelected 
                     ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold' 
                     : 'border-gray-100 bg-white text-gray-600 hover:border-indigo-200 hover:bg-gray-50 font-medium'
@@ -64,7 +64,7 @@ const BasePreferenceModal = ({
                 `}
               >
                 {opt.label}
-                {isSelected && <CheckCircle weight="fill" className="absolute right-3 w-5 h-5 text-indigo-600 animate-fade-in" />}
+                {isSelected && <CheckCircle weight="fill" className="base-pref-option-check absolute right-3 w-5 h-5 text-indigo-600 animate-fade-in" />}
               </button>
             );
           })}
@@ -74,7 +74,7 @@ const BasePreferenceModal = ({
         <div className="flex gap-3 w-full mt-2">
           <button
             onClick={handleReset}
-            className="w-[30%] py-3.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all text-sm sm:text-base"
+            className="base-pref-skip-btn w-[30%] py-3.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all text-sm sm:text-base"
           >
            건너뛰기
           </button>
@@ -82,7 +82,7 @@ const BasePreferenceModal = ({
             onClick={handleSubmit}
             disabled={!selected}
             className={`
-              w-[70%] py-3.5 rounded-xl font-bold text-white transition-all text-sm sm:text-base
+              base-pref-submit-btn w-[70%] py-3.5 rounded-xl font-bold text-white transition-all text-sm sm:text-base
               ${selected ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'}
             `}
           >

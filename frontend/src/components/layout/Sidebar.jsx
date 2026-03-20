@@ -119,43 +119,43 @@ const Sidebar = ({ isOpen = false, onClose }) => {
           ))}
         </nav>
 
-        <div className="mt-auto relative pt-4 border-t border-gray-100" ref={menuRef}>
+        <div className="sidebar-user-wrap mt-auto relative pt-4 border-t border-gray-100" ref={menuRef}>
           {userInfo ? (
             <>
               {isProfileOpen && (
-                <div className="absolute bottom-full left-0 w-full bg-white rounded-2xl shadow-xl border border-gray-100 py-2 mb-2 z-50">
-                  <div className="px-4 py-3 border-b border-gray-100 mb-1">
-                    <p className="text-sm font-bold text-gray-900">{userInfo.nickname}님</p>
-                    <p className="text-xs text-gray-500 truncate">{userInfo.user_email || userInfo.email}</p>
+                <div className="sidebar-profile-menu absolute bottom-full left-0 w-full bg-white rounded-2xl shadow-xl border border-gray-100 py-2 mb-2 z-50">
+                  <div className="sidebar-profile-menu-header px-4 py-3 border-b border-gray-100 mb-1">
+                    <p className="sidebar-profile-menu-name text-sm font-bold text-gray-900">{userInfo.nickname}님</p>
+                    <p className="sidebar-profile-menu-email text-xs text-gray-500 truncate">{userInfo.user_email || userInfo.email}</p>
                   </div>
                   {/* 기존 마이페이지 버튼 위치 (사이드바로 이동하여 제거함) */}
                   <button
                     onClick={handleThemeToggle}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                    className="sidebar-profile-action-btn sidebar-profile-theme-btn w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
                   >
                     {theme === THEMES.DARK ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />} 테마 변경
-                    <span className="ml-auto text-xs text-gray-400">
+                    <span className="sidebar-profile-theme-state ml-auto text-xs text-gray-400">
                       {theme === THEMES.DARK ? '다크' : '라이트'}
                     </span>
                   </button>
                   <button
                     onClick={requestLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                    className="sidebar-profile-action-btn sidebar-profile-logout-btn w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <LogOut className="w-4 h-4" /> 로그아웃
                   </button>
                 </div>
               )}
               <div
-                className="flex items-center gap-3 cursor-pointer p-2 rounded-xl hover:bg-gray-50 transition-colors"
+                className="sidebar-user-trigger flex items-center gap-3 cursor-pointer p-2 rounded-xl hover:bg-gray-50 transition-colors"
                 onClick={() => setIsProfileOpen((prev) => !prev)}
               >
-                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-sm">
+                <div className="sidebar-user-avatar w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-sm">
                   {userInfo.nickname?.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-700 truncate">{userInfo.nickname}님</p>
-                  <p className="text-xs text-gray-400">설정 열기</p>
+                  <p className="sidebar-user-name text-sm font-bold text-gray-700 truncate">{userInfo.nickname}님</p>
+                  <p className="sidebar-user-sub text-xs text-gray-400">설정 열기</p>
                 </div>
               </div>
             </>
@@ -222,29 +222,29 @@ const Sidebar = ({ isOpen = false, onClose }) => {
             ))}
           </nav>
 
-          <div className="pt-4 border-t border-gray-100 space-y-2">
+          <div className="sidebar-user-wrap pt-4 border-t border-gray-100 space-y-2">
             {userInfo ? (
               <div className="space-y-1">
-                <div className="px-3 py-3 mb-2 bg-gray-50 rounded-xl">
-                  <p className="text-sm font-bold text-gray-900">{userInfo.nickname}님</p>
-                  <p className="text-xs text-gray-500 truncate">{userInfo.user_email || userInfo.email}</p>
+                <div className="sidebar-profile-menu px-3 py-3 mb-2 bg-gray-50 rounded-xl">
+                  <p className="sidebar-profile-menu-name text-sm font-bold text-gray-900">{userInfo.nickname}님</p>
+                  <p className="sidebar-profile-menu-email text-xs text-gray-500 truncate">{userInfo.user_email || userInfo.email}</p>
                 </div>
 
                 {/* 기존 모바일용 마이페이지 버튼 위치 (사이드바로 이동하여 제거함) */}
 
                 <button
                   onClick={handleThemeToggle}
-                  className="w-full flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="sidebar-profile-action-btn sidebar-profile-theme-btn w-full flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   {theme === THEMES.DARK ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />} 테마 변경
-                  <span className="ml-auto text-xs text-gray-400">
+                  <span className="sidebar-profile-theme-state ml-auto text-xs text-gray-400">
                     {theme === THEMES.DARK ? '다크' : '라이트'}
                   </span>
                 </button>
 
                 <button
                   onClick={requestLogout}
-                  className="w-full flex items-center gap-3 p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="sidebar-profile-action-btn sidebar-profile-logout-btn w-full flex items-center gap-3 p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <LogOut className="w-4 h-4" /> 로그아웃
                 </button>
