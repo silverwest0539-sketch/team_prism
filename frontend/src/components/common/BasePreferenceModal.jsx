@@ -74,7 +74,7 @@ const BasePreferenceModal = ({
             onClick={handleReset}
             className="w-[30%] py-3.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all text-sm sm:text-base"
           >
-            초기화
+           건너뛰기
           </button>
           <button
             onClick={handleSubmit}
