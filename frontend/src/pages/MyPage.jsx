@@ -309,58 +309,60 @@ const MyPage = () => {
         title="계정 설정 섹션을 표시하지 못했습니다."
         description="잠시 후 다시 시도해 주세요."
       >
-        {/* 수정된 프로필 영역 - height를 대폭 줄이고 2x2 그리드로 재배치 */}
+        {/* 수정된 프로필 영역 - 텍스트 크기 증가 및 모바일 최적화 배치 */}
         <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 sm:mb-10 min-h-[160px]">
           <div className="p-5 sm:p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">프로필</h2>
             
             {/* 2x2 그리드 레이아웃 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* 첫 번째 줄 */}
+              
+              {/* 첫 번째 줄 (모바일 화면시 1, 2번째로 노출됨) */}
               <div
                 onClick={() => setActiveModal(MODAL.ACCOUNT)}
-                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
+                className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
               >
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition">계정 정보</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">프로필 편집, 비밀번호 변경</p>
+                  <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">계정 정보</h3>
+                  <p className="text-sm text-gray-400 mt-0.5">프로필 편집, 비밀번호 변경</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-600 transition" />
+                <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-600 transition" />
               </div>
 
-              <div 
-                onClick={() => setPrefModalType('community')}
-                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
-              >
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition">선호 플랫폼 설정</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">우선 표시할 플랫폼</p>
-                </div>
-                <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-600 transition" />
-              </div>
-
-              {/* 두 번째 줄 */}
               <div
                 onClick={() => setActiveModal(MODAL.WITHDRAW)}
-                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-red-50 rounded-xl transition-colors border border-gray-100"
+                className="group flex items-center justify-between p-4 cursor-pointer hover:bg-red-50 rounded-xl transition-colors border border-gray-100"
               >
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-red-600 transition">회원탈퇴</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">계정 삭제 및 데이터 파기</p>
+                  <h3 className="text-base font-bold text-gray-900 group-hover:text-red-600 transition">회원탈퇴</h3>
+                  <p className="text-sm text-gray-400 mt-0.5">계정 삭제 및 데이터 파기</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-300 group-hover:text-red-600 transition" />
+                <ChevronRight size={18} className="text-gray-300 group-hover:text-red-600 transition" />
+              </div>
+
+              {/* 두 번째 줄 (모바일 화면시 3, 4번째로 노출됨) */}
+              <div 
+                onClick={() => setPrefModalType('community')}
+                className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
+              >
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 플랫폼 설정</h3>
+                  <p className="text-sm text-gray-400 mt-0.5">우선 표시할 플랫폼</p>
+                </div>
+                <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-600 transition" />
               </div>
 
               <div 
                 onClick={() => setPrefModalType('news')}
-                className="group flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
+                className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
               >
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition">선호 뉴스 카테고리 설정</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">우선 표시할 뉴스 분야</p>
+                  <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 뉴스 카테고리 설정</h3>
+                  <p className="text-sm text-gray-400 mt-0.5">우선 표시할 뉴스 분야</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-600 transition" />
+                <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-600 transition" />
               </div>
+
             </div>
           </div>
         </section>
@@ -544,6 +546,7 @@ const MyPage = () => {
           onSubmit={handlePreferenceSubmit}
           onReset={handlePreferenceReset} 
           onClose={() => setPrefModalType(null)} 
+          initialValue={userInfo?.preferredCommunity} // 🔥 [추가] 유저의 기존 선호 플랫폼 값 전달
         />
       )}
 
@@ -557,6 +560,7 @@ const MyPage = () => {
           onSubmit={handlePreferenceSubmit}
           onReset={handlePreferenceReset} 
           onClose={() => setPrefModalType(null)}
+          initialValue={userInfo?.preferredNews} // 🔥 [추가] 유저의 기존 선호 뉴스 값 전달
         />
       )}
     </div>

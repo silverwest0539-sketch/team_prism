@@ -9,10 +9,12 @@ const BasePreferenceModal = ({
   options, 
   submitText = '저장하기', 
   onSubmit,
-  onReset, // [추가] 초기화 버튼 핸들러
-  onClose 
+  onReset,
+  onClose,
+  initialValue // 🔥 [추가] 기존 선택값을 받기 위한 prop 추가
 }) => {
-  const [selected, setSelected] = useState(null);
+  // 🔥 [수정] 무조건 null이 아니라, initialValue가 있으면 그 값으로 시작하도록 수정
+  const [selected, setSelected] = useState(initialValue || null);
 
   if (!isOpen) return null;
 
