@@ -425,11 +425,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            comment.source.includes('youtube')
-                              ? 'bg-red-100 text-red-600'
-                              : 'bg-green-100 text-green-600'
-                          }`}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600"
                         >
                           {comment.source}
                         </span>
