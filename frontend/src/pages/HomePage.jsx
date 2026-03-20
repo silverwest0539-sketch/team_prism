@@ -368,7 +368,7 @@ const HomePage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
         
         {/* 1. 트렌드 키워드 */}
-        <div className="card-soft">
+        <div className="card-soft home-topcard-shell">
           <div className="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2 border-gray-100">
             <div className="flex items-center gap-1 relative">
               <h2 className="text-base xl:text-lg font-bold text-gray-900 break-keep">오늘의 트렌드 키워드</h2>
@@ -376,7 +376,7 @@ const HomePage = () => {
                 onMouseEnter={() => setHoveredTooltip('trend')}
                 onMouseLeave={() => setHoveredTooltip(null)}
                 onClick={(e) => { e.stopPropagation(); setPinnedTooltip(prev => prev === 'trend' ? null : 'trend'); }}
-                className={`transition-colors p-1 ${pinnedTooltip === 'trend' ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-500'}`}
+                className={`home-topcard-muted transition-colors p-1 ${pinnedTooltip === 'trend' ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-500'}`}
               >
                 <Question size={18} weight="fill" />
               </button>
@@ -388,15 +388,15 @@ const HomePage = () => {
                 </div>
               )}
             </div>
-            <button onClick={() => setIsTrendModalOpen(true)} className="text-xs text-gray-400 hover:text-indigo-600 font-medium flex items-center gap-1 ml-auto">
+            <button onClick={() => setIsTrendModalOpen(true)} className="home-topcard-muted text-xs text-gray-400 hover:text-indigo-600 font-medium flex items-center gap-1 ml-auto transition-colors">
               더보기 <Plus size={12} />
             </button>
           </div>
           <ul className="flex flex-col gap-2">
             {risingKeywords.slice(0, 5).map((item, index) => (
-              <li key={index} onClick={() => openModal({ keyword: item.keyword, rank: item.rank, score: item.score, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type: 'trend' })} className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12">
-                <div className="flex items-center gap-4"><span className="font-bold text-blue-600 w-3 text-center">{item.rank}</span><p className="font-medium text-gray-900">{item.keyword}</p></div>
-                <div className={`text-xs font-bold ${item.isUp ? 'text-red-500' : item.isUp === false ? 'text-blue-500' : 'text-gray-400'}`}>{item.change}</div>
+              <li key={index} onClick={() => openModal({ keyword: item.keyword, rank: item.rank, score: item.score, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type: 'trend' })} className="home-topcard-row flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12">
+                <div className="flex items-center gap-4"><span className="home-topcard-rank font-bold text-blue-600 w-3 text-center">{item.rank}</span><p className="home-topcard-keyword font-medium text-gray-900">{item.keyword}</p></div>
+                <div className={`home-topcard-change text-xs font-bold ${item.isUp ? 'text-red-500' : item.isUp === false ? 'text-blue-500' : 'text-gray-400'}`}>{item.change}</div>
               </li>
             ))}
           </ul>
@@ -411,7 +411,7 @@ const HomePage = () => {
                 onMouseEnter={() => setHoveredTooltip('platform')}
                 onMouseLeave={() => setHoveredTooltip(null)}
                 onClick={(e) => { e.stopPropagation(); setPinnedTooltip(prev => prev === 'platform' ? null : 'platform'); }}
-                className={`transition-colors p-1 ${pinnedTooltip === 'platform' ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-500'}`}
+                className={`home-topcard-muted transition-colors p-1 ${pinnedTooltip === 'platform' ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-500'}`}
               >
                 <Question size={18} weight="fill" />
               </button>
@@ -443,15 +443,15 @@ const HomePage = () => {
           </div>
           <ul className="flex flex-col gap-2">
             {risingPlatforms.map((item, index) => (
-              <li key={index} onClick={() => openModal({ keyword: item.keyword, rank: index +1, score: item.count, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type : 'platform' })} className="flex items-center gap-4 text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12">
-                <span className="font-bold text-blue-600 w-3 text-center">{item.rank || index + 1 }</span><span className="font-medium text-gray-900 whitespace-nowrap">{item.keyword}</span>
+              <li key={index} onClick={() => openModal({ keyword: item.keyword, rank: index +1, score: item.count, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type : 'platform' })} className="home-topcard-row flex items-center gap-4 text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12">
+                <span className="home-topcard-rank font-bold text-blue-600 w-3 text-center">{item.rank || index + 1 }</span><span className="home-topcard-keyword font-medium text-gray-900 whitespace-nowrap">{item.keyword}</span>
               </li>
             ))}
           </ul>
         </div>
 
         {/* 3. 뉴스 키워드 */}
-        <div className="card-soft relative">
+        <div className="card-soft home-topcard-shell relative">
           <div className="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2 border-gray-100">
             <div className="flex items-center gap-1 relative">
               <h2 className="text-base xl:text-lg font-bold text-gray-900 break-keep">오늘의 뉴스 키워드</h2>
@@ -556,10 +556,10 @@ const HomePage = () => {
                 rel="noopener noreferrer" 
                 className="video-card home-youtube-card flex-none w-[240px] sm:w-[260px] md:w-[280px] lg:w-[19%] min-w-[220px] sm:min-w-[240px] group/item hover:-translate-y-1 transition-transform duration-300 rounded-b-lg hover:shadow-lg"
               >
-                <div className="relative w-full aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
-                  <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300" />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                    <PlayCircle className="text-white w-12 h-12 drop-shadow-lg" />
+                <div className="home-youtube-thumb relative w-full aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
+                  <img src={video.thumbnail} alt={video.title} className="home-youtube-thumb-img w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300" />
+                  <div className="home-youtube-thumb-overlay absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                    <PlayCircle className="home-youtube-play-icon text-white w-12 h-12 drop-shadow-lg" />
                   </div>
                 </div>
                 <div className="home-youtube-card-body p-3 sm:p-4 flex flex-col justify-between flex-1 bg-white border-x border-b border-gray-100 rounded-b-lg group-hover/item:border-gray-200 transition-colors">
@@ -598,17 +598,17 @@ const HomePage = () => {
                 {communityPosts.slice(0, visibleCommunityCount).map((post, idx) => {
                   const isRead = readLinks.has(post.link);
                   return (
-                    <a key={`${post.rank}-${idx}`} href={post.link} target="_blank" rel="noopener noreferrer" onClick={() => handlePostClick(post.link)} className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group">
+                    <a key={`${post.rank}-${idx}`} href={post.link} target="_blank" rel="noopener noreferrer" onClick={() => handlePostClick(post.link)} className="home-community-item flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group">
                       <div className="flex-1 overflow-hidden flex items-center gap-2">
                         {post.category && <span className={`shrink-0 px-2 py-0.5 text-[11px] font-bold rounded-md ${getCategoryBadgeClass(post.category)}`}>{post.category}</span>}
-                        <h3 className={`text-sm truncate transition-colors ${isRead ? 'text-gray-400 font-normal' : 'text-gray-800 font-medium group-hover:text-blue-600'}`}>{post.title}</h3>
+                        <h3 className={`home-community-item-title text-sm truncate transition-colors ${isRead ? 'text-gray-400 font-normal' : 'text-gray-800 font-medium group-hover:text-blue-600'}`}>{post.title}</h3>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
+                      <ChevronRight className="home-community-item-arrow w-5 h-5 text-gray-300 group-hover:text-gray-500" />
                     </a>
                   );
                 })}
                 {communityPosts.length > 5 && (
-                  <button onClick={() => setVisibleCommunityCount(prev => prev === 5 ? communityPosts.length : 5)} className="w-full mt-1 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium rounded-xl text-sm transition-colors border border-gray-100 flex items-center justify-center gap-1">
+                  <button onClick={() => setVisibleCommunityCount(prev => prev === 5 ? communityPosts.length : 5)} className="home-community-more-btn w-full mt-1 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium rounded-xl text-sm transition-colors border border-gray-100 flex items-center justify-center gap-1">
                     {visibleCommunityCount === 5 ? <><>더보기</> <ChevronDown className="w-4 h-4" /></> : <><>접기</> <ChevronUp className="w-4 h-4" /></>}
                   </button>
                 )}
@@ -619,11 +619,11 @@ const HomePage = () => {
 
         <div>
           <div className="flex justify-between items-end mb-4 h-[34px]"> 
-            <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1 flex items-center gap-2">오늘의 뉴스</h2>
+            <h2 className="section-title-lg home-news-title border-b-2 border-gray-800 w-fit pb-1 flex items-center gap-2">오늘의 뉴스</h2>
           </div>
           <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
             {NEWS_CATEGORY_OPTIONS.map((cat) => (
-              <button key={cat.value} onClick={() => setSelectedNewsCategory(cat.value)} className={`chip ${selectedNewsCategory === cat.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              <button key={cat.value} onClick={() => setSelectedNewsCategory(cat.value)} className={`chip home-news-chip ${selectedNewsCategory === cat.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                 {cat.label}
               </button>
             ))}
@@ -634,19 +634,19 @@ const HomePage = () => {
                 {todayNews.slice(0, visibleNewsCount).map((news, idx) => {
                   const isRead = readNewsLinks.has(news.link);
                   return (
-                    <a key={idx} href={news.link} target="_blank" rel="noopener noreferrer" onClick={() => handleNewsClick(news.link)} className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group">
-                      <div className="flex-1 overflow-hidden"><h3 className={`text-sm truncate transition-colors ${isRead ? 'text-gray-400 font-normal' : 'text-gray-800 font-medium group-hover:text-emerald-600'}`}>{news.title}</h3></div>
-                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
+                    <a key={idx} href={news.link} target="_blank" rel="noopener noreferrer" onClick={() => handleNewsClick(news.link)} className="home-news-item flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group">
+                      <div className="flex-1 overflow-hidden"><h3 className={`home-news-item-title text-sm truncate transition-colors ${isRead ? 'text-gray-400 font-normal' : 'text-gray-800 font-medium group-hover:text-emerald-600'}`}>{news.title}</h3></div>
+                      <ChevronRight className="home-news-item-arrow w-5 h-5 text-gray-300 group-hover:text-gray-500" />
                     </a>
                   );
                 })}
                 {todayNews.length > 5 && (
-                  <button onClick={() => setVisibleNewsCount(prev => prev === 5 ? todayNews.length : 5)} className="w-full mt-1 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium rounded-xl text-sm transition-colors border border-gray-100 flex items-center justify-center gap-1">
+                  <button onClick={() => setVisibleNewsCount(prev => prev === 5 ? todayNews.length : 5)} className="home-news-more-btn w-full mt-1 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium rounded-xl text-sm transition-colors border border-gray-100 flex items-center justify-center gap-1">
                     {visibleNewsCount === 5 ? <><>더보기</> <ChevronDown className="w-4 h-4" /></> : <><>접기</> <ChevronUp className="w-4 h-4" /></>}
                   </button>
                 )}
               </>
-            ) : ( <div className="text-center py-10 text-gray-400 text-sm bg-white rounded-xl border border-gray-100">뉴스 데이터를 불러오는 중입니다.</div> )}
+            ) : ( <div className="home-news-empty text-center py-10 text-gray-400 text-sm bg-white rounded-xl border border-gray-100">뉴스 데이터를 불러오는 중입니다.</div> )}
           </div>
         </div>
       </div>
@@ -655,33 +655,33 @@ const HomePage = () => {
 
       {isTrendModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
+          <div className="home-trend-modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="home-trend-modal-header flex justify-between items-center p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">오늘의 트렌드 키워드</h3>
-                <p className="text-sm text-gray-500 mt-1">오늘의 트렌드 키워 전체 순위입니다.</p>
+                <h3 className="home-trend-modal-title text-xl font-bold text-gray-900 flex items-center gap-2">오늘의 트렌드 키워드</h3>
+                <p className="home-trend-modal-subtitle text-sm text-gray-500 mt-1">오늘의 트렌드 키워 전체 순위입니다.</p>
               </div>
-              <button onClick={() => setIsTrendModalOpen(false)} className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+              <button onClick={() => setIsTrendModalOpen(false)} className="home-trend-modal-close p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
                 <X size={24} />
               </button>
             </div>
-            <div className="overflow-y-auto p-6 bg-gray-50/50">
+            <div className="home-trend-modal-body overflow-y-auto p-6 bg-gray-50/50">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                 <div className="space-y-2">
-                  <h4 className="text-sm font-bold text-gray-400 mb-3 pl-2">1위 ~ 10위</h4>
+                  <h4 className="home-trend-modal-section-title text-sm font-bold text-gray-400 mb-3 pl-2">1위 ~ 10위</h4>
                   {risingKeywords.slice(0, 10).map((item) => (
-                    <div key={item.rank} onClick={() => { setIsTrendModalOpen(false); openModal({ keyword: item.keyword, rank: item.rank, score: item.score, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type: 'trend' }); }} className="group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer">
-                      <div className="flex items-center gap-4"><span className={`text-lg font-bold w-6 text-center ${item.rank <= 3 ? 'text-indigo-600' : 'text-gray-500'}`}>{item.rank}</span><span className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">{item.keyword}</span></div>
-                      <span className={`text-xs font-bold ${item.isUp ? 'text-red-500' : item.change === '-' ? 'text-gray-300' : 'text-blue-500'}`}>{item.change}</span>
+                    <div key={item.rank} onClick={() => { setIsTrendModalOpen(false); openModal({ keyword: item.keyword, rank: item.rank, score: item.score, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type: 'trend' }); }} className="home-trend-modal-item group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer">
+                      <div className="flex items-center gap-4"><span className={`home-trend-modal-rank text-lg font-bold w-6 text-center ${item.rank <= 3 ? 'text-indigo-600' : 'text-gray-500'}`}>{item.rank}</span><span className="home-trend-modal-keyword font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">{item.keyword}</span></div>
+                      <span className={`home-trend-modal-change text-xs font-bold ${item.isUp ? 'text-red-500' : item.change === '-' ? 'text-gray-300' : 'text-blue-500'}`}>{item.change}</span>
                     </div>
                   ))}
                 </div>
                 <div className="space-y-2 mt-6 md:mt-0">
-                  <h4 className="text-sm font-bold text-gray-400 mb-3 pl-2">11위 ~ 20위</h4>
+                  <h4 className="home-trend-modal-section-title text-sm font-bold text-gray-400 mb-3 pl-2">11위 ~ 20위</h4>
                   {risingKeywords.slice(10, 20).map((item) => (
-                    <div key={item.rank} onClick={() => { setIsTrendModalOpen(false); openModal({ keyword: item.keyword, rank: item.rank, score: item.score, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type: 'trend' }); }} className="group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer">
-                      <div className="flex items-center gap-4"><span className="text-lg font-bold w-6 text-center text-gray-400">{item.rank}</span><span className="font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">{item.keyword}</span></div>
-                      <span className={`text-xs font-bold ${item.isUp ? 'text-red-500' : item.change === '-' ? 'text-gray-300' : 'text-blue-500'}`}>{item.change}</span>
+                    <div key={item.rank} onClick={() => { setIsTrendModalOpen(false); openModal({ keyword: item.keyword, rank: item.rank, score: item.score, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type: 'trend' }); }} className="home-trend-modal-item group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer">
+                      <div className="flex items-center gap-4"><span className="home-trend-modal-rank text-lg font-bold w-6 text-center text-gray-400">{item.rank}</span><span className="home-trend-modal-keyword font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">{item.keyword}</span></div>
+                      <span className={`home-trend-modal-change text-xs font-bold ${item.isUp ? 'text-red-500' : item.change === '-' ? 'text-gray-300' : 'text-blue-500'}`}>{item.change}</span>
                     </div>
                   ))}
                 </div>

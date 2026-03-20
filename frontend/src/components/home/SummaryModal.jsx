@@ -252,13 +252,13 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const hasNegativePreview = previewComments.some(c => c.sentiment === 'negative');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 animate-[fadeIn_0.2s_ease-out]">
-      <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex justify-between items-start sm:items-center gap-3 bg-white sticky top-0 z-10">
+    <div className="summary-modal-root fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 animate-[fadeIn_0.2s_ease-out]">
+      <div className="summary-modal-panel bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div className="summary-modal-header px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex justify-between items-start sm:items-center gap-3 bg-white sticky top-0 z-10">
           <div className="min-w-0">
-            <span className="text-xl sm:text-2xl font-bold text-gray-900 break-all">{data?.keyword}</span>
+            <span className="summary-modal-title text-xl sm:text-2xl font-bold text-gray-900 break-all">{data?.keyword}</span>
             {isPersonKeyword && (
-                <span className="bg-indigo-100 text-indigo-700 text-sm font-bold px-2.5 py-1 rounded-full align-middle ml-1">
+                <span className="summary-modal-person-badge bg-indigo-100 text-indigo-700 text-sm font-bold px-2.5 py-1 rounded-full align-middle ml-1">
                   인물
                 </span>
               )}
@@ -267,7 +267,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={toggleBookmark}
-              className={`p-2 rounded-full transition-all duration-200 group ${
+              className={`summary-modal-icon-btn summary-modal-bookmark-btn p-2 rounded-full transition-all duration-200 group ${
                 isBookmarked
                   ? 'bg-yellow-50 text-yellow-500 hover:bg-yellow-100'
                   : 'bg-transparent text-gray-300 hover:bg-gray-100 hover:text-yellow-400'
@@ -285,7 +285,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-gray-600"
+              className="summary-modal-icon-btn summary-modal-close-btn p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-gray-600"
               title="닫기"
             >
               <X size={24} weight="bold" />
@@ -293,49 +293,49 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
           </div>
         </div>
 
-        <div className="overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
+        <div className="summary-modal-body overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
           
           {/* 여론 신호등 */}
-          <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-            <h3 className="font-bold text-gray-700 text-sm flex items-center gap-1 mb-3">
-              <Smiley size={18} className="text-gray-500" /> 여론 신호등
+          <div className="summary-modal-section-box bg-gray-50 rounded-2xl p-5 border border-gray-100">
+            <h3 className="summary-modal-section-title font-bold text-gray-700 text-sm flex items-center gap-1 mb-3">
+              <Smiley size={18} className="summary-modal-section-icon text-gray-500" /> 여론 신호등
             </h3>
             <div className="flex gap-2">
-              <div className={`flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
+              <div className={`summary-modal-sentiment-item summary-modal-sentiment-positive flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
                 topSentiment === 'positive'
                   ? 'border-green-100 shadow-sm ring-2 ring-green-500 ring-offset-2'
                   : 'border-gray-100 opacity-50 grayscale'
               }`}>
-                <div className={`w-3 h-3 rounded-full mb-2 ${topSentiment === 'positive' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-400'}`}></div>
-                <span className={`text-xs font-bold ${topSentiment === 'positive' ? 'text-green-700' : 'text-gray-600'}`}>긍정적</span>
+                <div className={`summary-modal-sentiment-dot w-3 h-3 rounded-full mb-2 ${topSentiment === 'positive' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-400'}`}></div>
+                <span className={`summary-modal-sentiment-label text-xs font-bold ${topSentiment === 'positive' ? 'text-green-700' : 'text-gray-600'}`}>긍정적</span>
               </div>
 
-              <div className={`flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
+              <div className={`summary-modal-sentiment-item summary-modal-sentiment-neutral flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
                 topSentiment === 'neutral'
                   ? 'border-yellow-100 shadow-sm ring-2 ring-yellow-500 ring-offset-2'
                   : 'border-gray-100 opacity-50 grayscale'
               }`}>
-                <div className={`w-3 h-3 rounded-full mb-2 ${topSentiment === 'neutral' ? 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]' : 'bg-gray-400'}`}></div>
-                <span className={`text-xs font-bold ${topSentiment === 'neutral' ? 'text-yellow-700' : 'text-gray-600'}`}>중립</span>
+                <div className={`summary-modal-sentiment-dot w-3 h-3 rounded-full mb-2 ${topSentiment === 'neutral' ? 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]' : 'bg-gray-400'}`}></div>
+                <span className={`summary-modal-sentiment-label text-xs font-bold ${topSentiment === 'neutral' ? 'text-yellow-700' : 'text-gray-600'}`}>중립</span>
               </div>
 
-              <div className={`flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
+              <div className={`summary-modal-sentiment-item summary-modal-sentiment-negative flex-1 bg-white border p-3 rounded-xl flex flex-col items-center justify-center transition-all ${
                 topSentiment === 'negative'
                   ? 'border-red-100 shadow-sm ring-2 ring-red-500 ring-offset-2'
                   : 'border-gray-100 opacity-50 grayscale'
               }`}>
-                <div className={`w-3 h-3 rounded-full mb-2 ${topSentiment === 'negative' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-gray-400'}`}></div>
-                <span className={`text-xs font-bold ${topSentiment === 'negative' ? 'text-red-700' : 'text-gray-600'}`}>부정적</span>
+                <div className={`summary-modal-sentiment-dot w-3 h-3 rounded-full mb-2 ${topSentiment === 'negative' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-gray-400'}`}></div>
+                <span className={`summary-modal-sentiment-label text-xs font-bold ${topSentiment === 'negative' ? 'text-red-700' : 'text-gray-600'}`}>부정적</span>
               </div>
             </div>
           </div>
 
           {/* 최근 3일 언급량 추이 */}
           <div>
-            <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
-              <ChartLineUp size={18} className="text-indigo-500" /> 최근 3일 언급량 추이
+            <h3 className="summary-modal-subsection-title font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+              <ChartLineUp size={18} className="summary-modal-subsection-icon text-indigo-500" /> 최근 3일 언급량 추이
             </h3>
-            <div className="h-40 w-full bg-white border border-gray-100 rounded-2xl p-2 shadow-sm relative overflow-hidden">
+            <div className="summary-modal-chart-card h-40 w-full bg-white border border-gray-100 rounded-2xl p-2 shadow-sm relative overflow-hidden">
               {loading && (
                 <div className="summary-modal-loading-overlay absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in rounded-2xl">
                   <div className="w-6 h-6 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-2"></div>
@@ -366,7 +366,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
                   </LineChart>
                 </ResponsiveContainer>
               ) : !loading && (
-                <div className="h-full flex items-center justify-center text-xs text-gray-400">차트 데이터 없음</div>
+                <div className="summary-modal-empty-text h-full flex items-center justify-center text-xs text-gray-400">차트 데이터 없음</div>
               )}
             </div>
           </div>
@@ -374,15 +374,15 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
           {/* 실제 반응 미리보기 */}
           <div>
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2 text-sm">
-                <ChatCircle size={18} className="text-blue-500" /> 실제 반응 미리보기
-              </h3>
+               <h3 className="summary-modal-subsection-title font-bold text-gray-800 flex items-center gap-2 text-sm">
+                 <ChatCircle size={18} className="summary-modal-subsection-icon text-blue-500" /> 실제 반응 미리보기
+               </h3>
               
               {/* [추가] 인물이 아니면서 부정 댓글이 포함된 경우에만 동의 버튼 표시 */}
               {hasNegativePreview && !isPersonKeyword && (
                 <button
                   onClick={() => setIsNegativeRevealed(!isNegativeRevealed)}
-                  className={`text-[10px] px-2 py-1 rounded-md font-bold transition-all border ${
+                  className={`summary-modal-consent-btn text-[10px] px-2 py-1 rounded-md font-bold transition-all border ${
                     isNegativeRevealed 
                       ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
                       : 'bg-white text-gray-500 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
@@ -421,25 +421,25 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
                   return (
                     <div
                       key={idx}
-                      className="relative bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-2 overflow-hidden"
+                      className="summary-modal-comment-card relative bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-2 overflow-hidden"
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600"
+                          className="summary-modal-source-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600"
                         >
                           {comment.source}
                         </span>
-                        {isNegative && <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 rounded">부정적</span>}
+                        {isNegative && <span className="summary-modal-negative-badge text-[10px] font-bold text-red-500 bg-red-50 px-1.5 rounded">부정적</span>}
                       </div>
 
-                      <p className={`text-sm text-gray-600 line-clamp-2 transition-all duration-300 ${isBlurred ? 'blur-sm select-none opacity-40' : ''}`}>
+                      <p className={`summary-modal-comment-text text-sm text-gray-600 line-clamp-2 transition-all duration-300 ${isBlurred ? 'blur-sm select-none opacity-40' : ''}`}>
                         "{comment.text}"
                       </p>
 
                       {/* 미동의 부정 댓글 오버레이 안내 */}
                       {isBlurred && (
                         <div className="summary-modal-blur-overlay absolute inset-0 z-10 flex items-center justify-center bg-white/30 backdrop-blur-[1px]">
-                          <span className="text-[10px] font-bold text-gray-500 bg-white/95 px-2.5 py-1 rounded-md shadow-sm border border-gray-200">
+                          <span className="summary-modal-blur-hint text-[10px] font-bold text-gray-500 bg-white/95 px-2.5 py-1 rounded-md shadow-sm border border-gray-200">
                             상단의 동의 버튼을 눌러 확인하세요
                           </span>
                         </div>
@@ -448,22 +448,22 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
                   );
                 })
               ) : !loading && (
-                <div className="text-center py-4 text-xs text-gray-400">관련 반응 데이터가 없습니다.</div>
+                <div className="summary-modal-empty-text text-center py-4 text-xs text-gray-400">관련 반응 데이터가 없습니다.</div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-100 bg-gray-50 flex flex-col sm:flex-row gap-2">
+        <div className="summary-modal-footer p-4 border-t border-gray-100 bg-gray-50 flex flex-col sm:flex-row gap-2">
           <button
             onClick={handleCreationMove}
-            className="w-full py-3.5 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-xl font-bold transition"
+            className="summary-modal-secondary-btn w-full py-3.5 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-xl font-bold transition"
           >
             콘텐츠 생성으로 이동
           </button>
           <button
             onClick={handleDetailMove}
-            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition"
+            className="summary-modal-primary-btn w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition"
           >
             상세 분석 리포트 보러가기 <ArrowRight weight="bold" />
           </button>

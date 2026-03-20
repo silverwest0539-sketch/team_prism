@@ -299,8 +299,8 @@ const MyPage = () => {
   return (
     <div className="page pb-20">
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">마이페이지</h1>
-        <p className="text-gray-500 text-sm mt-2">
+        <h1 className="mypage-main-title text-2xl sm:text-3xl font-bold text-gray-900">마이페이지</h1>
+        <p className="mypage-main-subtitle text-gray-500 text-sm mt-2">
           계정 설정을 관리하고 스크랩한 콘텐츠를 확인하세요.
         </p>
       </div>
@@ -311,9 +311,9 @@ const MyPage = () => {
         description="잠시 후 다시 시도해 주세요."
       >
         {/* 수정된 프로필 영역 - 텍스트 크기 증가 및 모바일 최적화 배치 */}
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 sm:mb-10 min-h-[160px]">
+        <section className="mypage-profile-panel bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 sm:mb-10 min-h-[160px]">
           <div className="p-5 sm:p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">프로필</h2>
+            <h2 className="mypage-profile-heading text-xl font-bold text-gray-900 mb-4">프로필</h2>
             
             {/* 2x2 그리드 레이아웃 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -321,47 +321,47 @@ const MyPage = () => {
               {/* 첫 번째 줄 (모바일 화면시 1, 2번째로 노출됨) */}
               <div
                 onClick={() => setActiveModal(MODAL.ACCOUNT)}
-                className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
+                className="mypage-profile-item group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
               >
                 <div>
-                  <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">계정 정보</h3>
-                  <p className="text-sm text-gray-400 mt-0.5">프로필 편집, 비밀번호 변경</p>
+                  <h3 className="mypage-profile-item-title text-base font-bold text-gray-900 group-hover:text-blue-600 transition">계정 정보</h3>
+                  <p className="mypage-profile-item-desc text-sm text-gray-400 mt-0.5">프로필 편집, 비밀번호 변경</p>
                 </div>
-                <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-600 transition" />
+                <ChevronRight size={18} className="mypage-profile-item-arrow text-gray-300 group-hover:text-blue-600 transition" />
               </div>
 
               <div
                 onClick={() => setActiveModal(MODAL.WITHDRAW)}
-                className="group flex items-center justify-between p-4 cursor-pointer hover:bg-red-50 rounded-xl transition-colors border border-gray-100"
+                className="mypage-profile-item mypage-profile-item-danger group flex items-center justify-between p-4 cursor-pointer hover:bg-red-50 rounded-xl transition-colors border border-gray-100"
               >
                 <div>
-                  <h3 className="text-base font-bold text-gray-900 group-hover:text-red-600 transition">회원탈퇴</h3>
-                  <p className="text-sm text-gray-400 mt-0.5">계정 삭제 및 데이터 파기</p>
+                  <h3 className="mypage-profile-item-title mypage-profile-item-title-danger text-base font-bold text-gray-900 group-hover:text-red-600 transition">회원탈퇴</h3>
+                  <p className="mypage-profile-item-desc text-sm text-gray-400 mt-0.5">계정 삭제 및 데이터 파기</p>
                 </div>
-                <ChevronRight size={18} className="text-gray-300 group-hover:text-red-600 transition" />
+                <ChevronRight size={18} className="mypage-profile-item-arrow mypage-profile-item-arrow-danger text-gray-300 group-hover:text-red-600 transition" />
               </div>
 
               {/* 두 번째 줄 (모바일 화면시 3, 4번째로 노출됨) */}
               <div 
                 onClick={() => setPrefModalType('community')}
-                className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
+                className="mypage-profile-item group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
               >
                 <div>
-                  <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 플랫폼 설정</h3>
-                  <p className="text-sm text-gray-400 mt-0.5">우선 표시할 플랫폼</p>
+                  <h3 className="mypage-profile-item-title text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 플랫폼 설정</h3>
+                  <p className="mypage-profile-item-desc text-sm text-gray-400 mt-0.5">우선 표시할 플랫폼</p>
                 </div>
-                <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-600 transition" />
+                <ChevronRight size={18} className="mypage-profile-item-arrow text-gray-300 group-hover:text-blue-600 transition" />
               </div>
 
               <div 
                 onClick={() => setPrefModalType('news')}
-                className="group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
+                className="mypage-profile-item group flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 rounded-xl transition-colors border border-gray-100"
               >
                 <div>
-                  <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 뉴스 카테고리 설정</h3>
-                  <p className="text-sm text-gray-400 mt-0.5">우선 표시할 뉴스 분야</p>
+                  <h3 className="mypage-profile-item-title text-base font-bold text-gray-900 group-hover:text-blue-600 transition">선호 뉴스 카테고리 설정</h3>
+                  <p className="mypage-profile-item-desc text-sm text-gray-400 mt-0.5">우선 표시할 뉴스 분야</p>
                 </div>
-                <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-600 transition" />
+                <ChevronRight size={18} className="mypage-profile-item-arrow text-gray-300 group-hover:text-blue-600 transition" />
               </div>
 
             </div>
@@ -398,53 +398,53 @@ const MyPage = () => {
           [MODAL AREA] 
          ========================================= */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]">
+        <div className="mypage-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-sm animate-fade-in">
+          <div className="mypage-modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] lg:max-h-[94vh]">
             
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900">
+            <div className="mypage-modal-header flex items-center justify-between p-4 sm:p-5 lg:p-4 border-b border-gray-100">
+              <h3 className="mypage-modal-title text-lg font-bold text-gray-900">
                 {activeModal === MODAL.ACCOUNT && '계정 정보 설정'}
                 {activeModal === MODAL.WITHDRAW && '회원 탈퇴'}
               </h3>
-              <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full transition">
-                <X size={20} className="text-gray-500" />
+              <button onClick={closeModal} className="mypage-modal-close-btn p-2 hover:bg-gray-100 rounded-full transition">
+                <X size={20} className="mypage-modal-close-icon text-gray-500" />
               </button>
             </div>
 
-            <div className="p-4 sm:p-6 overflow-y-auto">
+            <div className="mypage-modal-body p-4 sm:p-5 lg:p-4 overflow-y-auto">
               {activeModal === MODAL.ACCOUNT && (
-                <div className="space-y-8">
+                <div className="space-y-6 sm:space-y-7 lg:space-y-5">
                   <div className="flex flex-col items-center">
-                    <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4 text-3xl font-bold shadow-inner">
+                    <div className="mypage-modal-avatar w-24 h-24 lg:w-20 lg:h-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4 lg:mb-3 text-3xl lg:text-2xl font-bold shadow-inner">
                       {userInfo.nickname?.charAt(0)}
                     </div>
                     <div className="w-full">
-                       <label className="block text-sm font-medium text-gray-700 mb-1">이름</label>
+                       <label className="mypage-modal-label block text-sm font-medium text-gray-700 mb-1">이름</label>
                        <input 
                           type="text" 
                           value={editNickname} 
                           onChange={(e) => setEditNickname(e.target.value)} 
-                          className="w-full border rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="mypage-modal-input w-full border rounded-lg px-4 py-2 mb-3 lg:mb-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
                         />
-                       <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+                       <label className="mypage-modal-label block text-sm font-medium text-gray-700 mb-1">이메일</label>
                        <input 
                           type="email" 
                           value={userInfo.email} 
                           disabled 
-                          className="w-full border bg-gray-50 text-gray-500 rounded-lg px-4 py-2"
+                          className="mypage-modal-input mypage-modal-input-disabled w-full border bg-gray-50 text-gray-500 rounded-lg px-4 py-2"
                         />
                     </div>
                   </div>
-                  <div className="border-t pt-6">
-                    <h4 className="font-bold mb-4 flex items-center gap-2">
-                      <Shield size={18} className="text-green-600"/> 보안 설정
+                  <div className="mypage-modal-security border-t pt-5 lg:pt-4">
+                    <h4 className="mypage-modal-security-title font-bold mb-3 lg:mb-2 flex items-center gap-2">
+                      <Shield size={18} className="mypage-modal-security-icon text-green-600"/> 보안 설정
                     </h4>
                     
-                    <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="grid grid-cols-2 gap-3 mb-3">
                       <button
                         type="button"
                         onClick={handleKakaoToggle}
-                        className={`py-3 rounded-lg text-sm font-bold transition-all flex justify-center items-center ${
+                        className={`mypage-modal-link-btn py-3 rounded-lg text-sm font-bold transition-all flex justify-center items-center ${
                           isKakaoLinked
                             ? 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
                             : 'bg-[#FEE500] text-[#000000] hover:brightness-95'
@@ -456,7 +456,7 @@ const MyPage = () => {
                       <button
                         type="button"
                         onClick={handleNaverToggle}
-                        className={`py-3 rounded-lg text-sm font-bold transition-all flex justify-center items-center ${
+                        className={`mypage-modal-link-btn py-3 rounded-lg text-sm font-bold transition-all flex justify-center items-center ${
                           isNaverLinked
                             ? 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
                             : 'bg-[#03C75A] text-white hover:brightness-95'
@@ -466,9 +466,9 @@ const MyPage = () => {
                       </button>
                     </div>
                     <div className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span className="text-sm font-medium">비밀번호 변경</span>
-                        <button onClick={() => setActiveModal(MODAL.PASSWORD)} className="text-xs border bg-white px-3 py-1 rounded hover:bg-gray-100">변경</button>
+                      <div className="mypage-modal-password-row flex justify-between items-center p-3 lg:p-2.5 bg-gray-50 rounded-lg">
+                        <span className="mypage-modal-password-label text-sm font-medium">비밀번호 변경</span>
+                        <button onClick={() => setActiveModal(MODAL.PASSWORD)} className="mypage-modal-password-btn text-xs border bg-white px-3 py-1 rounded hover:bg-gray-100">변경</button>
                       </div>
                     </div>
                   </div>
@@ -518,7 +518,7 @@ const MyPage = () => {
             </div>
 
             {activeModal !== MODAL.WITHDRAW && activeModal !== MODAL.PASSWORD && (
-              <div className="p-4 border-t bg-gray-50">
+              <div className="mypage-modal-footer p-4 lg:p-3 border-t bg-gray-50">
                 <button
                   onClick={() => {
                     if (activeModal === MODAL.ACCOUNT) {
@@ -527,7 +527,7 @@ const MyPage = () => {
                       closeModal();
                     }
                   }}
-                  className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all"
+                  className="mypage-modal-save-btn w-full py-3.5 lg:py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all"
                 >
                   {activeModal === MODAL.ACCOUNT ? '프로필 저장하기' : '저장하기'}
                 </button>
