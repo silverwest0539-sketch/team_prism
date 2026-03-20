@@ -1420,8 +1420,9 @@ const AnalysisPage = () => {
                   관련 뉴스
                 </h3>
                 <div className="space-y-3">
+                  {/* 변경된 부분: news.map 을 news.slice(0, 3).map 으로 변경 */}
                   {news?.length > 0 ? (
-                    news.map((item, idx) => (
+                    news.slice(0, 3).map((item, idx) => (
                       <a
                         key={idx}
                         href={item.link}
