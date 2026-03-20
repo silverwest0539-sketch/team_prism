@@ -1,6 +1,6 @@
 // src/pages/AnalysisPage.jsx
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { createPortal, flushSync } from 'react-dom';
+import { createPortal } from 'react-dom';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import {
   Bell,

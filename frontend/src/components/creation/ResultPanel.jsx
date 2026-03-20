@@ -1,11 +1,12 @@
 // src/components/creation/ResultPanel.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Copy, Check, ArrowsClockwise, WarningCircle, BookmarkSimple, MagicWand, Sparkle } from '@phosphor-icons/react';
 
 const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, onSave }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [editableContent, setEditableContent] = useState(() => String(content || ''));
+  const panelRef = useRef(null);
   
   // 로딩 진행 단계를 위한 상태 (0, 1, 2, 3)
   const [loadingStep, setLoadingStep] = useState(0);
@@ -17,6 +18,42 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
   }, [content]);
 
   const v1Content = editableContent.trim();
+
+  useEffect(() => {
+    const panelElement = panelRef.current;
+    if (!panelElement) return undefined;
+
+    const syncHeight = () => {
+      if (window.innerWidth < 1280) {
+        panelElement.style.height = '';
+        return;
+      }
+
+      const inputPanel = document.querySelector('.creation-input-panel');
+      if (!inputPanel) {
+        panelElement.style.height = '';
+        return;
+      }
+
+      const nextHeight = Math.ceil(inputPanel.getBoundingClientRect().height);
+      panelElement.style.height = nextHeight > 0 ? `${nextHeight}px` : '';
+    };
+
+    syncHeight();
+
+    const observer = new ResizeObserver(() => syncHeight());
+    const inputPanel = document.querySelector('.creation-input-panel');
+    if (inputPanel) {
+      observer.observe(inputPanel);
+    }
+
+    window.addEventListener('resize', syncHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', syncHeight);
+    };
+  }, []);
   
   // 새로운 내용이 오면 저장 상태 초기화
   useEffect(() => {
@@ -119,7 +156,10 @@ const ResultPanel = ({ content, isLoading = false, errorMessage = '', onRetry, o
   }
 
   return (
-    <div className="creation-result-panel bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col h-full min-h-[280px]">
+    <div
+      ref={panelRef}
+      className="creation-result-panel bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col min-h-[220px]"
+    >
 
       {/* 헤더 */}
       <div className="creation-result-header flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-100">

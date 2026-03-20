@@ -337,7 +337,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
             </h3>
             <div className="h-40 w-full bg-white border border-gray-100 rounded-2xl p-2 shadow-sm relative overflow-hidden">
               {loading && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in rounded-2xl">
+                <div className="summary-modal-loading-overlay absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in rounded-2xl">
                   <div className="w-6 h-6 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-2"></div>
                   <span className="text-indigo-600 font-bold animate-pulse text-sm">분석중...</span>
                 </div>
@@ -395,7 +395,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
             <div className="space-y-3 relative min-h-[100px]">
               {loading && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in rounded-xl">
+                <div className="summary-modal-loading-overlay absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center animate-fade-in rounded-xl">
                   <div className="w-6 h-6 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-2"></div>
                   <span className="text-indigo-600 font-bold animate-pulse text-sm">분석중...</span>
                 </div>
@@ -438,7 +438,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
                       {/* 미동의 부정 댓글 오버레이 안내 */}
                       {isBlurred && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/30 backdrop-blur-[1px]">
+                        <div className="summary-modal-blur-overlay absolute inset-0 z-10 flex items-center justify-center bg-white/30 backdrop-blur-[1px]">
                           <span className="text-[10px] font-bold text-gray-500 bg-white/95 px-2.5 py-1 rounded-md shadow-sm border border-gray-200">
                             상단의 동의 버튼을 눌러 확인하세요
                           </span>

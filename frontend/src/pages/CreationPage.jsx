@@ -207,7 +207,7 @@ const CreationPage = () => {
   return (
     <div className="w-full relative">
       <div
-        className={`page creation-page space-y-2 sm:space-y-2.5 px-4 pt-1.5 pb-2.5 sm:px-5 sm:pt-2 sm:pb-3 2xl:px-5 2xl:pt-2 2xl:pb-3 transition-all duration-500 ease-in-out ${
+        className={`page creation-page px-4 pt-1.5 pb-2.5 sm:px-5 sm:pt-2 sm:pb-3 2xl:px-5 2xl:pt-2 2xl:pb-3 transition-all duration-500 ease-in-out ${
           !isLoggedIn ? 'opacity-30 blur-[6px] pointer-events-none select-none' : ''
         }`}
       >

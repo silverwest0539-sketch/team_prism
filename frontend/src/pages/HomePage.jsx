@@ -1,5 +1,5 @@
 // src/pages/HomePage.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlayCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, X, Newspaper } from 'lucide-react';  
 import SearchBar from '../components/common/SearchBar';
@@ -10,6 +10,87 @@ import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 import { Question } from '@phosphor-icons/react'; 
+
+const LIGHT_NEWS_WORD_COLORS = [
+  'text-emerald-600',
+  'text-blue-600',
+  'text-rose-500',
+  'text-amber-600',
+  'text-purple-600',
+  'text-teal-600',
+  'text-indigo-600',
+  'text-pink-600',
+  'text-cyan-600',
+  'text-orange-600',
+];
+
+const getIsDarkTheme = () => {
+  if (typeof document === 'undefined') return false;
+  return document.documentElement.classList.contains('theme-dark');
+};
+
+const getDarkNewsWordStyleByRank = (rank) => {
+  if (rank === 0) {
+    return {
+      color: '#99F6E4',
+      opacity: 1,
+      textShadow: '0 0 10px rgba(153, 246, 228, 0.18)',
+      fontWeight: 800,
+    };
+  }
+
+  if (rank === 1) {
+    return {
+      color: '#93C5FD',
+      opacity: 1,
+      textShadow: '0 0 8px rgba(147, 197, 253, 0.14)',
+      fontWeight: 800,
+    };
+  }
+
+  if (rank === 2) {
+    return {
+      color: '#F9A8D4',
+      opacity: 0.98,
+      textShadow: 'none',
+      fontWeight: 760,
+    };
+  }
+
+  if (rank === 3) {
+    return {
+      color: '#7DD3FC',
+      opacity: 0.97,
+      textShadow: 'none',
+      fontWeight: 740,
+    };
+  }
+
+  if (rank === 4) {
+    return {
+      color: '#C4B5FD',
+      opacity: 0.96,
+      textShadow: 'none',
+      fontWeight: 720,
+    };
+  }
+
+  if (rank <= 9) {
+    return {
+      color: '#CBD5E1',
+      opacity: 0.9,
+      textShadow: 'none',
+      fontWeight: 680,
+    };
+  }
+
+  return {
+    color: rank % 2 === 0 ? '#E5E7EB' : '#94A3B8',
+    opacity: rank <= 12 ? 0.84 : 0.8,
+    textShadow: 'none',
+    fontWeight: 620,
+  };
+};
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -53,6 +134,7 @@ const HomePage = () => {
 
   const scrollRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDarkTheme, setIsDarkTheme] = useState(getIsDarkTheme);
 
   const COMMUNITY_OPTIONS = [
     { label: '더쿠', value: 'theqoo' },
@@ -97,6 +179,42 @@ const HomePage = () => {
   const handleNewsClick = (link) => setReadNewsLinks((prev) => new Set(prev).add(link));
   const getCategoryBadgeClass = () => 'bg-blue-100 text-blue-700';
 
+  const visibleNewsKeywords = useMemo(() => newsKeywords.slice(0, 20), [newsKeywords]);
+
+  const newsKeywordRankByIndex = useMemo(() => {
+    const indexed = visibleNewsKeywords.map((item, index) => ({
+      index,
+      value: Number(item?.count ?? item?.score ?? (30 - index)) || 0,
+    }));
+
+    indexed.sort((a, b) => b.value - a.value);
+
+    const rankMap = new Map();
+    indexed.forEach((entry, rank) => {
+      rankMap.set(entry.index, rank);
+    });
+
+    return rankMap;
+  }, [visibleNewsKeywords]);
+
+  const newsKeywordDebugRows = useMemo(
+    () =>
+      visibleNewsKeywords.map((item, index) => {
+        const rank = newsKeywordRankByIndex.get(index) ?? index;
+        const value = Number(item?.count ?? item?.score ?? (30 - index)) || 0;
+        const darkStyle = getDarkNewsWordStyleByRank(rank);
+        return {
+          keyword: String(item?.keyword || ''),
+          rank: rank + 1,
+          value,
+          finalColor: isDarkTheme ? darkStyle.color : '(light-mode)',
+          opacity: isDarkTheme ? darkStyle.opacity : '(light-mode)',
+          textShadow: isDarkTheme ? darkStyle.textShadow : '(light-mode)',
+        };
+      }),
+    [visibleNewsKeywords, newsKeywordRankByIndex, isDarkTheme]
+  );
+
   const handleInitialPreferencesSubmit = async ({ community, news }) => {
     if (community && community !== 'skip') {
       setSelectedPlatform(community); 
@@ -129,6 +247,27 @@ const HomePage = () => {
 
   useEffect(() => setVisibleCommunityCount(5), [selectedComm]);
   useEffect(() => setVisibleNewsCount(5), [selectedNewsCategory]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+
+    const root = document.documentElement;
+    const syncTheme = () => setIsDarkTheme(root.classList.contains('theme-dark'));
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !isDarkTheme || newsKeywordDebugRows.length === 0) return;
+    // 다크모드 뉴스 워드클라우드 최종 색상 검증 로그
+    console.groupCollapsed('[HomePage][DarkWordCloud] rank/value/finalColor');
+    console.table(newsKeywordDebugRows);
+    console.groupEnd();
+  }, [isDarkTheme, newsKeywordDebugRows]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -264,7 +403,7 @@ const HomePage = () => {
         </div>
 
         {/* 2. 플랫폼별 키워드 */}
-        <div className="card-soft relative">
+        <div className="card-soft home-topcard-shell relative">
           <div className="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-2 border-gray-100">
             <div className="flex items-center gap-1 relative">
               <h2 className="text-base xl:text-lg font-bold text-gray-900 break-keep">오늘의 플랫폼별 키워드</h2>
@@ -320,7 +459,7 @@ const HomePage = () => {
                 onMouseEnter={() => setHoveredTooltip('news')}
                 onMouseLeave={() => setHoveredTooltip(null)}
                 onClick={(e) => { e.stopPropagation(); setPinnedTooltip(prev => prev === 'news' ? null : 'news'); }}
-                className={`transition-colors p-1 ${pinnedTooltip === 'news' ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-500'}`}
+                className={`home-topcard-muted transition-colors p-1 ${pinnedTooltip === 'news' ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-500'}`}
               >
                 <Question size={18} weight="fill" />
               </button>
@@ -351,23 +490,22 @@ const HomePage = () => {
             </div>
           </div>
           <div className="flex flex-wrap justify-center items-center content-center gap-x-2 gap-y-1 px-2 py-4 h-[260px] overflow-hidden leading-none">
-            {newsKeywords.length > 0 ? (
-              newsKeywords.slice(0, 20).map((item, index) => {
-                // 1. 다양한 색상 팔레트 (시인성이 좋은 색상들로 구성)
-                const colors = [
-                  'text-emerald-600', 'text-blue-600', 'text-rose-500', 'text-amber-600', 
-                  'text-purple-600', 'text-teal-600', 'text-indigo-600', 'text-pink-600',
-                  'text-cyan-600', 'text-orange-600'
-                ];
-                // 인덱스를 활용해 색상을 순환 배정합니다.
-                const colorClass = colors[index % colors.length];
-
-                // 2. 빈도수 기반 폰트 크기 계산
-                const frequency = item.count || item.score || (30 - index); 
-                
-                // 빈도수 값에 따라 최소 16px ~ 최대 48px 사이로 크기를 동적 제한합니다.
-                // 실제 빈도수 숫자의 단위가 크다면 frequency 곱셈 수치(1.2)를 줄이거나 늘려 조정하십시오.
+            {visibleNewsKeywords.length > 0 ? (
+              visibleNewsKeywords.map((item, index) => {
+                const rank = newsKeywordRankByIndex.get(index) ?? index;
+                const frequency = Number(item?.count ?? item?.score ?? (30 - index)) || 0;
                 const calculatedSize = Math.max(22, Math.min(64, (frequency * 3.5) + 12));
+                const darkStyle = getDarkNewsWordStyleByRank(rank);
+                const lightColorClass = LIGHT_NEWS_WORD_COLORS[index % LIGHT_NEWS_WORD_COLORS.length];
+                const wordStyle = isDarkTheme
+                  ? {
+                      fontSize: `${calculatedSize}px`,
+                      color: darkStyle.color,
+                      opacity: darkStyle.opacity,
+                      textShadow: darkStyle.textShadow,
+                      fontWeight: darkStyle.fontWeight,
+                    }
+                  : { fontSize: `${calculatedSize}px` };
 
                 return (
                   <span
@@ -379,8 +517,8 @@ const HomePage = () => {
                         'noopener,noreferrer'
                       );
                     }}
-                    className={`${colorClass} font-extrabold cursor-pointer hover:opacity-70 hover:scale-105 transition-transform duration-200 inline-block break-keep m-0 p-0`}
-                    style={{ fontSize: `${calculatedSize}px` }}
+                    className={`${isDarkTheme ? '' : lightColorClass} font-extrabold cursor-pointer hover:opacity-70 hover:scale-105 transition-transform duration-200 inline-block break-keep m-0 p-0`}
+                    style={wordStyle}
                     title={`${item.keyword} (빈도: ${item.count || item.score || '정보 없음'})`}
                   >
                     {item.keyword}
@@ -397,16 +535,16 @@ const HomePage = () => {
       {/* 유튜브 섹션 */}
       <div className="mb-8 relative group"> 
         <div className="flex justify-between items-end mb-4">
-          <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">유튜브 일일 급상승 동영상</h2>
+          <h2 className="section-title-lg home-youtube-title border-b-2 border-gray-800 w-fit pb-1">유튜브 일일 급상승 동영상</h2>
         </div>
         <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
           {CATEGORY_TABS.map((cat) => (
-            <button key={cat} onClick={() => setYoutubeCategory(cat)} className={`chip ${youtubeCategory === cat ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{cat}</button>
+            <button key={cat} onClick={() => setYoutubeCategory(cat)} className={`chip home-youtube-chip ${youtubeCategory === cat ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{cat}</button>
           ))}
         </div>
         <div className="relative">
           {/* 전체 영역(.group) 호버 시 보이는 스크롤 버튼들 */}
-          <button onClick={() => scroll('left')} className="hidden sm:flex absolute left-1 lg:left-0 top-1/2 -translate-y-1/2 lg:-ml-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100" aria-label="Previous videos"><ChevronLeft className="w-6 h-6 text-gray-600" /></button>
+          <button onClick={() => scroll('left')} className="home-youtube-nav-btn hidden sm:flex absolute left-1 lg:left-0 top-1/2 -translate-y-1/2 lg:-ml-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100" aria-label="Previous videos"><ChevronLeft className="home-youtube-nav-icon w-6 h-6 text-gray-600" /></button>
           
           <div ref={scrollRef} className="flex overflow-x-auto gap-4 scrollbar-hide scroll-smooth pb-4 px-1">
             {youtubeVideos.slice(0, 10).map((video) => (
@@ -416,7 +554,7 @@ const HomePage = () => {
                 href={`https://www.youtube.com/watch?v=${encodeURIComponent(String(video.id || ''))}`} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="video-card flex-none w-[240px] sm:w-[260px] md:w-[280px] lg:w-[19%] min-w-[220px] sm:min-w-[240px] group/item hover:-translate-y-1 transition-transform duration-300 rounded-b-lg hover:shadow-lg"
+                className="video-card home-youtube-card flex-none w-[240px] sm:w-[260px] md:w-[280px] lg:w-[19%] min-w-[220px] sm:min-w-[240px] group/item hover:-translate-y-1 transition-transform duration-300 rounded-b-lg hover:shadow-lg"
               >
                 <div className="relative w-full aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                   <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300" />
@@ -424,12 +562,12 @@ const HomePage = () => {
                     <PlayCircle className="text-white w-12 h-12 drop-shadow-lg" />
                   </div>
                 </div>
-                <div className="p-3 sm:p-4 flex flex-col justify-between flex-1 bg-white border-x border-b border-gray-100 rounded-b-lg group-hover/item:border-gray-200 transition-colors">
+                <div className="home-youtube-card-body p-3 sm:p-4 flex flex-col justify-between flex-1 bg-white border-x border-b border-gray-100 rounded-b-lg group-hover/item:border-gray-200 transition-colors">
                   <div>
-                    <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 mb-2 group-hover/item:text-blue-600 transition-colors">{video.title}</h3>
-                    <p className="text-xs text-gray-500 font-medium">{video.channel}</p>
+                    <h3 className="home-youtube-card-title font-bold text-gray-900 text-sm leading-snug line-clamp-2 mb-2 group-hover/item:text-blue-600 transition-colors">{video.title}</h3>
+                    <p className="home-youtube-card-channel text-xs text-gray-500 font-medium">{video.channel}</p>
                   </div>
-                  <div className="mt-2 text-[11px] text-gray-400 flex items-center gap-1">
+                  <div className="home-youtube-card-meta mt-2 text-[11px] text-gray-400 flex items-center gap-1">
                     <span>{formatViews(video.views)}</span><span>·</span><span>{formatDate(video.publish_time)}</span>
                   </div>
                 </div>
@@ -437,7 +575,7 @@ const HomePage = () => {
             ))}
           </div>
           
-          <button onClick={() => scroll('right')} className="hidden sm:flex absolute right-1 lg:right-0 top-1/2 -translate-y-1/2 lg:-mr-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100" aria-label="Next videos"><ChevronRight className="w-6 h-6 text-gray-600" /></button>
+          <button onClick={() => scroll('right')} className="home-youtube-nav-btn hidden sm:flex absolute right-1 lg:right-0 top-1/2 -translate-y-1/2 lg:-mr-4 z-10 bg-white border border-gray-200 shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100" aria-label="Next videos"><ChevronRight className="home-youtube-nav-icon w-6 h-6 text-gray-600" /></button>
         </div>
       </div>
 
@@ -445,11 +583,11 @@ const HomePage = () => {
       <div className="mb-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
           <div className="flex justify-between items-end mb-4">
-            <h2 className="section-title-lg border-b-2 border-gray-800 w-fit pb-1">커뮤니티 인기글</h2>
+            <h2 className="section-title-lg home-community-title border-b-2 border-gray-800 w-fit pb-1">커뮤니티 인기글</h2>
           </div>
           <div className="scroll-x scrollbar-hide flex gap-2 mb-6">
             {COMMUNITY_OPTIONS.map((comm) => (
-              <button key={comm.value} onClick={() => setSelectedComm(comm.value)} className={`chip ${selectedComm === comm.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              <button key={comm.value} onClick={() => setSelectedComm(comm.value)} className={`chip home-community-chip ${selectedComm === comm.value ? 'chip-active' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                 {comm.label}
               </button>
             ))}
@@ -475,7 +613,7 @@ const HomePage = () => {
                   </button>
                 )}
               </>
-            ) : ( <div className="text-center py-10 text-gray-400 text-sm bg-white rounded-xl border border-gray-100">현재 불러올 수 있는 인기글 데이터가 없습니다.</div> )}
+            ) : ( <div className="home-community-empty text-center py-10 text-gray-400 text-sm bg-white rounded-xl border border-gray-100">현재 불러올 수 있는 인기글 데이터가 없습니다.</div> )}
           </div>
         </div>
 

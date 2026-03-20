@@ -7,7 +7,7 @@ const CreationTargetSection = ({
   onChangeOtherRequests,
 }) => {
   return (
-    <div className="creation-target-section bg-gray-50 rounded-xl border border-gray-100 pb-3 mb-0">
+    <div className="creation-target-section bg-gray-50 rounded-xl border border-gray-100 mb-0">
       <div className="creation-target-header border-b border-gray-200 mb-3">
         <span className="inline-flex items-center text-base font-bold text-gray-700">
           선택 항목
