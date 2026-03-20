@@ -30,7 +30,7 @@ const LoginPage = () => {
 
 
   const handleLogoClick = () => {
-    navigate('/home');
+    navigate('/');
   };
 
   const handleLogin = async (e) => {
