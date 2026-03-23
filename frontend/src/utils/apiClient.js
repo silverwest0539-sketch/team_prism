@@ -20,7 +20,7 @@ const apiClient = axios.create({
   },
 });
 
-// 요청 인터셉터 — localStorage에 토큰이 있으면 자동 첨부
+// 요청 인터셉터 — sessionStorage에 토큰이 있으면 자동 첨부
 apiClient.interceptors.request.use((config) => {
   const token = window.sessionStorage.getItem('token');
   if (token) {

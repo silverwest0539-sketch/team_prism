@@ -20,7 +20,7 @@ const CreationTargetSection = ({
         </label>
         <input
           type="text"
-          className="creation-target-input w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mb-4"
+          className="creation-target-input w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[13px] sm:text-sm placeholder:text-[13px] sm:placeholder:text-sm mb-4"
           value={target}
           onChange={(event) => onChangeTarget(event.target.value)}
           placeholder="예: 20~30대 직장인, 간편식/헬스 관심 사용자"
@@ -30,7 +30,7 @@ const CreationTargetSection = ({
           기타 요구사항
         </label>
         <textarea
-          className="creation-target-textarea w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-sm"
+          className="creation-target-textarea w-full border border-gray-300 rounded-lg p-2.5 2xl:p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-[13px] sm:text-sm leading-5 placeholder:text-[13px] sm:placeholder:text-sm"
           rows={3} 
           value={otherRequests}
           onChange={(event) => onChangeOtherRequests(event.target.value)}

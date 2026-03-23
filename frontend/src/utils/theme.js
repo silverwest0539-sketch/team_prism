@@ -38,11 +38,11 @@ export const saveTheme = (theme) => {
 const hasAuthenticatedSession = () => {
   if (typeof window === 'undefined') return false;
 
-  const token = String(window.localStorage.getItem(TOKEN_STORAGE_KEY) || '').trim();
+  const token = String(window.sessionStorage.getItem(TOKEN_STORAGE_KEY) || '').trim();
   if (!token) return false;
 
   try {
-    const rawUser = window.localStorage.getItem(USER_STORAGE_KEY);
+    const rawUser = window.sessionStorage.getItem(USER_STORAGE_KEY);
     if (!rawUser) return false;
     const parsed = JSON.parse(rawUser);
     return Boolean(parsed && typeof parsed.email === 'string' && parsed.email.trim());

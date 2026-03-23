@@ -220,7 +220,7 @@ const SavedPromptsSection = ({ email = '' }) => {
         // GET 요청 시 email을 쿼리스트링으로 전달
         const response = await fetch(toApiUrl(`/list?email=${encodeURIComponent(email)}`), {
           headers: {
-            'Authorization': `Bearer ${window.localStorage.getItem('token')}` // 필요한 경우 토큰 추가
+            'Authorization': `Bearer ${window.sessionStorage.getItem('token')}` // 필요한 경우 토큰 추가
           }
         });
 
@@ -321,7 +321,7 @@ const SavedPromptsSection = ({ email = '' }) => {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+        'Authorization': `Bearer ${window.sessionStorage.getItem('token')}`
       },
       body: JSON.stringify({ email }),
     });

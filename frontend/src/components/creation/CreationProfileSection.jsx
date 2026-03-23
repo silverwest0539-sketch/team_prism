@@ -94,7 +94,7 @@ const CreationProfileSection = ({
           {PURPOSE_LABEL}
         </label>
         <textarea
-          className={`creation-purpose-textarea w-full border rounded-lg p-2.5 2xl:p-2 focus:outline-none focus:ring-2 resize-none text-sm ${
+          className={`creation-purpose-textarea w-full border rounded-lg p-2.5 2xl:p-2 focus:outline-none focus:ring-2 resize-none text-sm leading-5 min-h-[3.8rem] sm:min-h-0 placeholder:text-[13px] sm:placeholder:text-sm ${
             purposeError
               ? 'border-red-400 focus:ring-red-200'
               : 'border-gray-300 focus:ring-indigo-500'

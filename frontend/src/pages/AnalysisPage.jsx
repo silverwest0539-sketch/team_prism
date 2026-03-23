@@ -941,7 +941,7 @@ const AnalysisPage = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleSearch}
-            className="search-input w-full" 
+            containerClassName="w-full"
           />
         </div>
       </header>
@@ -1021,31 +1021,31 @@ const AnalysisPage = () => {
             </div>
           </div>
           
-          <div className="analysis-top-actions flex-shrink-0 flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
+          <div className="analysis-top-actions flex-shrink-0 flex items-center gap-1.5 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
              <button 
                onClick={() => setIsEditModalOpen(true)}
-               className="analysis-edit-report-btn flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-gray-50 text-gray-500 border border-gray-200 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm shadow-sm transition-all hover:-translate-y-1"
+               className="analysis-edit-report-btn flex whitespace-nowrap items-center gap-1 sm:gap-2 bg-white hover:bg-gray-50 text-gray-500 border border-gray-200 px-2.5 py-1.5 sm:px-4 sm:py-3 rounded-md sm:rounded-xl font-medium text-[11px] sm:text-sm shadow-sm transition-all hover:-translate-y-1"
                title="데이터 오류 제보 및 수정 요청"
              >
-               <WarningCircle size={20} className="analysis-edit-report-icon sm:w-5 sm:h-5 text-gray-400" />
+               <WarningCircle size={16} className="analysis-edit-report-icon w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                <span className="hidden sm:inline">정보 수정 제보</span>
                <span className="sm:hidden">수정제보</span>
              </button>
  
              <button 
                onClick={handleGoToNamuwiki}
-               className="analysis-namu-btn flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-white hover:bg-teal-50 text-gray-700 border border-gray-200 px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base shadow-sm transition-all hover:-translate-y-1"
+               className="analysis-namu-btn flex whitespace-nowrap items-center gap-1 sm:gap-2 bg-white hover:bg-teal-50 text-gray-700 border border-gray-200 px-2.5 py-1.5 sm:px-6 sm:py-3 rounded-md sm:rounded-xl font-semibold sm:font-bold text-[11px] sm:text-base shadow-sm transition-all hover:-translate-y-1"
                title="나무위키에서 검색"
              >
-               <Book size={20} className="sm:w-5 sm:h-5 text-teal-600" weight="bold" />
+               <Book size={16} className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" weight="bold" />
                <span>나무위키 검색</span>
              </button>
 
              <button 
                onClick={handleGoToCreation}
-               className="analysis-create-btn flex whitespace-nowrap items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base transition-all hover:-translate-y-1"
+               className="analysis-create-btn flex whitespace-nowrap items-center gap-1 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 sm:px-6 sm:py-3 rounded-md sm:rounded-xl font-semibold sm:font-bold text-[11px] sm:text-base transition-all hover:-translate-y-1"
              >
-               <Export size={20} className="sm:w-5 sm:h-5" />
+               <Export size={16} className="w-4 h-4 sm:w-5 sm:h-5" />
                <span>콘텐츠 생성</span>
              </button>
           </div>
@@ -1082,7 +1082,7 @@ const AnalysisPage = () => {
                 />
                 <button
                   onClick={handleDateApply}
-                  className="analysis-top-filter-apply px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                  className="analysis-top-filter-apply px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-900 text-white rounded-md sm:rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-800 transition-colors"
                 >
                   조회
                 </button>

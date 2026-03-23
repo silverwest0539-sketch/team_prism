@@ -90,7 +90,7 @@ const CreationPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+          'Authorization': `Bearer ${window.sessionStorage.getItem('token')}`
         },
         body: JSON.stringify(inputData),
       });
@@ -172,7 +172,7 @@ const CreationPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.localStorage.getItem('token')}`
+          'Authorization': `Bearer ${window.sessionStorage.getItem('token')}`
         },
         body: JSON.stringify({
           email: userEmail,

@@ -34,7 +34,11 @@ const Layout = ({ children }) => {
 
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      <main className="w-full min-w-0 pt-16 lg:pt-0 lg:pl-64">
+      <main
+        className={`w-full min-w-0 pt-16 lg:pt-0 lg:pl-64 relative z-0 ${
+          isSidebarOpen ? 'max-lg:pointer-events-none' : ''
+        }`}
+      >
         {children}
       </main>
 

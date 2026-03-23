@@ -174,9 +174,10 @@ const Sidebar = ({ isOpen = false, onClose }) => {
 
   const MobileSidebar = () => (
     <div
-      className={`lg:hidden fixed inset-0 z-50 transition ${
+      className={`lg:hidden fixed inset-0 z-[9999] transition ${
         isOpen ? 'pointer-events-auto' : 'pointer-events-none'
       }`}
+      style={{ zIndex: 9999 }}
     >
       <button
         type="button"
@@ -185,12 +186,14 @@ const Sidebar = ({ isOpen = false, onClose }) => {
         className={`absolute inset-0 bg-black/40 transition-opacity ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
+        style={{ zIndex: 0 }}
       />
 
       <aside
         className={`absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-white border-r border-gray-200 p-6 font-sans shadow-xl transition-transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ zIndex: 1 }}
       >
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-between mb-8">
