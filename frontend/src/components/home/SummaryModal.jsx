@@ -1,5 +1,6 @@
 // src/components/home/SummaryModal.jsx
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -83,6 +84,20 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
 
   // [추가] 부정 댓글 블러 해제 상태
   const [isNegativeRevealed, setIsNegativeRevealed] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const prevOverflow = document.body.style.overflow;
+    const prevTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.touchAction = prevTouchAction;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !data?.keyword) {
@@ -251,9 +266,9 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   const previewComments = [...nonNegativeComments, ...negativeComments].slice(0, 2);
   const hasNegativePreview = previewComments.some(c => c.sentiment === 'negative');
 
-  return (
-    <div className="summary-modal-root fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 animate-[fadeIn_0.2s_ease-out]">
-      <div className="summary-modal-panel bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+  const modalContent = (
+    <div className="summary-modal-root fixed inset-0 z-[10000] flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm p-2.5 sm:p-4 overflow-y-auto overscroll-contain animate-[fadeIn_0.2s_ease-out]">
+      <div className="summary-modal-panel bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-1.25rem)] sm:max-h-[92vh]">
         <div className="summary-modal-header px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex justify-between items-start sm:items-center gap-3 bg-white sticky top-0 z-10">
           <div className="min-w-0">
             <span className="summary-modal-title text-xl sm:text-2xl font-bold text-gray-900 break-all">{data?.keyword}</span>
@@ -471,4 +486,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 }
