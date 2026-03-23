@@ -8,6 +8,7 @@ const BasePreferenceModal = ({
   subtitle, 
   options, 
   submitText = '저장하기', 
+  resetText = '건너뛰기',   // ✅ 추가: 기본값은 기존과 동일하게 유지
   onSubmit,
   onReset,
   onClose,
@@ -76,7 +77,7 @@ const BasePreferenceModal = ({
             onClick={handleReset}
             className="base-pref-skip-btn w-[30%] py-3.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all text-sm sm:text-base"
           >
-           건너뛰기
+           {resetText}
           </button>
           <button
             onClick={handleSubmit}

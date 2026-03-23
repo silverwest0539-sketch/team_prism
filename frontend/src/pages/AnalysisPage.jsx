@@ -1610,27 +1610,39 @@ const AnalysisPage = () => {
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden relative">
             
-            <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-white z-20">
-              <div className="flex items-baseline gap-3">
-                <h3 className="text-lg font-bold flex items-center gap-2">
+            {/* --- 수정된 모달 헤더 시작 --- */}
+            <div className="flex justify-between items-start sm:items-center p-4 sm:p-5 border-b border-gray-100 bg-white z-20 gap-3">
+              
+              {/* 왼쪽 영역: 제목, 개수, 안내문구 */}
+              {/* 모바일에서는 flex-col(위아래), sm 이상에서는 flex-row(좌우)로 배치 */}
+              <div className="flex flex-col sm:flex-row sm:items-baseline gap-1.5 sm:gap-3 overflow-hidden">
+                
+                {/* 제목: whitespace-nowrap을 추가해 '긍 정' 처럼 텍스트가 깨지는 것을 방지 */}
+                <h3 className="text-base sm:text-lg font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0">
                   {sentimentModalConfig.sentiment === 'positive' && <span className="text-blue-500">긍정</span>}
                   {sentimentModalConfig.sentiment === 'negative' && <span className="text-red-500">부정</span>}
                   {sentimentModalConfig.sentiment === 'neutral' && <span className="text-gray-500">중립</span>}
                   <span className="text-gray-800">댓글 반응</span>
                 </h3>
-                <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 hidden sm:inline-block">
-                  총 {displayModalTotalCount}건
-                </span>
-                <span className="text-xs"> 
-                  AI 분석결과로 정확하지 않을 수 있습니다.
-                </span>
+                
+                {/* 개수 및 안내 문구: 모바일에서 자연스럽게 아래로 떨어지고, 넘치면 다음 줄로 넘어감(flex-wrap) */}
+                <div className="flex items-center gap-2 flex-wrap mt-0.5 sm:mt-0">
+                  {/* hidden sm:inline-block을 제거하여 모바일에서도 보이게 수정 */}
+                  <span className="text-[11px] sm:text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 whitespace-nowrap">
+                    총 {displayModalTotalCount}건
+                  </span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 whitespace-nowrap"> 
+                    AI 분석결과로 정확하지 않을 수 있습니다.
+                  </span>
+                </div>
               </div>
               
-              <div className="flex items-center gap-3">
+              {/* 오른쪽 영역: 버튼들 (shrink-0 추가로 공간 확보) */}
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 {sentimentModalConfig.sentiment === 'negative' && !isPersonKeyword && (
                   <button
                     onClick={() => setIsNegativeRevealed(!isNegativeRevealed)}
-                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all border ${
+                    className={`text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition-all border whitespace-nowrap ${
                       isNegativeRevealed 
                          ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
                         : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:text-red-500 shadow-sm'
@@ -1642,7 +1654,7 @@ const AnalysisPage = () => {
 
                 <button 
                   onClick={() => setSentimentModalConfig({ isOpen: false, sentiment: null })}
-                  className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="p-1 sm:p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <X size={22} />
                 </button>

@@ -544,6 +544,7 @@ const MyPage = () => {
           subtitle="대시보드에서 우선 표시할 플랫폼을 선택해주세요."
           options={COMMUNITY_OPTIONS}
           submitText="변경하기"
+          resetText="초기화"   // ✅ 추가
           onSubmit={handlePreferenceSubmit}
           onReset={handlePreferenceReset} 
           onClose={() => setPrefModalType(null)} 
@@ -558,6 +559,7 @@ const MyPage = () => {
           subtitle="대시보드에서 우선 표시할 뉴스 분야를 선택해주세요."
           options={NEWS_OPTIONS}
           submitText="변경하기"
+          resetText="초기화"   // ✅ 추가
           onSubmit={handlePreferenceSubmit}
           onReset={handlePreferenceReset} 
           onClose={() => setPrefModalType(null)}
