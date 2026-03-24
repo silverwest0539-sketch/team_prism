@@ -384,7 +384,7 @@ const HomePage = () => {
                 <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in pointer-events-none">
                   <div className="absolute -top-1 left-6 w-3 h-3 bg-gray-800 transform rotate-45"></div>
                   <p className="font-semibold mb-1">트렌드 키워드란?</p>
-                  <p className="opacity-90 leading-relaxed">최근 검색량, 언급량, 확산도를 종합적으로 분석하여 산출된 순위입니다.</p>
+                  <p className="opacity-90 leading-relaxed">전날 대비 언급량 변화, 검색량, 확산도를 종합 분석하여 순위별로 정렬한 키워드입니다.</p>
                 </div>
               )}
             </div>
@@ -426,8 +426,8 @@ const HomePage = () => {
               {isTooltipVisible('platform') && (
                 <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in pointer-events-none">
                   <div className="absolute -top-1 left-6 w-3 h-3 bg-gray-800 transform rotate-45"></div>
-                  <p className="font-semibold mb-1">플랫폼 트렌드란?</p>
-                  <p className="opacity-90 leading-relaxed">선택된 플랫폼 내에서의 최근 언급량과 반응 급상승 폭을 기준으로 산출된 순위입니다.</p>
+                  <p className="font-semibold mb-1">플랫폼별 키워드란?</p>
+                  <p className="opacity-90 leading-relaxed">선택된 플랫폼 내에서의 전날 대비 언급량 변화, 검색량, 확산도를 종합 분석하여 순위별로 정렬한 키워드입니다.</p>
                 </div>
               )}
             </div>
@@ -481,7 +481,7 @@ const HomePage = () => {
                 <div className="absolute top-8 left-0 z-50 w-64 p-3 bg-gray-800 text-white text-xs rounded-xl shadow-xl animate-fade-in pointer-events-none">
                   <div className="absolute -top-1 left-6 w-3 h-3 bg-gray-800 transform rotate-45"></div>
                   <p className="font-semibold mb-1">뉴스 키워드란?</p>
-                  <p className="opacity-90 leading-relaxed">주요 언론사 기사에서 언급된 빈도와 사회적 주목도를 종합적으로 분석하여 산출된 순위입니다.</p>
+                  <p className="opacity-90 leading-relaxed">오늘의 주요 뉴스 제목에서 언급된 빈도수를 기반으로 추출한 키워드입니다.</p>
                 </div>
               )}
             </div>

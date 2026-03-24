@@ -1503,7 +1503,7 @@ const AnalysisPage = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">로그인이 필요한 서비스입니다</h2>
             <p className="text-gray-500 mb-8 leading-relaxed text-sm sm:text-base">
               키워드 심층 분석 및 상세 데이터는<br />
-              가입 회원에게만 제공되고 있습니다.
+              가입한 회원에게만 제공되고 있습니다.
             </p>
             <button
               onClick={() => navigate('/login')}
