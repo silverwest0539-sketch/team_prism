@@ -270,24 +270,46 @@ const HomePage = () => {
   }, [isDarkTheme, newsKeywordDebugRows]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchRisingKeywords = async () => {
       try {
         const trendRes = await apiClient.get('/trends/rising');
         setRisingKeywords(trendRes.data || []);
+      } catch (error) { 
+        console.error('트렌드 키워드 로드 실패:', error); 
+      }
+    };
+    fetchRisingKeywords();
+  }, []);
 
+  // 2. 오늘의 플랫폼별 키워드 (selectedPlatform이 변경될 때만 실행)
+  useEffect(() => {
+    const fetchPlatformTrends = async () => {
+      try {
         const platformRes = await apiClient.get('/trends/platform', {
           params: { platform: String(selectedPlatform || '') },
         });
         setRisingPlatforms(platformRes.data || []);
+      } catch (error) { 
+        console.error('플랫폼 트렌드 로드 실패:', error); 
+      }
+    };
+    fetchPlatformTrends();
+  }, [selectedPlatform]);
 
+  // 3. 유튜브 동영상 (youtubeCategory가 변경될 때만 실행)
+  useEffect(() => {
+    const fetchYoutubeVideos = async () => {
+      try {
         const videoRes = await apiClient.get('/videos', {
           params: { category: String(youtubeCategory || '') },
         });
         setYoutubeVideos(videoRes.data || []);
-      } catch (error) { console.error(error); }
+      } catch (error) { 
+        console.error('유튜브 데이터 로드 실패:', error); 
+      }
     };
-    fetchData();
-  }, [selectedPlatform, youtubeCategory]);
+    fetchYoutubeVideos();
+  }, [youtubeCategory]);
 
   useEffect(() => {
     const fetchNewsKeywords = async () => {
