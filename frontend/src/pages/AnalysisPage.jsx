@@ -1007,7 +1007,7 @@ const AnalysisPage = () => {
                         <div className="absolute -top-1 left-4 w-3 h-3 bg-gray-800 transform rotate-45"></div>
                         <p className="font-semibold mb-1">트렌드 스코어란?</p>
                         <p className="opacity-90 leading-relaxed">
-                          최근 검색량, 언급량, 확산도를 종합적으로 분석하여 산출된 트렌드 지표입니다.
+                          전날 대비 언급량 변화, 플랫폼 확산 범위, 제목 노출 빈도를 종합하여 0~100점으로 산출한 트렌드 지표입니다.
                         </p>
                       </div>
                     )}
@@ -1201,7 +1201,7 @@ const AnalysisPage = () => {
                 <BookmarkSimple className="text-yellow-500" /> 여론 분석
               </div>
               <span className="analysis-sentiment-help text-[11px] font-normal text-gray-400 tracking-tight">
-                * 해당 반응 선택시 댓글 확인 가능
+                * 각 반응 선택 시 해당 감정으로 분류된 댓글만 확인 가능
               </span>
             </h3>
             <div className="flex-1 relative">
@@ -1246,7 +1246,7 @@ const AnalysisPage = () => {
                   관련 댓글 반응
                 </h2>
                 <p className="analysis-section-subtitle text-xs text-gray-500 mt-1 hidden sm:block">
-                  커뮤니티 및 미디어 주요 여론
+                  주요 커뮤니티의 댓글 반응
                 </p>
               </div>
               
@@ -1373,7 +1373,7 @@ const AnalysisPage = () => {
                   종합 트렌드 인사이트
                 </h2>
                 <p className="analysis-section-subtitle text-xs text-gray-500 mt-1 hidden sm:block">
-                  AI 요약 및 주요 뉴스, 미디어 반응 종합 리포트
+                  AI 트렌드 요약 및 주요 뉴스, 미디어 반응 종합 리포트
                 </p>
               </div>
               

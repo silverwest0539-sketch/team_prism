@@ -390,7 +390,7 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
           <div>
             <div className="flex justify-between items-center mb-3">
                <h3 className="summary-modal-subsection-title font-bold text-gray-800 flex items-center gap-2 text-sm">
-                 <ChatCircle size={18} className="summary-modal-subsection-icon text-blue-500" /> 실제 반응 미리보기
+                 <ChatCircle size={18} className="summary-modal-subsection-icon text-blue-500" /> 댓글 반응 미리보기
                </h3>
               
               {/* [추가] 인물이 아니면서 부정 댓글이 포함된 경우에만 동의 버튼 표시 */}

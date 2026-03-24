@@ -301,7 +301,7 @@ const MyPage = () => {
       <div className="mb-6 sm:mb-8">
         <h1 className="mypage-main-title text-2xl sm:text-3xl font-bold text-gray-900">마이페이지</h1>
         <p className="mypage-main-subtitle text-gray-500 text-sm mt-2">
-          계정 설정을 관리하고 스크랩한 콘텐츠를 확인하세요.
+          계정 설정을 관리하고 저장한 키워드와 프롬프트를 확인하세요.
         </p>
       </div>
 
