@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Moon, Sun, X } from 'lucide-react'; // Settings 아이콘은 마이페이지 메뉴 이동으로 사용하지 않아 제거됨
+import BrandLogo from '../common/BrandLogo';
 import { getStoredUser } from '../../utils/authStorage';
 import { THEMES, getStoredTheme, applyTheme, saveTheme, toggleTheme, resetThemeToLight } from '../../utils/theme';
 
@@ -101,10 +102,13 @@ const Sidebar = ({ isOpen = false, onClose }) => {
     <aside className="hidden lg:flex w-64 h-screen bg-white border-r border-gray-200 p-6 fixed left-0 top-0 font-sans z-50 overflow-y-auto">
       <div className="w-full flex flex-col">
         <h1
-          className="text-2xl font-bold text-blue-600 mb-10 cursor-pointer"
+          className="mb-10 cursor-pointer"
           onClick={() => handleNavigate('/home')}
         >
-          PicKey
+          <BrandLogo
+            imageHeightClass="h-8"
+            textClassName="text-2xl font-bold text-blue-600"
+          />
         </h1>
 
         <nav className="flex-1 space-y-2">
@@ -196,17 +200,20 @@ const Sidebar = ({ isOpen = false, onClose }) => {
         style={{ zIndex: 1 }}
       >
         <div className="h-full flex flex-col">
-          <div className="flex items-center justify-between mb-8">
+          <div className="relative flex items-center justify-center mb-8">
             <h1
-              className="text-2xl font-bold text-blue-600 cursor-pointer"
+              className="cursor-pointer mx-auto"
               onClick={() => handleNavigate('/home')}
             >
-              PicKey
+              <BrandLogo
+                imageHeightClass="h-8"
+                textClassName="text-2xl font-bold text-blue-600"
+              />
             </h1>
             <button
               type="button"
               onClick={() => onClose?.()}
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+              className="absolute right-0 p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
               aria-label="메뉴 닫기"
             >
               <X size={18} />

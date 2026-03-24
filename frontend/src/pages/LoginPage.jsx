@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
+import BrandLogo from '../components/common/BrandLogo';
 import { showToast } from '../utils/toast';
 
 
@@ -61,11 +62,15 @@ const LoginPage = () => {
             role="button"
             tabIndex={0}
             onClick={handleLogoClick}
-            className={`text-4xl font-bold mb-2 transition-all duration-500 cursor-pointer select-none`}
+            className="mb-2 transition-all duration-500 cursor-pointer select-none"
             title={`PicKey 홈으로 이동`}
             aria-label="PicKey 로고"
           >
-            PicKey
+            <BrandLogo
+              imageHeightClass="h-10"
+              imageClassName="mx-auto"
+              textClassName="text-4xl font-bold"
+            />
           </h1>
           <p className="text-gray-600 font-medium">서비스 이용을 위해 로그인해주세요</p>
         </div>

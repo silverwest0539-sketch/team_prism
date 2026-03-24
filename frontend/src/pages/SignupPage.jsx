@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
+import BrandLogo from '../components/common/BrandLogo';
 import { showToast } from '../utils/toast';
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
@@ -327,11 +328,15 @@ const SignupPage = () => {
                 handleLogoClick();
               }
             }}
-            className="text-3xl font-bold text-indigo-600 mb-2 cursor-pointer hover:text-indigo-700"
+            className="mb-2 cursor-pointer"
             title="PicKey"
             aria-label="PicKey 로고"
           >
-            PicKey
+            <BrandLogo
+              imageHeightClass="h-9"
+              imageClassName="mx-auto block"
+              textClassName="text-3xl font-bold text-indigo-600 hover:text-indigo-700"
+            />
           </h1>
           <p className="text-gray-600 font-medium">지금 시작, PicKey와 함께하세요</p>
         </div>
