@@ -144,11 +144,12 @@ const LandingPage = () => {
           데이터 속 숨겨진 인사이트를 찾다
         </p>
 
-        <h1
-          className="text-6xl sm:text-7xl font-extrabold text-indigo-500 mb-6 tracking-tight drop-shadow-md"
-          style={{ textShadow: '0px 4px 20px rgba(99, 102, 241, 0.3)' }}
-        >
-          PicKey
+        <h1 className="mb-6">
+          <img
+            src="/PicKeyLogo_indigo.svg"
+            alt="PicKey"
+            className="h-[3.75rem] sm:h-[4.5rem] w-auto mx-auto"
+          />
         </h1>
 
         <p className="text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto text-gray-700 font-medium">

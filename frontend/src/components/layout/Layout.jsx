@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
-import ScrollToTopButton from '../common/ScrollToTopButton'; // 👈 추가
+import BrandLogo from '../common/BrandLogo';
+import ScrollToTopButton from '../common/ScrollToTopButton'; // ?몚 異붽?
 
 const Layout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -22,13 +23,16 @@ const Layout = ({ children }) => {
       <header className="lg:hidden fixed inset-x-0 top-0 z-40 h-16 bg-white/95 backdrop-blur border-b border-gray-200 px-4 flex items-center justify-between">
         <button
           type="button"
-          aria-label="메뉴 열기"
+          aria-label="硫붾돱 ?닿린"
           onClick={() => setIsSidebarOpen(true)}
           className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
         >
           <Menu size={20} />
         </button>
-        <span className="text-lg font-bold text-blue-600">PicKey</span>
+        <BrandLogo
+          imageHeightClass="h-7"
+          textClassName="text-lg font-bold text-blue-600"
+        />
         <div className="w-9" />
       </header>
 
@@ -42,10 +46,11 @@ const Layout = ({ children }) => {
         {children}
       </main>
 
-      {/* 👈 여기에 버튼 컴포넌트를 추가하면 모든 페이지에 알아서 들어갑니다! */}
+      {/* ?몚 ?ш린??踰꾪듉 而댄룷?뚰듃瑜?異붽??섎㈃ 紐⑤뱺 ?섏씠吏???뚯븘???ㅼ뼱媛묐땲?? */}
       <ScrollToTopButton /> 
     </div>
   );
 };
 
 export default Layout;
+

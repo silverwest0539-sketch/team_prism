@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
+import BrandLogo from '../components/common/BrandLogo';
 import { showToast } from '../utils/toast';
 
 const FindPasswordPage = () => {
@@ -29,10 +30,13 @@ const FindPasswordPage = () => {
         <button
           type="button"
           onClick={() => navigate('/home')}
-          className="block mx-auto mb-6 text-3xl font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+          className="block mx-auto mb-6 transition-colors"
           aria-label="홈으로 이동"
         >
-          PicKey
+          <BrandLogo
+            imageHeightClass="h-9"
+            textClassName="text-3xl font-bold text-indigo-600 hover:text-indigo-700"
+          />
         </button>
 
         <div className="card-soft w-full shadow-lg">
