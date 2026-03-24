@@ -19,7 +19,10 @@ exports.getRisingTrends = async () => {
        t.mention_count                                AS today_count,
        COALESCE(y.mention_count, 0)                   AS yesterday_count,
        t.mention_count / COALESCE(y.mention_count, 1) AS growth_ratio,
-       t.trend_score                                  AS trend_score
+       t.trend_score                                  AS trend_score,
+       COALESCE(t.positive_score, 0)                  AS positive_score,
+       COALESCE(t.negative_score, 0)                  AS negative_score,
+       COALESCE(t.neutral_score, 0)                   AS neutral_score
      FROM TREND_KEYWORD k
      JOIN KEYWORD_STATS t
        ON k.keyword_id = t.keyword_id AND t.stat_date = ?
@@ -43,6 +46,10 @@ exports.getRisingTrends = async () => {
       : isDown
         ? `${growthRatio.toFixed(1)}%`
         : '0.0%';
+    const totalSentiment = item.positive_score + item.negative_score + item.neutral_score;
+    const isNegative = totalSentiment > 0 && 
+                       (item.negative_score > item.positive_score) && 
+                       (item.negative_score > item.neutral_score);
 
     return {
       rank: index + 1,
@@ -51,6 +58,7 @@ exports.getRisingTrends = async () => {
       change: changeStr,
       isUp: isUp ? true : (isDown ? false : null),
       trendScore: item.trend_score,
+      isNegative: isNegative
     };
   });
 };
@@ -70,7 +78,7 @@ exports.getPlatformTrends = async (platform) => {
   );
 
   const [rows] = await db.execute(
-    `SELECT k.keyword_name, s.mention_count, s.${col} AS platform_score
+    `SELECT k.keyword_name, s.mention_count, s.${col} AS platform_score, COALESCE(s.positive_score, 0) AS positive_score, COALESCE(s.negative_score, 0) AS negative_score, COALESCE(s.neutral_score, 0) AS neutral_score
      FROM TREND_KEYWORD k
      JOIN KEYWORD_STATS s ON k.keyword_id = s.keyword_id
      WHERE s.stat_date = ? AND s.${col} IS NOT NULL
@@ -79,12 +87,20 @@ exports.getPlatformTrends = async (platform) => {
     [maxDate]
   );
 
-  return rows.map((item, index) => ({
-    rank: index + 1,
-    keyword: item.keyword_name,
-    count: item.mention_count,
-    score: item.platform_score,
-  }));
+  return rows.map((item, index) => {
+    const totalSentiment = item.positive_score + item.negative_score + item.neutral_score;
+    const isNegative = totalSentiment > 0 && 
+                       (item.negative_score > item.positive_score) && 
+                       (item.negative_score > item.neutral_score);
+
+    return {
+      rank: index + 1,
+      keyword: item.keyword_name,
+      count: item.mention_count,
+      score: item.platform_score,
+      isNegative: isNegative
+    };
+  });
 };
 
 exports.getAllTrends = async (keyword, date) => {
@@ -162,7 +178,7 @@ exports.getAnalysis = async (keyword, startDate, endDate) => {
 
   // ── 2. 히스토리 (날짜별 언급량) ──────────────────────
   let statsSql = `
-    SELECT stat_date, mention_count, COALESCE(trend_score, 0) AS trend_score,
+    SELECT stat_date, mention_count, COALESCE(trend_score, 0) AS trend_score, 
       COALESCE(youtube_count, 0) AS youtube_count,
       COALESCE(fmkorea_count, 0) AS fmkorea_count,
       COALESCE(ruliweb_count, 0) AS ruliweb_count,
