@@ -243,9 +243,9 @@ export default function SummaryModal({ isOpen, onClose, data, onScrapChange }) {
   };
 
   const allSentimentCounts = detailData?.sentimentCounts?.all;
-  const posScore = Number(allSentimentCounts?.positive ?? detailData?.positive_score) || 0;
-  const neuScore = Number(allSentimentCounts?.neutral ?? detailData?.neutral_score) || 0;
-  const negScore = Number(allSentimentCounts?.negative ?? detailData?.negative_score) || 0;
+  const posScore = Number(detailData?.positive_score) || 0;
+  const neuScore = Number(detailData?.neutral_score) || 0;
+  const negScore = Number(detailData?.negative_score) || 0;
 
   const maxScore = Math.max(posScore, neuScore, negScore);
   
