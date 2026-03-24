@@ -1,7 +1,7 @@
 // src/pages/HomePage.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlayCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, X, Newspaper } from 'lucide-react';  
+import { PlayCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, X, AlertTriangle } from 'lucide-react';  
 import SearchBar from '../components/common/SearchBar';
 import SummaryModal from '../components/home/SummaryModal';
 import InitialWizardModal from '../components/home/InitialWizardModal';
@@ -395,7 +395,15 @@ const HomePage = () => {
           <ul className="flex flex-col gap-2">
             {risingKeywords.slice(0, 5).map((item, index) => (
               <li key={index} onClick={() => openModal({ keyword: item.keyword, rank: item.rank, score: item.score, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type: 'trend' })} className="home-topcard-row flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12">
-                <div className="flex items-center gap-4"><span className="home-topcard-rank font-bold text-blue-600 w-3 text-center">{item.rank}</span><p className="home-topcard-keyword font-medium text-gray-900">{item.keyword}</p></div>
+                <div className="flex items-center gap-4">
+                  <span className="home-topcard-rank font-bold text-blue-600 w-3 text-center">{item.rank}</span>
+                    <div className="flex items-center gap-1.5">
+                      <p className="home-topcard-keyword font-medium text-gray-900">{item.keyword}</p>
+                      {item.isNegative && (
+                        <AlertTriangle className="w-4 h-4 text-yellow-500" title="부정적 언급이 많은 키워드입니다." />
+                      )}
+                    </div>
+                </div>
                 <div className={`home-topcard-change text-xs font-bold ${item.isUp ? 'text-red-500' : item.isUp === false ? 'text-blue-500' : 'text-gray-400'}`}>{item.change}</div>
               </li>
             ))}
@@ -444,7 +452,13 @@ const HomePage = () => {
           <ul className="flex flex-col gap-2">
             {risingPlatforms.map((item, index) => (
               <li key={index} onClick={() => openModal({ keyword: item.keyword, rank: index +1, score: item.count, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type : 'platform' })} className="home-topcard-row flex items-center gap-4 text-sm cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors h-12">
-                <span className="home-topcard-rank font-bold text-blue-600 w-3 text-center">{item.rank || index + 1 }</span><span className="home-topcard-keyword font-medium text-gray-900 whitespace-nowrap">{item.keyword}</span>
+                <span className="home-topcard-rank font-bold text-blue-600 w-3 text-center">{item.rank || index + 1 }</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="home-trend-modal-keyword font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">{item.keyword}</span>
+                    {item.isNegative && (
+                    <AlertTriangle className="w-4 h-4 text-yellow-500" title="부정적 언급이 많은 키워드입니다." />
+                    )}
+                </div>
               </li>
             ))}
           </ul>
@@ -641,7 +655,7 @@ const HomePage = () => {
                   );
                 })}
                 {todayNews.length > 5 && (
-                  <button onClick={() => setVisibleNewsCount(prev => prev === 5 ? todayNews.length : 5)} className="home-news-more-btn w-full mt-1 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium rounded-xl text-sm transition-colors border border-gray-100 flex items-center justify-center gap-1">
+                  <button onClick={() => setVisibleNewsCount(prev => prev === 5 ? 10 : 5)} className="home-news-more-btn w-full mt-1 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium rounded-xl text-sm transition-colors border border-gray-100 flex items-center justify-center gap-1">
                     {visibleNewsCount === 5 ? <><>더보기</> <ChevronDown className="w-4 h-4" /></> : <><>접기</> <ChevronUp className="w-4 h-4" /></>}
                   </button>
                 )}
@@ -671,7 +685,15 @@ const HomePage = () => {
                   <h4 className="home-trend-modal-section-title text-sm font-bold text-gray-400 mb-3 pl-2">1위 ~ 10위</h4>
                   {risingKeywords.slice(0, 10).map((item) => (
                     <div key={item.rank} onClick={() => { setIsTrendModalOpen(false); openModal({ keyword: item.keyword, rank: item.rank, score: item.score, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type: 'trend' }); }} className="home-trend-modal-item group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer">
-                      <div className="flex items-center gap-4"><span className={`home-trend-modal-rank text-lg font-bold w-6 text-center ${item.rank <= 3 ? 'text-indigo-600' : 'text-gray-500'}`}>{item.rank}</span><span className="home-trend-modal-keyword font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">{item.keyword}</span></div>
+                      <div className="flex items-center gap-4">
+                        <span className={`home-trend-modal-rank text-lg font-bold w-6 text-center ${item.rank <= 3 ? 'text-indigo-600' : 'text-gray-500'}`}>{item.rank}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="home-trend-modal-keyword font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">{item.keyword}</span>
+                          {item.isNegative && (
+                            <AlertTriangle className="w-4 h-4 text-yellow-500" title="부정적 언급이 많은 키워드입니다." />
+                          )}
+                        </div>
+                      </div>
                       <span className={`home-trend-modal-change text-xs font-bold ${item.isUp ? 'text-red-500' : item.change === '-' ? 'text-gray-300' : 'text-blue-500'}`}>{item.change}</span>
                     </div>
                   ))}
@@ -680,7 +702,14 @@ const HomePage = () => {
                   <h4 className="home-trend-modal-section-title text-sm font-bold text-gray-400 mb-3 pl-2">11위 ~ 20위</h4>
                   {risingKeywords.slice(10, 20).map((item) => (
                     <div key={item.rank} onClick={() => { setIsTrendModalOpen(false); openModal({ keyword: item.keyword, rank: item.rank, score: item.score, title: item.keyword, desc: `${item.keyword}에 대한 트렌드 요약입니다.`, type: 'trend' }); }} className="home-trend-modal-item group flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer">
-                      <div className="flex items-center gap-4"><span className="home-trend-modal-rank text-lg font-bold w-6 text-center text-gray-400">{item.rank}</span><span className="home-trend-modal-keyword font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">{item.keyword}</span></div>
+                      <div className="flex items-center gap-4"><span className="home-trend-modal-rank text-lg font-bold w-6 text-center text-gray-400">{item.rank}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="home-trend-modal-keyword font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">{item.keyword}</span>
+                          {item.isNegative && (
+                            <AlertTriangle className="w-4 h-4 text-yellow-500" title="부정적 언급이 많은 키워드입니다." />
+                          )}
+                        </div>
+                      </div>
                       <span className={`home-trend-modal-change text-xs font-bold ${item.isUp ? 'text-red-500' : item.change === '-' ? 'text-gray-300' : 'text-blue-500'}`}>{item.change}</span>
                     </div>
                   ))}
