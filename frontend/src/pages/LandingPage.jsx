@@ -141,21 +141,21 @@ const LandingPage = () => {
 
       <div className="relative z-10 mb-12 mt-8">
         <p className="font-bold text-lg mb-4 text-gray-600 tracking-wide">
-          데이터 속 숨겨진 인사이트를 찾다
+          트렌드를 포착하고, 콘텐츠로 연결하다
         </p>
 
         <h1 className="mb-6">
           <img
             src="/PicKeyLogo_indigo.svg"
             alt="PicKey"
-            className="h-[3.75rem] sm:h-[4.5rem] w-auto mx-auto"
+            className="h-[10rem] sm:h-[8rem] w-auto mx-auto"
           />
         </h1>
 
         <p className="text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto text-gray-700 font-medium">
-          빅데이터 분석과 AI 예측으로
+          흐르는 트렌드 속에서 키워드를 발견하고
           <br />
-          마케팅의 새로운 기회를 발견하세요.
+          당신만의 콘텐츠로 한발 앞서 나가보세요
         </p>
       </div>
 
@@ -166,7 +166,7 @@ const LandingPage = () => {
         지금 시작하기
       </button>
 
-      <div className="relative z-10 mt-12 flex flex-wrap justify-center gap-6 font-medium text-gray-500">
+      <div className="relative z-10 mt-12 flex flex-wrap justify-center gap-6 font-medium text-black">
         <Link to="/login" className="hover:text-indigo-600 transition-colors duration-200">
           로그인
         </Link>

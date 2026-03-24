@@ -102,11 +102,11 @@ const Sidebar = ({ isOpen = false, onClose }) => {
     <aside className="hidden lg:flex w-64 h-screen bg-white border-r border-gray-200 p-6 fixed left-0 top-0 font-sans z-50 overflow-y-auto">
       <div className="w-full flex flex-col">
         <h1
-          className="mb-10 cursor-pointer"
+          className="mb-10 cursor-pointer pl-2"
           onClick={() => handleNavigate('/home')}
         >
           <BrandLogo
-            imageHeightClass="h-8"
+            imageHeightClass="h-10"
             textClassName="text-2xl font-bold text-blue-600"
           />
         </h1>
