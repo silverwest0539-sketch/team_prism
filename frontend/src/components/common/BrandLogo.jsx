@@ -8,6 +8,7 @@ const isDarkMode = () => {
 const BrandLogo = ({
   text = 'PicKey',
   imageSrc = '/PicKeyLogo.svg',
+  darkImageSrc = '/PicKeyLogo_lightblue.svg',
   imageHeightClass = 'h-10',
   imageClassName = '',
   textClassName = 'text-4xl font-bold',
@@ -26,13 +27,13 @@ const BrandLogo = ({
     return () => observer.disconnect();
   }, []);
 
-  if (darkMode) {
+  if (darkMode && !darkImageSrc) {
     return <span className={textClassName}>{text}</span>;
   }
 
   return (
     <img
-      src={imageSrc}
+      src={darkMode ? darkImageSrc : imageSrc}
       alt={text}
       className={`${imageHeightClass} w-auto ${imageClassName}`.trim()}
     />
@@ -40,4 +41,3 @@ const BrandLogo = ({
 };
 
 export default BrandLogo;
-
