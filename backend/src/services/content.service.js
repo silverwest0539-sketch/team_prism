@@ -41,12 +41,30 @@ const fallbackTokenizeForNouns = (text) => {
 const extractNounsBatch = (payloadArray) => {
   return new Promise((resolve) => {
     const pythonPath = getPythonPath();
-    
-    // 환경에 맞게 경로 설정 (앞서 수정한 경로 방식 유지)
     const scriptPath = path.join(__dirname, '..', 'utils', 'noun_extractor.py');
 
     const pythonProcess = spawn(pythonPath, [scriptPath]);
     let dataString = '';
+
+    // 타임아웃 방어 로직 추가 (10초)
+    const timeout = setTimeout(() => {
+      console.warn("[Timeout] Python 형태소 분석 응답 지연. 강제 종료 및 폴백 진행");
+      pythonProcess.kill('SIGKILL');
+      resolve(runFallback());
+    }, 10000);
+
+    const runFallback = () => {
+      const fallbackResults = [];
+      payloadArray.forEach(item => {
+        if (item.text) {
+          const nouns = fallbackTokenizeForNouns(item.text);
+          nouns.forEach(noun => {
+            fallbackResults.push({ word: noun, platform: item.platform || 'unknown', type: item.type || 'trend' });
+          });
+        }
+      });
+      return fallbackResults;
+    };
 
     pythonProcess.stdout.on('data', (data) => {
       dataString += data.toString();
@@ -56,34 +74,19 @@ const extractNounsBatch = (payloadArray) => {
       console.error("[Kiwi Error]:", data.toString());
     });
 
-    // Fallback 처리용 헬퍼 함수
-    const runFallback = () => {
-      const fallbackResults = [];
-      payloadArray.forEach(item => {
-        if (item.text) {
-          const nouns = fallbackTokenizeForNouns(item.text);
-          nouns.forEach(noun => {
-            fallbackResults.push({
-              word: noun,
-              platform: item.platform || 'unknown',
-              type: item.type || 'trend'
-            });
-          });
-        }
-      });
-      return fallbackResults;
-    };
-
     pythonProcess.on('close', (code) => {
-      if (code !== 0) {
-        console.warn("Python 형태소 분석 프로세스 비정상 종료. 내장 정규식 필터로 폴백(Fallback)합니다.");
+      clearTimeout(timeout); // 정상 종료 시 타임아웃 해제
+      if (code !== 0 && code !== null) { // null은 우리가 kill 했을 때의 코드
+        console.warn("Python 형태소 분석 프로세스 비정상 종료. 내장 정규식 필터로 폴백합니다.");
         return resolve(runFallback());
       }
+      if (code === null) return; // 타임아웃으로 강제 종료된 경우 이미 resolve 되었으므로 무시
+
       try {
         const results = JSON.parse(dataString);
         resolve(results);
       } catch (e) {
-        console.error("JSON 파싱 오류. 내장 정규식 필터로 폴백(Fallback)합니다:", e);
+        console.error("JSON 파싱 오류. 내장 정규식 필터로 폴백합니다:", e);
         resolve(runFallback());
       }
     });
@@ -268,15 +271,25 @@ exports.getVideos = async (category) => {
   const CACHE_DURATION = 2 * 60 * 60 * 1000;
   const now = Date.now();
 
-  // 1. 캐시 확인
-  if (videoCache[category] && (now - videoCache[category].timestamp < CACHE_DURATION)) {
-    console.log(`📦 [Video Cache] '${category}' - 캐시 데이터 반환`);
-    // 캐시 원본 수정을 방지하기 위해 복사본 반환 권장
-    return JSON.parse(JSON.stringify(videoCache[category].data));
+  if (!videoCache[category]) {
+    videoCache[category] = { data: null, timestamp: 0, promise: null };
   }
 
-  // 2. 실제 API 호출을 담당하는 내부 함수 (재시도 로직 포함)
-  const fetchFromYoutube = async (retryCount = 0) => {
+  const cacheItem = videoCache[category];
+
+  // 1. 캐시 확인
+  if (cacheItem.data && (now - cacheItem.timestamp < CACHE_DURATION)) {
+    console.log(`[Video Cache] '${category}' - 캐시 데이터 반환`);
+    return JSON.parse(JSON.stringify(cacheItem.data));
+  }
+
+  // 2. 중복 호출 방지
+  if (cacheItem.promise) {
+    return await cacheItem.promise;
+  }
+
+  // 3. API 호출 및 재시도 로직
+  const fetchVideosWithRetry = async (retryCount = 0) => {
     const currentKey = getActiveKey();
     console.log(`[Youtube API] '${category}' - 요청 중... (Key Index: ${currentKeyIndex})`);
 
@@ -286,59 +299,85 @@ exports.getVideos = async (category) => {
       
       const apiParams = { 
         part: 'snippet,statistics', chart: 'mostPopular', regionCode: 'KR', 
-        maxResults: 12, 
-        key: currentKey 
+        maxResults: 12, key: currentKey 
       };
-      
       if (categoryId) apiParams.videoCategoryId = categoryId;
       
-      const response = await axios.get('https://www.googleapis.com/youtube/v3/videos', { params: apiParams });
-      return response.data;
+      // 재할당이 가능하도록 반드시 let으로 선언
+      let response = await axios.get('https://www.googleapis.com/youtube/v3/videos', { params: apiParams });
+      
+      // 🚨 방어 로직: items가 아예 없더라도 서버 에러가 나지 않게 빈 배열 기본값 적용
+      const initialItems = response.data?.items || [];
+      
+      // 음악 카테고리가 빈 배열을 반환하는 이슈 대응 (검색 API로 우회)
+      if (initialItems.length === 0 && category === '음악') {
+        console.log(`[Youtube API] '음악' 인기 영상 없음. 검색 API로 우회합니다.`);
+        const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+          params: { 
+            part: 'snippet', q: '인기 KPOP 음악', type: 'video', 
+            regionCode: 'KR', maxResults: 12, order: 'viewCount', key: currentKey 
+          }
+        });
+        
+        // 🚨 방어 로직: 검색 결과에서도 안전하게 추출
+        const searchItems = searchRes.data?.items || [];
+        const videoIds = searchItems.map(i => i.id?.videoId).filter(Boolean).join(',');
+        
+        if (videoIds) {
+          response = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+            params: { part: 'snippet,statistics', id: videoIds, key: currentKey }
+          });
+        }
+      }
+      
+      // 최종 데이터 가공 시에도 모든 속성에 안전 연산자(?.) 적용
+      const finalItems = response.data?.items || [];
+      const videos = finalItems.map(item => ({
+        id: item.id || '', 
+        title: item.snippet?.title || '제목 없음', 
+        channel: item.snippet?.channelTitle || '알 수 없는 채널',
+        views: item.statistics?.viewCount || 0, 
+        publish_time: item.snippet?.publishedAt || new Date().toISOString(),
+        thumbnail: item.snippet?.thumbnails?.medium?.url || '', 
+        scraped_category_name: category || '인기'
+      }));
+
+      // 작업 성공 시 캐시에 데이터 저장
+      videoCache[category] = { data: videos, timestamp: Date.now(), promise: null };
+      return videos;
 
     } catch (error) {
       const isQuotaError = error.response?.status === 403;
-      
       if (isQuotaError && retryCount < API_KEYS.length - 1) {
-        rotateKey(); 
-        return fetchFromYoutube(retryCount + 1); 
+        rotateKey();
+        return await fetchVideosWithRetry(retryCount + 1); 
       }
-      throw error; 
+      
+      console.error(`[Youtube API Error] 최종 에러 (${category}):`, error.response?.data?.error?.message || error.message);
+      videoCache[category].promise = null; 
+      return cacheItem.data || []; 
     }
   };
 
-  // 3. 실행 및 결과 처리
-  try {
-    const apiData = await fetchFromYoutube();
-    
-    // 일관된 데이터 매핑
-    const videos = apiData.items.map(item => ({
-      id: item.id, 
-      title: item.snippet.title, 
-      channel: item.snippet.channelTitle,
-      views: item.statistics.viewCount || 0, 
-      publish_time: item.snippet.publishedAt,
-      thumbnail: item.snippet.thumbnails.medium.url, 
-      scraped_category_name: category || '인기'
-    }));
-
-    videoCache[category] = { data: videos, timestamp: Date.now() };
-    return videos;
-
-  } catch (error) {
-    console.error(`[Youtube API Error] 최종 에러 (${category}):`, error.response?.data?.error?.message || error.message);
-    return videoCache[category]?.data || []; 
-  }
+  cacheItem.promise = fetchVideosWithRetry();
+  return await cacheItem.promise;
 };
 
 // 3. 커뮤니티 인기글 조회
 exports.getCommunityPosts = (platform) => {
   const platformPosts = getCommunityHotPosts(platform) || [];
   
-  // 1. 원본 배열을 복사한 뒤 무작위로 섞습니다. (원본 배열 훼손 방지)
-  const shuffledPosts = [...platformPosts].sort(() => 0.5 - Math.random());
+  // CPU 과부하를 막기 위해 전체 배열 정렬(sort) 대신 필요한 10개만 무작위 추출
+  const maxCount = Math.min(10, platformPosts.length);
+  const selectedPosts = [];
+  const sourceCopy = [...platformPosts];
 
-  // 2. 무작위로 섞인 배열에서 10개를 추출하고 포맷팅합니다.
-  return shuffledPosts.slice(0, 10).map((post, index) => ({
+  for (let i = 0; i < maxCount; i++) {
+    const randomIndex = Math.floor(Math.random() * sourceCopy.length);
+    selectedPosts.push(sourceCopy.splice(randomIndex, 1)[0]);
+  }
+
+  return selectedPosts.map(post => ({
     category: post.category,
     title: post.title || post.Title || post.subject || post.Subject || post.text || "제목 없음", 
     link: post.link || post.url || post.href || post.Link || post.Url || "#"

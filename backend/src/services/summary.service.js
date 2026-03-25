@@ -206,8 +206,10 @@ exports.generateSummary = async (keyword, startDate, endDate) => {
 
     // 생성된 요약본을 DB에 저장 (UPDATE) 및 Lock 해제
     await db.execute(
-      `UPDATE KEYWORD_STATS SET keyword_summary = ? WHERE keyword_id = ? AND stat_date = ?`,
-      [finalSummary, keywordId, targetStatDate]
+      `INSERT INTO KEYWORD_STATS (keyword_id, stat_date, keyword_summary)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE keyword_summary = VALUES(keyword_summary)`,
+      [keywordId, targetStatDate, finalSummary]
     );
     console.log(`💾 [DB Cache] 저장 완료: ${keyword} (${targetStatDate})`);
 

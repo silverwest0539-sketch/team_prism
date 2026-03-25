@@ -3,104 +3,138 @@ const db = require('../database');
 const { toISODate, extractWordCloudData } = require('../utils/formatters');
 
 let searchCache = {};
+let analysisPromises = {};
+
+let trendCache = {
+  rising: { data: null, timestamp: 0, promise: null },
+  platform: {} 
+};
+
+const TREND_CACHE_TTL = 10 * 60 * 1000;
 
 exports.getRisingTrends = async () => {
-  const [[{ maxDate }]] = await db.execute(
-    `SELECT MAX(stat_date) AS maxDate FROM KEYWORD_STATS`
-  );
-  const [[{ prevDate }]] = await db.execute(
-    `SELECT MAX(stat_date) AS prevDate FROM KEYWORD_STATS WHERE stat_date < ?`,
-    [maxDate]
-  );
+  const now = Date.now();
 
-  const [rows] = await db.execute(
-    `SELECT
-       k.keyword_name,
-       t.mention_count                                AS today_count,
-       COALESCE(y.mention_count, 0)                   AS yesterday_count,
-       t.mention_count / COALESCE(y.mention_count, 1) AS growth_ratio,
-       t.trend_score                                  AS trend_score,
-       COALESCE(t.positive_score, 0)                  AS positive_score,
-       COALESCE(t.negative_score, 0)                  AS negative_score,
-       COALESCE(t.neutral_score, 0)                   AS neutral_score
-     FROM TREND_KEYWORD k
-     JOIN KEYWORD_STATS t
-       ON k.keyword_id = t.keyword_id AND t.stat_date = ?
-     LEFT JOIN KEYWORD_STATS y
-       ON k.keyword_id = y.keyword_id AND y.stat_date = ?
-     WHERE t.trend_score > 0
-     ORDER BY t.trend_score DESC
-     LIMIT 20`,
-    [maxDate, prevDate]
-  );
+  // 1. 캐시된 데이터가 유효하면 즉시 반환
+  if (trendCache.rising.data && (now - trendCache.rising.timestamp < TREND_CACHE_TTL)) {
+    return trendCache.rising.data;
+  }
 
-  return rows.map((item, index) => {
-    const todayCount = item.today_count || 0;
-    const yesterdayCount = item.yesterday_count || 0;
-    const base = yesterdayCount === 0 ? 1 : yesterdayCount;
-    const growthRatio = (todayCount - yesterdayCount) / base * 100;
-    const isUp = growthRatio > 0;
-    const isDown = growthRatio < 0;
-    const changeStr = isUp
-      ? `+${growthRatio.toFixed(1)}%`
-      : isDown
-        ? `${growthRatio.toFixed(1)}%`
-        : '0.0%';
-    const totalSentiment = item.positive_score + item.negative_score + item.neutral_score;
-    const isNegative = totalSentiment > 0 && 
-                       (item.negative_score > item.positive_score) && 
-                       (item.negative_score > item.neutral_score);
+  // 2. 이미 누군가 DB 조회를 시작했다면, 끝날 때까지 기다렸다가 그 결과를 공유 (Cache Stampede 방지)
+  if (trendCache.rising.promise) {
+    return await trendCache.rising.promise;
+  }
 
-    return {
-      rank: index + 1,
-      keyword: item.keyword_name,
-      count: todayCount,
-      change: changeStr,
-      isUp: isUp ? true : (isDown ? false : null),
-      trendScore: item.trend_score,
-      isNegative: isNegative
-    };
-  });
+  // 3. 아무도 조회하고 있지 않다면 내가 조회를 시작하고 Promise를 저장
+  trendCache.rising.promise = (async () => {
+    try {
+      const [[{ maxDate }]] = await db.execute(`SELECT MAX(stat_date) AS maxDate FROM KEYWORD_STATS`);
+      const [[{ prevDate }]] = await db.execute(`SELECT MAX(stat_date) AS prevDate FROM KEYWORD_STATS WHERE stat_date < ?`, [maxDate]);
+
+      const [rows] = await db.execute(
+        `SELECT
+           k.keyword_name,
+           t.mention_count                                AS today_count,
+           COALESCE(y.mention_count, 0)                   AS yesterday_count,
+           t.mention_count / COALESCE(y.mention_count, 1) AS growth_ratio,
+           t.trend_score                                  AS trend_score,
+           COALESCE(t.positive_score, 0)                  AS positive_score,
+           COALESCE(t.negative_score, 0)                  AS negative_score,
+           COALESCE(t.neutral_score, 0)                   AS neutral_score
+         FROM TREND_KEYWORD k
+         JOIN KEYWORD_STATS t ON k.keyword_id = t.keyword_id AND t.stat_date = ?
+         LEFT JOIN KEYWORD_STATS y ON k.keyword_id = y.keyword_id AND y.stat_date = ?
+         WHERE t.trend_score > 0
+         ORDER BY t.trend_score DESC
+         LIMIT 20`,
+        [maxDate, prevDate]
+      );
+
+      const formattedData = rows.map((item, index) => {
+        const todayCount = item.today_count || 0;
+        const yesterdayCount = item.yesterday_count || 0;
+        const base = yesterdayCount === 0 ? 1 : yesterdayCount;
+        const growthRatio = (todayCount - yesterdayCount) / base * 100;
+        const isUp = growthRatio > 0;
+        const isDown = growthRatio < 0;
+        const changeStr = isUp ? `+${growthRatio.toFixed(1)}%` : isDown ? `${growthRatio.toFixed(1)}%` : '0.0%';
+        const totalSentiment = item.positive_score + item.negative_score + item.neutral_score;
+        const isNegative = totalSentiment > 0 && (item.negative_score > item.positive_score) && (item.negative_score > item.neutral_score);
+
+        return {
+          rank: index + 1, keyword: item.keyword_name, count: todayCount, change: changeStr,
+          isUp: isUp ? true : (isDown ? false : null), trendScore: item.trend_score, isNegative: isNegative
+        };
+      });
+
+      // 조회 완료 후 캐시 저장 및 promise 초기화
+      trendCache.rising = { data: formattedData, timestamp: Date.now(), promise: null };
+      return formattedData;
+    } catch (error) {
+      trendCache.rising.promise = null; // 에러 발생 시 초기화
+      throw error;
+    }
+  })();
+
+  return await trendCache.rising.promise;
 };
 
 exports.getPlatformTrends = async (platform) => {
-  const col = {
-    youtube: 'youtube_score',
-    fmkorea: 'fmkorea_score',
-    ruliweb: 'ruliweb_score',
-    theqoo: 'theqoo_score',
-    dcinside: 'dcinside_score',
-    instiz: 'instiz_score'
-  }[platform] || 'youtube_score';
+  const now = Date.now();
+  
+  // 플랫폼별 캐시 객체 초기화
+  if (!trendCache.platform[platform]) {
+    trendCache.platform[platform] = { data: null, timestamp: 0, promise: null };
+  }
 
-  const [[{ maxDate }]] = await db.execute(
-    `SELECT MAX(stat_date) AS maxDate FROM KEYWORD_STATS`
-  );
+  const cacheItem = trendCache.platform[platform];
 
-  const [rows] = await db.execute(
-    `SELECT k.keyword_name, s.mention_count, s.${col} AS platform_score, COALESCE(s.positive_score, 0) AS positive_score, COALESCE(s.negative_score, 0) AS negative_score, COALESCE(s.neutral_score, 0) AS neutral_score
-     FROM TREND_KEYWORD k
-     JOIN KEYWORD_STATS s ON k.keyword_id = s.keyword_id
-     WHERE s.stat_date = ? AND s.${col} IS NOT NULL
-     ORDER BY s.${col} DESC
-     LIMIT 5`,
-    [maxDate]
-  );
+  if (cacheItem.data && (now - cacheItem.timestamp < TREND_CACHE_TTL)) {
+    return cacheItem.data;
+  }
 
-  return rows.map((item, index) => {
-    const totalSentiment = item.positive_score + item.negative_score + item.neutral_score;
-    const isNegative = totalSentiment > 0 && 
-                       (item.negative_score > item.positive_score) && 
-                       (item.negative_score > item.neutral_score);
+  if (cacheItem.promise) {
+    return await cacheItem.promise;
+  }
 
-    return {
-      rank: index + 1,
-      keyword: item.keyword_name,
-      count: item.mention_count,
-      score: item.platform_score,
-      isNegative: isNegative
-    };
-  });
+  cacheItem.promise = (async () => {
+    try {
+      const col = {
+        youtube: 'youtube_score', fmkorea: 'fmkorea_score', ruliweb: 'ruliweb_score',
+        theqoo: 'theqoo_score', dcinside: 'dcinside_score', instiz: 'instiz_score'
+      }[platform] || 'youtube_score';
+
+      const [[{ maxDate }]] = await db.execute(`SELECT MAX(stat_date) AS maxDate FROM KEYWORD_STATS`);
+
+      const [rows] = await db.execute(
+        `SELECT k.keyword_name, s.mention_count, s.${col} AS platform_score, COALESCE(s.positive_score, 0) AS positive_score, COALESCE(s.negative_score, 0) AS negative_score, COALESCE(s.neutral_score, 0) AS neutral_score
+         FROM TREND_KEYWORD k
+         JOIN KEYWORD_STATS s ON k.keyword_id = s.keyword_id
+         WHERE s.stat_date = ? AND s.${col} IS NOT NULL
+         ORDER BY s.${col} DESC
+         LIMIT 5`,
+        [maxDate]
+      );
+
+      const formattedData = rows.map((item, index) => {
+        const totalSentiment = item.positive_score + item.negative_score + item.neutral_score;
+        const isNegative = totalSentiment > 0 && (item.negative_score > item.positive_score) && (item.negative_score > item.neutral_score);
+
+        return {
+          rank: index + 1, keyword: item.keyword_name, count: item.mention_count,
+          score: item.platform_score, isNegative: isNegative
+        };
+      });
+
+      trendCache.platform[platform] = { data: formattedData, timestamp: Date.now(), promise: null };
+      return formattedData;
+    } catch (error) {
+      trendCache.platform[platform].promise = null;
+      throw error;
+    }
+  })();
+
+  return await cacheItem.promise;
 };
 
 exports.getAllTrends = async (keyword, date) => {
@@ -121,7 +155,7 @@ exports.getAllTrends = async (keyword, date) => {
     params.push(`%${keyword}%`);
   }
 
-  sql += ` ORDER BY s.stat_date DESC, s.mention_count DESC`;
+  sql += ` ORDER BY s.stat_date DESC, s.mention_count DESC LIMIT 200`;
 
   const [rows] = await db.execute(sql, params);
   return rows;
@@ -139,279 +173,290 @@ const rotateKey = () => {
 exports.getAnalysis = async (keyword, startDate, endDate) => {
   const now = Date.now();
 
-  // 캐시 히트 시 is_person만 DB에서 새로 가져오기
+  // 1. 캐시 히트 시 즉시 반환
   if (!startDate && !endDate && searchCache[keyword] && (now - searchCache[keyword].timestamp < 60 * 60 * 1000)) {
-    const [[fresh]] = await db.execute(
-      `SELECT is_person FROM TREND_KEYWORD WHERE keyword_name = ?`, [keyword]
-    );
-    return { ...searchCache[keyword].data, is_person: fresh?.is_person ?? 0 };
+    return searchCache[keyword].data;
   }
 
-  // ── 1. 키워드 기본 정보 ───────────────────────────────
-  const [kwRows] = await db.execute(
-    `SELECT keyword_id, keyword_name, is_person FROM TREND_KEYWORD WHERE keyword_name = ?`,
-    [keyword]
-  );
-  if (kwRows.length === 0) return { found: false, message: '데이터 없음' };
-
-  const keywordId = kwRows[0].keyword_id;
-  const keywordName = kwRows[0].keyword_name;
-  const isPerson = kwRows[0].is_person;
-
-  // 가장 최근 날짜의 언급량 + 트렌드 스코어
-  const [latestStats] = await db.execute(
-    `SELECT 
-       mention_count, 
-       COALESCE(trend_score, 0) AS trend_score,
-       COALESCE(positive_score, 0) AS positive_score,
-       COALESCE(neutral_score, 0) AS neutral_score,
-       COALESCE(negative_score, 0) AS negative_score
-     FROM KEYWORD_STATS
-     WHERE keyword_id = ? ORDER BY stat_date DESC LIMIT 1`,
-    [keywordId]
-  );
-  const totalMentions = latestStats.length > 0 ? latestStats[0].mention_count : 0;
-  const trendScore = latestStats.length > 0 ? latestStats[0].trend_score : 0;
-  const positiveScore = latestStats.length > 0 ? latestStats[0].positive_score : 0;
-  const neutralScore = latestStats.length > 0 ? latestStats[0].neutral_score : 0;
-  const negativeScore = latestStats.length > 0 ? latestStats[0].negative_score : 0;
-
-  // ── 2. 히스토리 (날짜별 언급량) ──────────────────────
-  let statsSql = `
-    SELECT stat_date, mention_count, COALESCE(trend_score, 0) AS trend_score, 
-      COALESCE(youtube_count, 0) AS youtube_count,
-      COALESCE(fmkorea_count, 0) AS fmkorea_count,
-      COALESCE(ruliweb_count, 0) AS ruliweb_count,
-      COALESCE(instiz_count, 0) AS instiz_count,
-      COALESCE(theqoo_count, 0) AS theqoo_count,
-      COALESCE(dcinside_count, 0) AS dcinside_count
-    FROM KEYWORD_STATS
-    WHERE keyword_id = ?
-  `;
-
-  const statsParams = [keywordId];
-
-  if (startDate) {
-    statsSql += ` AND stat_date >= ?`;
-    statsParams.push(startDate);
-  }
-  if (endDate) {
-    statsSql += ` AND stat_date <= ?`;
-    statsParams.push(endDate);
-  }
-  statsSql += ` ORDER BY stat_date ASC`;
-
-  const [statsRows] = await db.execute(statsSql, statsParams);
-
-  const history = statsRows.map(row => {
-    let dateStr = "";
-    if (row.stat_date) {
-      // 시간대(Timezone) 문제 해결: 한국 시간에 맞게 날짜 오프셋 보정
-      const dateObj = new Date(row.stat_date);
-      const offset = dateObj.getTimezoneOffset() * 60000;
-      const localDate = new Date(dateObj.getTime() - offset);
-
-      // 프론트엔드가 요구하는 'YYYYMMDD' 형식으로 변환
-      dateStr = localDate.toISOString().slice(0, 10).replace(/-/g, '');
-    }
-
-    return {
-      date: dateStr,
-      mentions: row.mention_count || 0,
-      youtube: row.youtube_count || 0,
-      fmkorea: row.fmkorea_count || 0,
-      ruliweb: row.ruliweb_count || 0,
-      theqoo: row.theqoo_count || 0,
-      dcinside: row.dcinside_count || 0,
-      instiz: row.instiz_count || 0,
-      score: row.trend_score || 0,
-    };
-  });
-
-  // ── 3. 댓글 예시 ─────────────────────────────────────
-  let countSql = `
-    SELECT 
-      u.platform,
-      COUNT(*) as total,
-      SUM(CASE WHEN u.sentiment_label = 'positive' THEN 1 ELSE 0 END) as positive_count,
-      SUM(CASE WHEN u.sentiment_label = 'negative' THEN 1 ELSE 0 END) as negative_count,
-      SUM(CASE WHEN u.sentiment_label = 'neutral' THEN 1 ELSE 0 END) as neutral_count
-    FROM USAGE_EXAMPLE u
-    JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
-    WHERE ke.keyword_id = ?
-  `;
-
-  const countParams = [keywordId];
-
-  // 프론트엔드에서 넘겨준 날짜로 댓글도 필터링
-  if (startDate) {
-    countSql += ` AND u.collected_date >= ?`;
-    countParams.push(startDate);
-  }
-  if (endDate) {
-    countSql += ` AND u.collected_date <= ?`;
-    countParams.push(endDate);
-  }
-  countSql += ` GROUP BY u.platform`;
-  const [countRows] = await db.execute(countSql, countParams);
-
-  let totalCommentCount = 0;
-  const sentimentCounts = {
-    all: { positive: 0, negative: 0, neutral: 0 }
-  };
-
-  countRows.forEach(row => {
-    totalCommentCount += row.total;
-    const pos = Number(row.positive_count) || 0;
-    const neg = Number(row.negative_count) || 0;
-    const neu = Number(row.neutral_count) || 0;
-
-    // 전체 합산
-    sentimentCounts.all.positive += pos;
-    sentimentCounts.all.negative += neg;
-    sentimentCounts.all.neutral += neu;
-
-    // 플랫폼별 합산
-    sentimentCounts[row.platform] = { positive: pos, negative: neg, neutral: neu };
-  });
-
-  let commentsSql = `
-      SELECT u.platform, u.url, u.content, u.collected_date, u.sentiment_label
-      FROM USAGE_EXAMPLE u
-      JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
-      WHERE ke.keyword_id = ?
-  `;
-  const commentsParams = [keywordId];
-
-  if (startDate) {
-    commentsSql += ` AND u.collected_date >= ?`;
-    commentsParams.push(startDate);
-  }
-  if (endDate) {
-    commentsSql += ` AND u.collected_date <= ?`;
-    commentsParams.push(endDate);
+  // 2. 동시 요청 중복 방지 (Cache Stampede 방지)
+  if (!startDate && !endDate && analysisPromises[keyword]) {
+    return await analysisPromises[keyword];
   }
 
-  // 최신순 정렬
-  commentsSql += ` ORDER BY u.collected_date DESC LIMIT 70`;
+  // 3. 실제 조회 작업 시작 및 Promise 등록
+  const analysisTask = (async () => {
+    try {
+      // ── 1. 키워드 기본 정보 ───────────────────────────────
+      const [kwRows] = await db.execute(
+        `SELECT keyword_id, keyword_name, is_person FROM TREND_KEYWORD WHERE keyword_name = ?`,
+        [keyword]
+      );
+      if (kwRows.length === 0) return { found: false, message: '데이터 없음' };
 
-  const [exampleRows] = await db.execute(commentsSql, commentsParams);
+      const keywordId = kwRows[0].keyword_id;
+      const keywordName = kwRows[0].keyword_name;
+      const isPerson = kwRows[0].is_person;
 
-  const parsedComments = exampleRows.map(row => {
-    // DB의 날짜 데이터를 YYYY-MM-DD 형식의 문자열로 안전하게 변환
-    let formattedDate = null;
-    if (row.collected_date) {
-      const dateObj = new Date(row.collected_date);
-      // 유효한 날짜인지 체크
-      if (!isNaN(dateObj)) {
-        // 한국 시간(KST)을 고려한 오프셋 적용 후 변환 (선택 사항이나 권장됨)
-        const offset = dateObj.getTimezoneOffset() * 60000;
-        const localDate = new Date(dateObj.getTime() - offset);
-        formattedDate = localDate.toISOString().split('T')[0];
+      // 가장 최근 날짜의 언급량 + 트렌드 스코어
+      const [latestStats] = await db.execute(
+        `SELECT 
+           mention_count, 
+           COALESCE(trend_score, 0) AS trend_score,
+           COALESCE(positive_score, 0) AS positive_score,
+           COALESCE(neutral_score, 0) AS neutral_score,
+           COALESCE(negative_score, 0) AS negative_score
+         FROM KEYWORD_STATS
+         WHERE keyword_id = ? ORDER BY stat_date DESC LIMIT 1`,
+        [keywordId]
+      );
+      const totalMentions = latestStats.length > 0 ? latestStats[0].mention_count : 0;
+      const trendScore = latestStats.length > 0 ? latestStats[0].trend_score : 0;
+      const positiveScore = latestStats.length > 0 ? latestStats[0].positive_score : 0;
+      const neutralScore = latestStats.length > 0 ? latestStats[0].neutral_score : 0;
+      const negativeScore = latestStats.length > 0 ? latestStats[0].negative_score : 0;
+
+      // ── 2. 히스토리 쿼리 준비 ──────────────────────
+      let statsSql = `
+        SELECT stat_date, mention_count, COALESCE(trend_score, 0) AS trend_score, 
+          COALESCE(youtube_count, 0) AS youtube_count,
+          COALESCE(fmkorea_count, 0) AS fmkorea_count,
+          COALESCE(ruliweb_count, 0) AS ruliweb_count,
+          COALESCE(instiz_count, 0) AS instiz_count,
+          COALESCE(theqoo_count, 0) AS theqoo_count,
+          COALESCE(dcinside_count, 0) AS dcinside_count
+        FROM KEYWORD_STATS
+        WHERE keyword_id = ?
+      `;
+      const statsParams = [keywordId];
+
+      if (startDate) {
+        statsSql += ` AND stat_date >= ?`;
+        statsParams.push(startDate);
       }
-    }
+      if (endDate) {
+        statsSql += ` AND stat_date <= ?`;
+        statsParams.push(endDate);
+      }
+      statsSql += ` ORDER BY stat_date ASC`;
 
-    return {
-      source: row.platform,
-      text: row.content,
-      link: row.url,
-      date: formattedDate, // 추가된 날짜 데이터
-      sentiment: row.sentiment_label || 'neutral',
-    };
-  });
+      // ── 3. 댓글 집계 쿼리 준비 ─────────────────────────────────────
+      let countSql = `
+        SELECT 
+          u.platform,
+          COUNT(*) as total,
+          SUM(CASE WHEN u.sentiment_label = 'positive' THEN 1 ELSE 0 END) as positive_count,
+          SUM(CASE WHEN u.sentiment_label = 'negative' THEN 1 ELSE 0 END) as negative_count,
+          SUM(CASE WHEN u.sentiment_label = 'neutral' THEN 1 ELSE 0 END) as neutral_count
+        FROM USAGE_EXAMPLE u
+        JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
+        WHERE ke.keyword_id = ?
+      `;
+      const countParams = [keywordId];
 
-  const wordCloudData = await extractWordCloudData(parsedComments, keyword);
+      if (startDate) {
+        countSql += ` AND u.collected_date >= ?`;
+        countParams.push(startDate);
+      }
+      if (endDate) {
+        countSql += ` AND u.collected_date <= ?`;
+        countParams.push(endDate);
+      }
+      countSql += ` GROUP BY u.platform`;
 
+      // ── 4. 댓글 목록 쿼리 준비 ─────────────────────────────────────
+      let commentsSql = `
+          SELECT u.platform, u.url, u.content, u.collected_date, u.sentiment_label
+          FROM USAGE_EXAMPLE u
+          JOIN KEYWORD_EXAMPLE ke ON u.example_id = ke.example_id
+          WHERE ke.keyword_id = ?
+      `;
+      const commentsParams = [keywordId];
 
-  // ── 4. 유튜브 영상 검색 ───────────────────────────────
-  let relatedVideos = [];
+      if (startDate) {
+        commentsSql += ` AND u.collected_date >= ?`;
+        commentsParams.push(startDate);
+      }
+      if (endDate) {
+        commentsSql += ` AND u.collected_date <= ?`;
+        commentsParams.push(endDate);
+      }
+      commentsSql += ` ORDER BY u.collected_date DESC LIMIT 70`;
 
-  if (API_KEYS.length > 0 && keyword) {
-    const fetchYoutubeWithRotation = async (retryCount = 0) => {
-      const currentKey = getActiveKey();
+      // 🚀 핵심 최적화: 3개의 무거운 쿼리를 병렬로 동시 실행
+      const [
+        [statsRows],
+        [countRows],
+        [exampleRows]
+      ] = await Promise.all([
+        db.execute(statsSql, statsParams),
+        db.execute(countSql, countParams),
+        db.execute(commentsSql, commentsParams)
+      ]);
 
-      try {
-        const threeDaysAgo = new Date();
-        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-        const searchParams = {
-          part: 'snippet', q: keyword, type: 'video',
-          maxResults: 10, key: currentKey, regionCode: 'KR', order: 'viewCount', publishedAfter: threeDaysAgo.toISOString()
-        };
-        // if (startDate) searchParams.publishedAfter  = toISODate(startDate);
-        // if (endDate)   searchParams.publishedBefore = toISODate(endDate, true);
-
-        const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', { params: searchParams });
-        const videoIds = searchRes.data.items.map(i => i.id.videoId).join(',');
-        if (!videoIds) return [];
-
-        const videoRes = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
-          params: { part: 'snippet,statistics', id: videoIds, key: currentKey },
-        });
-        return videoRes.data.items.map(item => ({
-          id: item.id,
-          title: item.snippet.title,
-          channel: item.snippet.channelTitle,
-          views: parseInt(item.statistics.viewCount || 0),
-          thumbnail: item.snippet.thumbnails.medium.url,
-          publish_time: item.snippet.publishedAt,
-        }))
-          .filter(video =>
-            /[가-힣]/.test(video.title || '')
-          );
-      } catch (err) {
-        const isQuotaError = err.response?.status === 403;
-        if (isQuotaError && retryCount < API_KEYS.length - 1) {
-          console.log(`🔄 [Trend API Rotation] 할당량 초과로 키 교체 (Index: ${currentKeyIndex})`);
-          rotateKey();
-          return fetchYoutubeWithRotation(retryCount + 1);
+      // --- 데이터 가공 ---
+      const history = statsRows.map(row => {
+        let dateStr = "";
+        if (row.stat_date) {
+          const dateObj = new Date(row.stat_date);
+          const offset = dateObj.getTimezoneOffset() * 60000;
+          const localDate = new Date(dateObj.getTime() - offset);
+          dateStr = localDate.toISOString().slice(0, 10).replace(/-/g, '');
         }
-        console.error('❌ 유튜브 API 최종 실패:', err.message);
-        return [];
+
+        return {
+          date: dateStr,
+          mentions: row.mention_count || 0,
+          youtube: row.youtube_count || 0,
+          fmkorea: row.fmkorea_count || 0,
+          ruliweb: row.ruliweb_count || 0,
+          theqoo: row.theqoo_count || 0,
+          dcinside: row.dcinside_count || 0,
+          instiz: row.instiz_count || 0,
+          score: row.trend_score || 0,
+        };
+      });
+
+      let totalCommentCount = 0;
+      const sentimentCounts = {
+        all: { positive: 0, negative: 0, neutral: 0 }
+      };
+
+      countRows.forEach(row => {
+        totalCommentCount += row.total;
+        const pos = Number(row.positive_count) || 0;
+        const neg = Number(row.negative_count) || 0;
+        const neu = Number(row.neutral_count) || 0;
+
+        sentimentCounts.all.positive += pos;
+        sentimentCounts.all.negative += neg;
+        sentimentCounts.all.neutral += neu;
+
+        sentimentCounts[row.platform] = { positive: pos, negative: neg, neutral: neu };
+      });
+
+      const parsedComments = exampleRows.map(row => {
+        let formattedDate = null;
+        if (row.collected_date) {
+          const dateObj = new Date(row.collected_date);
+          if (!isNaN(dateObj)) {
+            const offset = dateObj.getTimezoneOffset() * 60000;
+            const localDate = new Date(dateObj.getTime() - offset);
+            formattedDate = localDate.toISOString().split('T')[0];
+          }
+        }
+
+        return {
+          source: row.platform,
+          text: row.content,
+          link: row.url,
+          date: formattedDate,
+          sentiment: row.sentiment_label || 'neutral',
+        };
+      });
+
+      const wordCloudData = await extractWordCloudData(parsedComments, keyword);
+
+      // ── 5. 유튜브 영상 검색 ───────────────────────────────
+      let relatedVideos = [];
+
+      if (API_KEYS.length > 0 && keyword) {
+        const fetchYoutubeWithRotation = async (retryCount = 0) => {
+          const currentKey = getActiveKey();
+
+          try {
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            const searchParams = {
+              part: 'snippet', q: keyword, type: 'video',
+              maxResults: 10, key: currentKey, regionCode: 'KR', order: 'viewCount', publishedAfter: threeDaysAgo.toISOString()
+            };
+
+            const searchRes = await axios.get('https://www.googleapis.com/youtube/v3/search', { params: searchParams });
+            const videoIds = searchRes.data.items.map(i => i.id.videoId).join(',');
+            if (!videoIds) return [];
+
+            const videoRes = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+              params: { part: 'snippet,statistics', id: videoIds, key: currentKey },
+            });
+            return videoRes.data.items.map(item => ({
+              id: item.id,
+              title: item.snippet.title,
+              channel: item.snippet.channelTitle,
+              views: parseInt(item.statistics.viewCount || 0),
+              thumbnail: item.snippet.thumbnails.medium.url,
+              publish_time: item.snippet.publishedAt,
+            }))
+              .filter(video =>
+                /[가-힣]/.test(video.title || '')
+              );
+          } catch (err) {
+            const isQuotaError = err.response?.status === 403;
+            if (isQuotaError && retryCount < API_KEYS.length - 1) {
+              console.log(`[Trend API Rotation] 할당량 초과로 키 교체 (Index: ${currentKeyIndex})`);
+              rotateKey();
+              return fetchYoutubeWithRotation(retryCount + 1);
+            }
+            console.error('유튜브 API 최종 실패:', err.message);
+            return [];
+          }
+        };
+        relatedVideos = await fetchYoutubeWithRotation();
       }
-    };
-    relatedVideos = await fetchYoutubeWithRotation();
+
+      if (relatedVideos.length === 0) {
+        const youtubeComments = parsedComments.filter(c => c.source.toLowerCase().includes('youtube'));
+        relatedVideos = youtubeComments.slice(0, 3).map((c, i) => ({
+          id: `local-${i}`,
+          title: c.text.length > 50 ? c.text.substring(0, 50) + '...' : c.text,
+          channel: 'YouTube 반응 (Local)',
+          views: 0,
+          thumbnail: 'https://via.placeholder.com/320x180/E5E7EB/9CA3AF?text=No+Video',
+          publish_time: new Date().toISOString(),
+        }));
+      }
+
+      const finalResponse = {
+        found: true,
+        keyword: keywordName,
+        is_person: isPerson,
+        totalMentions,
+        positive_score: positiveScore,
+        neutral_score: neutralScore,
+        negative_score: negativeScore,
+        history,
+        totalCommentCount,
+        sentimentCounts,
+        comments: parsedComments,
+        wordCloud: wordCloudData,
+        videos: relatedVideos,
+      };
+
+      if (!startDate && !endDate) {
+        searchCache[keyword] = { data: finalResponse, timestamp: now };
+      }
+
+      return finalResponse;
+
+    } catch (error) {
+      throw error;
+    } finally {
+      // 성공/실패 무관하게 Promise 정리
+      delete analysisPromises[keyword];
+    }
+  })();
+
+  // 날짜 필터 없는 요청만 Promise 등록 (날짜 필터 있는 요청은 캐시 대상 아님)
+  if (!startDate && !endDate) {
+    analysisPromises[keyword] = analysisTask;
   }
 
-  if (relatedVideos.length === 0) {
-    const youtubeComments = parsedComments.filter(c => c.source.toLowerCase().includes('youtube'));
-    relatedVideos = youtubeComments.slice(0, 3).map((c, i) => ({
-      id: `local-${i}`,
-      title: c.text.length > 50 ? c.text.substring(0, 50) + '...' : c.text,
-      channel: 'YouTube 반응 (Local)',
-      views: 0,
-      thumbnail: 'https://via.placeholder.com/320x180/E5E7EB/9CA3AF?text=No+Video',
-      publish_time: new Date().toISOString(),
-    }));
-  }
-
-  const finalResponse = {
-    found: true,
-    keyword: keywordName,
-    is_person: isPerson,
-    totalMentions,
-    positive_score: positiveScore,
-    neutral_score: neutralScore,
-    negative_score: negativeScore,
-    history,
-    totalCommentCount,
-    sentimentCounts,
-    comments: parsedComments,
-    wordCloud: wordCloudData,
-    videos: relatedVideos,
-  };
-
-  if (!startDate && !endDate && relatedVideos.length > 0) {
-    searchCache[keyword] = { data: finalResponse, timestamp: now };
-  }
-
-  return finalResponse;
+  return await analysisTask;
 };
 
 // ── 5. 검색어 자동완성 (빠른 완성) ───────────────────────────────
 exports.getAutocomplete = async (prefix) => {
   if (!prefix) return [];
 
-  // 입력한 단어가 포함된(LIKE 단어%) 키워드를 최대 10개까지 조회
   const [rows] = await db.execute(
     `SELECT keyword_name 
      FROM TREND_KEYWORD 
