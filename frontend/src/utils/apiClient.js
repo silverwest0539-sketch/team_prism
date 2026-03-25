@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { resetThemeToLight } from './theme';
+import { clearStoredToken, getStoredToken } from './authToken';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:5000/api';
 
@@ -22,7 +23,7 @@ const apiClient = axios.create({
 
 // 요청 인터셉터 — sessionStorage에 토큰이 있으면 자동 첨부
 apiClient.interceptors.request.use((config) => {
-  const token = window.sessionStorage.getItem('token');
+  const token = getStoredToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -34,7 +35,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      window.sessionStorage.removeItem('token');
+      clearStoredToken();
       window.sessionStorage.removeItem('user');
       resetThemeToLight();
 

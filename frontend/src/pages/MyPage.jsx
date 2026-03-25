@@ -4,8 +4,10 @@ import { ChevronRight, X, Shield, Trash } from 'lucide-react';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
+import { clearStoredToken } from '../utils/authToken';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { showToast } from '../utils/toast';
+import { createAndStoreOAuthState } from '../utils/oauthState';
 // 스크랩 페이지 컴포넌트 불러오기
 import ScrapPage from '../components/mypage/ScrapPage';
 import SavedPromptsSection from '../components/mypage/SavedPromptsSection';
@@ -149,7 +151,8 @@ const MyPage = () => {
     } else {
       const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
       const REDIRECT_URI = `${window.location.origin}/oauth/callback/kakao`;
-      window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+      const state = createAndStoreOAuthState('kakao');
+      window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&state=${state}`;
     }
   };
 
@@ -174,7 +177,7 @@ const MyPage = () => {
     } else {
       const NAVER_CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID;
       const REDIRECT_URI = `${window.location.origin}/oauth/callback/naver`;
-      const state = Math.random().toString(36).substring(3, 14);
+      const state = createAndStoreOAuthState('naver');
       window.location.href = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${state}`;
     }
   };
@@ -228,7 +231,7 @@ const MyPage = () => {
       if (response.data.success) {
         showToast(response.data.message || TOAST_MESSAGE.WITHDRAW_SUCCESS, { type: 'success' });
         window.sessionStorage.removeItem(STORAGE_KEY.USER);
-        window.sessionStorage.removeItem('token');
+        clearStoredToken();
         window.localStorage.removeItem(`hasSeenWizard_${userInfo.email}`);
         window.location.href = ROUTE.LOGIN; 
       }

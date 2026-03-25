@@ -9,6 +9,7 @@ import { showToast } from '../utils/toast';
 import { getStoredUser } from '../utils/authStorage';
 import { toApiUrl } from '../utils/apiClient';
 import { createHttpError, safeParseJson } from '../utils/fetchError';
+import { getAuthorizationHeader } from '../utils/authToken';
 
 const LOGIN_REQUIRED_TOAST = '\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD55C \uC11C\uBE44\uC2A4\uC785\uB2C8\uB2E4.';
 const DEFAULT_GENERATE_ERROR = '\uD504\uB86C\uD504\uD2B8 \uC0DD\uC131 \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC5B4\uC694. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574 \uC8FC\uC138\uC694.';
@@ -90,7 +91,7 @@ const CreationPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.sessionStorage.getItem('token')}`
+          ...getAuthorizationHeader(),
         },
         body: JSON.stringify(inputData),
       });
@@ -172,7 +173,7 @@ const CreationPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.sessionStorage.getItem('token')}`
+          ...getAuthorizationHeader(),
         },
         body: JSON.stringify({
           email: userEmail,

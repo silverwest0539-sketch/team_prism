@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Moon, Sun, X } from 'lucide-react'; // Settings 아이콘은 마이페이지 메뉴 이동으로 사용하지 않아 제거됨
 import BrandLogo from '../common/BrandLogo';
 import { getStoredUser } from '../../utils/authStorage';
+import { clearStoredToken } from '../../utils/authToken';
 import { THEMES, getStoredTheme, applyTheme, saveTheme, toggleTheme, resetThemeToLight } from '../../utils/theme';
 
 const MAIN_MENUS = [
@@ -85,7 +86,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
 
   const confirmLogout = () => {
     setIsLogoutConfirmOpen(false);
-    window.sessionStorage.removeItem('token');
+    clearStoredToken();
     window.sessionStorage.removeItem('user');
     resetThemeToLight();
     setTheme(THEMES.LIGHT);

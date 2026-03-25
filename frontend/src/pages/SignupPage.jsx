@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
 import BrandLogo from '../components/common/BrandLogo';
@@ -224,7 +224,7 @@ const SignupPage = () => {
         clearFieldError('emailAuth');
         showToast('이메일 인증이 완료되었습니다.', { type: 'success' });
       }
-    } catch (error) {
+    } catch {
       setFieldError('emailCode', '인증번호가 일치하지 않거나 만료되었습니다.');
     }
   };

@@ -4,6 +4,7 @@ import { BookmarkSimple, SortAscending } from '@phosphor-icons/react';
 import { showToast } from '../../utils/toast';
 import { toApiUrl } from '../../utils/apiClient';
 import { createHttpError, safeParseJson, toFriendlyFetchErrorMessage } from '../../utils/fetchError';
+import { getAuthorizationHeader } from '../../utils/authToken';
 import PaginationBar from '../common/PaginationBar';
 
 const formatSavedAt = (value) => {
@@ -96,6 +97,14 @@ const SavedPromptsSection = ({ email = '' }) => {
     return '';
   };
 
+  const normalizeIndustryLabel = (value = '') => {
+    const normalized = normalizeText(value);
+    if (!normalized) return '';
+    if (normalized.includes('크리에이터')) return '크리에이터';
+    if (normalized.includes('마케터')) return '마케터';
+    return normalized;
+  };
+
   const extractPurposeFromPrompt = (prompt = '') => {
     const text = String(prompt || '').trim();
     if (!text) return '';
@@ -162,9 +171,9 @@ const SavedPromptsSection = ({ email = '' }) => {
   };
 
   const getPromptIndustry = (item = {}) => {
-    const raw = String(item.industry || '').trim();
+    const raw = normalizeIndustryLabel(item.industry);
     if (raw) return raw;
-    return extractIndustryFromPrompt(item.prompt);
+    return normalizeIndustryLabel(extractIndustryFromPrompt(item.prompt));
   };
 
   const getPromptPurpose = (item = {}) => {
@@ -197,6 +206,22 @@ const SavedPromptsSection = ({ email = '' }) => {
     return cleanAdditionalValue(extractOtherRequestsFromPrompt(item.prompt));
   };
 
+  const getMetaBadgePresentation = (label = '', hasDualBadges = false) => {
+    const length = String(label || '').trim().length;
+    if (!length) {
+      return { fontSize: '10px', paddingClass: 'px-1.5 py-0.5' };
+    }
+
+    const threshold = hasDualBadges ? 6 : 10;
+    const reduction = Math.max(0, length - threshold) * 0.45;
+    const computedSize = Math.max(7, 10 - reduction);
+    const fontSize = `${Math.round(computedSize * 10) / 10}px`;
+
+    if (computedSize <= 7.5) return { fontSize, paddingClass: 'px-0.5 py-0' };
+    if (computedSize <= 8.5) return { fontSize, paddingClass: 'px-1 py-0' };
+    return { fontSize, paddingClass: 'px-1.5 py-0.5' };
+  };
+
   useEffect(() => {
     if (!selectedPrompt) return undefined;
 
@@ -220,7 +245,7 @@ const SavedPromptsSection = ({ email = '' }) => {
         // GET 요청 시 email을 쿼리스트링으로 전달
         const response = await fetch(toApiUrl(`/list?email=${encodeURIComponent(email)}`), {
           headers: {
-            'Authorization': `Bearer ${window.sessionStorage.getItem('token')}` // 필요한 경우 토큰 추가
+            ...getAuthorizationHeader(), // 필요한 경우 토큰 추가
           }
         });
 
@@ -321,7 +346,7 @@ const SavedPromptsSection = ({ email = '' }) => {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${window.sessionStorage.getItem('token')}`
+        ...getAuthorizationHeader(),
       },
       body: JSON.stringify({ email }),
     });
@@ -572,9 +597,8 @@ const SavedPromptsSection = ({ email = '' }) => {
                   const isSelected = selectedPromptIds.has(item.id);
                   const hasDualMetaBadges = Boolean(promptType && promptIndustry);
                   const metaBadgeWidthClass = hasDualMetaBadges ? 'max-w-[48%]' : 'max-w-full';
-                  const metaBadgeTextLength = String(promptType || '').length + String(promptIndustry || '').length;
-                  const isTightMetaRow = hasDualMetaBadges && metaBadgeTextLength >= 11;
-                  const metaBadgePaddingClass = isTightMetaRow ? 'px-0 py-0' : 'px-1.5 py-0.5';
+                  const promptTypeBadge = getMetaBadgePresentation(promptType, hasDualMetaBadges);
+                  const promptIndustryBadge = getMetaBadgePresentation(promptIndustry, hasDualMetaBadges);
 
                   return (
                     <article
@@ -644,17 +668,23 @@ const SavedPromptsSection = ({ email = '' }) => {
                         )}
                       </div>
 
-                      <div className={`mt-2.5 flex w-full min-w-0 items-center justify-start gap-1.5 ${isDeleteMode ? 'ml-7' : ''}`}>
+                      <div className={`mt-2.5 flex w-full min-w-0 flex-nowrap items-center justify-start gap-1.5 ${isDeleteMode ? 'ml-7' : ''}`}>
                         {promptType && (
-                           <span className={`mypage-saved-meta-chip inline-flex min-w-0 w-auto items-center justify-center ${metaBadgePaddingClass} rounded text-[10px] leading-tight font-semibold text-center bg-white border border-gray-200 text-gray-600 overflow-hidden text-ellipsis whitespace-nowrap ${metaBadgeWidthClass}`}>
-                             {promptType}
-                           </span>
-                         )}
-                         {promptIndustry && (
-                           <span className={`mypage-saved-meta-chip inline-flex min-w-0 w-auto items-center justify-center ${metaBadgePaddingClass} rounded text-[10px] leading-tight font-semibold text-center bg-white border border-gray-200 text-gray-600 overflow-hidden text-ellipsis whitespace-nowrap ${metaBadgeWidthClass}`}>
-                             {promptIndustry}
-                           </span>
-                         )}
+                          <span
+                            className={`mypage-saved-meta-chip inline-flex min-w-0 w-auto items-center justify-center ${promptTypeBadge.paddingClass} rounded leading-tight font-semibold text-center bg-white border border-gray-200 text-gray-600 whitespace-nowrap ${metaBadgeWidthClass}`}
+                            style={{ fontSize: promptTypeBadge.fontSize, lineHeight: 1.15 }}
+                          >
+                            {promptType}
+                          </span>
+                        )}
+                        {promptIndustry && (
+                          <span
+                            className={`mypage-saved-meta-chip inline-flex min-w-0 w-auto items-center justify-center ${promptIndustryBadge.paddingClass} rounded leading-tight font-semibold text-center bg-white border border-gray-200 text-gray-600 whitespace-nowrap ${metaBadgeWidthClass}`}
+                            style={{ fontSize: promptIndustryBadge.fontSize, lineHeight: 1.15 }}
+                          >
+                            {promptIndustry}
+                          </span>
+                        )}
                       </div>
 
                       {/* 변경된 코드 */}

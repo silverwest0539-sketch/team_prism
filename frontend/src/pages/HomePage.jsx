@@ -8,6 +8,7 @@ import InitialWizardModal from '../components/home/InitialWizardModal';
 import { formatViews, formatDate } from '../utils/formatters';
 import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
+import { getSafeExternalUrl } from '../utils/safeUrl';
 import { navigateToAnalysisOnEnter } from '../utils/searchNavigation';
 import { Question } from '@phosphor-icons/react'; 
 
@@ -633,8 +634,9 @@ const HomePage = () => {
               <>
                 {communityPosts.slice(0, visibleCommunityCount).map((post, idx) => {
                   const isRead = readLinks.has(post.link);
+                  const safePostLink = getSafeExternalUrl(post.link);
                   return (
-                    <a key={`${post.rank}-${idx}`} href={post.link} target="_blank" rel="noopener noreferrer" onClick={() => handlePostClick(post.link)} className="home-community-item flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group">
+                    <a key={`${post.rank}-${idx}`} href={safePostLink || undefined} target="_blank" rel="noopener noreferrer" onClick={() => safePostLink && handlePostClick(safePostLink)} className="home-community-item flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group">
                       <div className="flex-1 overflow-hidden flex items-center gap-2">
                         {post.category && <span className={`shrink-0 px-2 py-0.5 text-[11px] font-bold rounded-md ${getCategoryBadgeClass(post.category)}`}>{post.category}</span>}
                         <h3 className={`home-community-item-title text-sm truncate transition-colors ${isRead ? 'text-gray-400 font-normal' : 'text-gray-800 font-medium group-hover:text-blue-600'}`}>{post.title}</h3>
@@ -669,8 +671,9 @@ const HomePage = () => {
               <>
                 {todayNews.slice(0, visibleNewsCount).map((news, idx) => {
                   const isRead = readNewsLinks.has(news.link);
+                  const safeNewsLink = getSafeExternalUrl(news.link);
                   return (
-                    <a key={idx} href={news.link} target="_blank" rel="noopener noreferrer" onClick={() => handleNewsClick(news.link)} className="home-news-item flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group">
+                    <a key={idx} href={safeNewsLink || undefined} target="_blank" rel="noopener noreferrer" onClick={() => safeNewsLink && handleNewsClick(safeNewsLink)} className="home-news-item flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group">
                       <div className="flex-1 overflow-hidden"><h3 className={`home-news-item-title text-sm truncate transition-colors ${isRead ? 'text-gray-400 font-normal' : 'text-gray-800 font-medium group-hover:text-emerald-600'}`}>{news.title}</h3></div>
                       <ChevronRight className="home-news-item-arrow w-5 h-5 text-gray-300 group-hover:text-gray-500" />
                     </a>

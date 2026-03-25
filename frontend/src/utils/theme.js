@@ -1,6 +1,7 @@
+import { getStoredToken } from './authToken';
+
 const THEME_STORAGE_KEY = 'pickey_theme';
 const LEGACY_THEME_STORAGE_KEY = 'prism_theme';
-const TOKEN_STORAGE_KEY = 'token';
 const USER_STORAGE_KEY = 'user';
 
 export const THEMES = Object.freeze({
@@ -38,7 +39,7 @@ export const saveTheme = (theme) => {
 const hasAuthenticatedSession = () => {
   if (typeof window === 'undefined') return false;
 
-  const token = String(window.sessionStorage.getItem(TOKEN_STORAGE_KEY) || '').trim();
+  const token = getStoredToken();
   if (!token) return false;
 
   try {

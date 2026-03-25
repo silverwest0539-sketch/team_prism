@@ -44,6 +44,7 @@ import SearchBar from '../components/common/SearchBar';
 import { formatDateLabel, formatDateForInput, formatViews } from '../utils/formatters';
 import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
+import { getSafeExternalUrl } from '../utils/safeUrl';
 import { showToast } from '../utils/toast';
 import SimpleWordCloud from '../components/analysis/SimpleWordCloud';
 import CommentItem from '../components/analysis/CommentItem';
@@ -54,6 +55,16 @@ const getFormattedDate = (date) => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+const toSafeSummaryText = (rawSummary) => {
+  if (typeof rawSummary !== 'string') return '';
+  return rawSummary
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 };
 
 const AnalysisPage = () => {
@@ -167,13 +178,21 @@ const AnalysisPage = () => {
     if (currentEnd) params.endDate = currentEnd;
 
     try {
-      const [analysisRes, newsRes] = await Promise.all([
+      const [analysisResult, newsResult] = await Promise.allSettled([
         apiClient.get('/analysis', { params }),
         apiClient.get('/news', { params }),
       ]);
 
-      const analysisData = analysisRes.data;
-      const newsData = newsRes.data;
+      if (analysisResult.status !== 'fulfilled') {
+        throw analysisResult.reason;
+      }
+
+      const analysisData = analysisResult.value.data;
+      const newsData = newsResult.status === 'fulfilled' ? newsResult.value.data : [];
+
+      if (newsResult.status === 'rejected') {
+        console.warn('뉴스 로드 실패(분석 데이터는 정상):', newsResult.reason);
+      }
 
       if (analysisData.found) {
         // 데이터가 있으면 모달 닫기
@@ -272,7 +291,7 @@ const AnalysisPage = () => {
       if (end) params.endDate = end;
 
       const res = await apiClient.get('/summary', { params });
-      setAiSummary(res.data.summary);
+      setAiSummary(toSafeSummaryText(res.data.summary));
     } catch (err) {
       console.error('AI 요약 로드 실패:', err);
       setAiSummary('요약 정보를 불러오는데 실패했습니다.');
@@ -1403,10 +1422,9 @@ const AnalysisPage = () => {
                   ) : (
                     aiSummary ? (
                       <div className="animate-fade-in-up">
-                          <div 
-                            className="ai-summary-content mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed"
-                            dangerouslySetInnerHTML={{ __html: aiSummary }} 
-                          />
+                        <p className="ai-summary-content mb-2 pl-2 border-l-2 border-indigo-200 text-sm leading-relaxed whitespace-pre-line">
+                          {aiSummary}
+                        </p>
                       </div>
                     ) : (
                       <p className="analysis-ai-ready text-gray-400 text-center text-xs">키워드를 분석할 준비가 되었습니다.</p>
@@ -1425,7 +1443,7 @@ const AnalysisPage = () => {
                     news.slice(0, 3).map((item, idx) => (
                       <a
                         key={idx}
-                        href={item.link}
+                        href={getSafeExternalUrl(item.link) || undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="analysis-news-row row-hover border border-transparent hover:border-gray-100"
@@ -1460,7 +1478,7 @@ const AnalysisPage = () => {
                         key={video.id}
                         href={video.views === 0 ? '#' : `https://www.youtube.com/watch?v=${encodeURIComponent(String(video.id || ''))}`}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         className="analysis-video-row flex flex-col sm:flex-row gap-3 sm:gap-4 group cursor-pointer"
                       >
                         <div className="analysis-video-thumb w-full sm:w-32 h-44 sm:h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 relative">
