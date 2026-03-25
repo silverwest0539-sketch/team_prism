@@ -43,6 +43,17 @@
 
 ---
 
+## 활용성 및 특징
+
+<img src="./assets/images/Features.png" alt="활용성 및 특징" width="60%" />
+
+- 트렌드 발견부터 반응 분석, 콘텐츠 초안 생성까지 한 번에 지원하여
+- 마케터가 빠르게 인사이트를 얻고 바로 실행할 수 있도록 돕는 서비스입니다.
+
+<br>
+
+---
+
 ## 주요 기능
 
 ### 1. 실시간 트렌드 키워드 탐지
@@ -200,7 +211,7 @@ project-root/
 
 <br>
 
-<img src="./assets/images/architecture.png" alt="시스템 아키텍처" width="100%" />
+<img src="./assets/images/architecture.png" alt="시스템 아키텍처" width="80%" />
 
 ---
 
@@ -234,12 +245,12 @@ project-root/
 ---
 
 ## 유스케이스 다이어그램
-<img src="./assets/images/usecase.png" alt="유스케이스 다이어그램" width="100%" />
+<img src="./assets/images/usecase.png" alt="유스케이스 다이어그램" width="600" />
 
 ---
 
 ## 서비스 플로우
-<img src="./assets/images/flowchart.png" alt="서비스 플로우" width="100%" />
+<img src="./assets/images/flowchart.png" alt="서비스 플로우" width="80%" />
 
 ---
 
