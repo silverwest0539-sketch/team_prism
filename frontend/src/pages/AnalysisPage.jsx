@@ -46,6 +46,13 @@ import apiClient from '../utils/apiClient';
 import { getStoredUser } from '../utils/authStorage';
 import { getSafeExternalUrl } from '../utils/safeUrl';
 import { showToast } from '../utils/toast';
+import {
+  normalizeAnalysisResponse,
+  normalizeCommentsResponse,
+  normalizeKeywordExistsResponse,
+  normalizeNewsList,
+  normalizeSummaryResponse,
+} from '../utils/responseGuards';
 import SimpleWordCloud from '../components/analysis/SimpleWordCloud';
 import CommentItem from '../components/analysis/CommentItem';
 import { DUMMY_DATA, PLATFORM_OPTIONS, SENTIMENT_DATA } from '../constants/analysisConstants';
@@ -187,8 +194,10 @@ const AnalysisPage = () => {
         throw analysisResult.reason;
       }
 
-      const analysisData = analysisResult.value.data;
-      const newsData = newsResult.status === 'fulfilled' ? newsResult.value.data : [];
+      const analysisData = normalizeAnalysisResponse(analysisResult.value.data);
+      const newsData = newsResult.status === 'fulfilled'
+        ? normalizeNewsList(newsResult.value.data)
+        : [];
 
       if (newsResult.status === 'rejected') {
         console.warn('뉴스 로드 실패(분석 데이터는 정상):', newsResult.reason);
@@ -208,22 +217,17 @@ const AnalysisPage = () => {
                 offset: 0
               }
             });
-            analysisData.comments = commentsRes.data.comments || [];
+            const normalizedCommentsResponse = normalizeCommentsResponse(commentsRes.data);
+            analysisData.comments = normalizedCommentsResponse.comments;
 
             setBottomTotalCount(
-              commentsRes.data.totalCount || 
-              commentsRes.data.total_comments || 
-              commentsRes.data.comments?.length || 0
+              normalizedCommentsResponse.totalCount
             );
           } catch (err) {
             console.error('하단 댓글 로드 실패:', err);
           }
         } else {
-          setBottomTotalCount(
-            analysisData.totalCommentCount || 
-            analysisData.total_comments || 
-            analysisData.comments?.length || 0
-          );
+          setBottomTotalCount(analysisData.totalCommentCount || analysisData.comments?.length || 0);
         }
 
         setData(analysisData);
@@ -252,7 +256,7 @@ const AnalysisPage = () => {
         setIsNoDataModalOpen(true);
       }
 
-      setNews(newsData || []);
+      setNews(newsData);
     } catch (err) {
       console.error('데이터 로드 실패:', err);
       showToast('데이터를 불러오지 못했습니다.', { type: 'error' });
@@ -267,7 +271,8 @@ const AnalysisPage = () => {
     setKeywordExists(null);
     try {
       const res = await apiClient.get('/analysis/exists', { params: { keyword } });
-      if (!res.data.exists) {
+      const existsResponse = normalizeKeywordExistsResponse(res.data);
+      if (!existsResponse.exists) {
         setKeywordExists(false);
         setIsNoDataModalOpen(true);
       } else {
@@ -291,7 +296,8 @@ const AnalysisPage = () => {
       if (end) params.endDate = end;
 
       const res = await apiClient.get('/summary', { params });
-      setAiSummary(toSafeSummaryText(res.data.summary));
+      const normalizedSummary = normalizeSummaryResponse(res.data);
+      setAiSummary(toSafeSummaryText(normalizedSummary.summary));
     } catch (err) {
       console.error('AI 요약 로드 실패:', err);
       setAiSummary('요약 정보를 불러오는데 실패했습니다.');
@@ -366,7 +372,8 @@ const AnalysisPage = () => {
         }
       });
 
-      const newComments = res.data.comments || [];
+      const normalizedCommentsResponse = normalizeCommentsResponse(res.data);
+      const newComments = normalizedCommentsResponse.comments;
       if (newComments.length > 0) {
         setData(prev => ({
           ...prev,
@@ -404,7 +411,8 @@ const AnalysisPage = () => {
           offset: 0
         }
       });
-      const newComments = res.data.comments || [];
+      const normalizedCommentsResponse = normalizeCommentsResponse(res.data);
+      const newComments = normalizedCommentsResponse.comments;
       setModalCommentsData(newComments);
       setModalCommentOffset(newComments.length);
       setModalHasMoreComments(newComments.length >= 70);
@@ -430,7 +438,8 @@ const AnalysisPage = () => {
         }
       });
 
-      const newComments = res.data.comments || [];
+      const normalizedCommentsResponse = normalizeCommentsResponse(res.data);
+      const newComments = normalizedCommentsResponse.comments;
       if (newComments.length > 0) {
         setModalCommentsData(prev => [...prev, ...newComments]);
         setModalCommentOffset(prev => prev + newComments.length);
@@ -503,17 +512,14 @@ const AnalysisPage = () => {
             platform: selectedPlatform !== 'all' ? selectedPlatform : undefined
           }
         });
-        const newComments = res.data.comments || [];
+        const normalizedCommentsResponse = normalizeCommentsResponse(res.data);
+        const newComments = normalizedCommentsResponse.comments;
         
         setData(prev => prev ? { ...prev, comments: newComments } : prev);
         setCommentOffset(newComments.length);
         setHasMoreComments(newComments.length >= 70);
         
-        setBottomTotalCount(
-          res.data.totalCount || 
-          res.data.total_comments || 
-          newComments.length
-        );
+        setBottomTotalCount(normalizedCommentsResponse.totalCount);
       } catch (error) {
         console.error('플랫폼 전용 댓글 로드 실패:', error);
       } finally {
@@ -533,8 +539,9 @@ const AnalysisPage = () => {
 
     try {
       const res = await apiClient.get('/analysis', { params: { keyword: inputKeyword } });
-      const resolvedKeyword = String(res.data?.keyword || '').trim();
-      if (res.data?.found && resolvedKeyword) {
+      const normalizedAnalysis = normalizeAnalysisResponse(res.data);
+      const resolvedKeyword = String(normalizedAnalysis.keyword || '').trim();
+      if (normalizedAnalysis.found && resolvedKeyword) {
         return resolvedKeyword;
       }
       return '';

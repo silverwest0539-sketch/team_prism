@@ -5,6 +5,7 @@ import { showToast } from '../../utils/toast';
 import { toApiUrl } from '../../utils/apiClient';
 import { createHttpError, safeParseJson, toFriendlyFetchErrorMessage } from '../../utils/fetchError';
 import { getAuthorizationHeader } from '../../utils/authToken';
+import { toArray } from '../../utils/responseGuards';
 import PaginationBar from '../common/PaginationBar';
 
 const formatSavedAt = (value) => {
@@ -256,7 +257,7 @@ const SavedPromptsSection = ({ email = '' }) => {
         }
 
         if (result.success) {
-          setSavedPrompts(result.data);
+          setSavedPrompts(toArray(result.data));
         } else {
           showToast(result.error || '목록을 불러오지 못했습니다.', { type: 'error' });
         }
